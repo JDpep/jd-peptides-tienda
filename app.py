@@ -422,6 +422,15 @@ CREATE TABLE IF NOT EXISTS purchase_order_items (
     FOREIGN KEY (po_id) REFERENCES purchase_orders(id),
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
+
+CREATE TABLE IF NOT EXISTS product_images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    sort_order INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
 """
 
 PRODUCTS_SEED = [
@@ -655,7 +664,8 @@ def producto(pid):
         (product['category'], pid)
     )
     benefits = product['benefits'].split('|') if product['benefits'] else []
-    return render_template('producto.html', product=product, related=related, benefits=benefits)
+    images = query_db("SELECT * FROM product_images WHERE product_id=? ORDER BY sort_order, id", (pid,))
+    return render_template('producto.html', product=product, related=related, benefits=benefits, images=images)
 
 
 @app.route('/carrito/agregar', methods=['POST'])
@@ -895,19 +905,18 @@ def admin_nuevo_producto():
         benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
         active = 1 if request.form.get('active') else 0
 
-        image_path = ''
-        file = request.files.get('image')
-        if file and file.filename and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(UPLOAD_FOLDER, filename))
-            image_path = filename
-
         try:
-            execute_db(
+            pid = execute_db(
                 """INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active, image_path)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active, image_path)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '')""",
+                (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active)
             )
+            files = request.files.getlist('images')
+            for i, file in enumerate(files):
+                if file and file.filename and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file.save(os.path.join(UPLOAD_FOLDER, filename))
+                    execute_db("INSERT INTO product_images (product_id, filename, sort_order) VALUES (?, ?, ?)", (pid, filename, i))
             flash('Producto creado exitosamente.', 'success')
             return redirect(url_for('admin_productos'))
         except Exception as e:
@@ -938,19 +947,19 @@ def admin_editar_producto(pid):
         benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
         active = 1 if request.form.get('active') else 0
 
-        image_path = product['image_path'] or ''
-        file = request.files.get('image')
-        if file and file.filename and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(UPLOAD_FOLDER, filename))
-            image_path = filename
-
         try:
             execute_db(
                 """UPDATE products SET sku=?, name=?, category=?, dose=?, price=?, stock=?,
-                   low_stock_alert=?, description=?, benefits=?, active=?, image_path=? WHERE id=?""",
-                (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active, image_path, pid)
+                   low_stock_alert=?, description=?, benefits=?, active=? WHERE id=?""",
+                (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active, pid)
             )
+            files = request.files.getlist('images')
+            existing_count = query_db("SELECT COUNT(*) as c FROM product_images WHERE product_id=?", (pid,), one=True)['c']
+            for i, file in enumerate(files):
+                if file and file.filename and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file.save(os.path.join(UPLOAD_FOLDER, filename))
+                    execute_db("INSERT INTO product_images (product_id, filename, sort_order) VALUES (?, ?, ?)", (pid, filename, existing_count + i))
             flash('Producto actualizado.', 'success')
             return redirect(url_for('admin_productos'))
         except Exception as e:
@@ -958,8 +967,34 @@ def admin_editar_producto(pid):
 
     benefits_text = (product['benefits'] or '').replace('|', '\n')
     categories = [r['category'] for r in query_db("SELECT DISTINCT category FROM products ORDER BY category")]
+    product_images = query_db("SELECT * FROM product_images WHERE product_id=? ORDER BY sort_order, id", (pid,))
     return render_template('admin/producto_form.html', product=product,
-                           benefits_text=benefits_text, categories=categories, action='editar')
+                           benefits_text=benefits_text, categories=categories,
+                           action='editar', product_images=product_images)
+
+
+@app.route('/admin/productos/imagen/<int:img_id>/eliminar', methods=['POST'])
+@admin_required
+def admin_eliminar_imagen(img_id):
+    img = query_db("SELECT * FROM product_images WHERE id=?", (img_id,), one=True)
+    if img:
+        pid = img['product_id']
+        execute_db("DELETE FROM product_images WHERE id=?", (img_id,))
+        flash('Imagen eliminada.', 'success')
+        return redirect(url_for('admin_editar_producto', pid=pid))
+    flash('Imagen no encontrada.', 'error')
+    return redirect(url_for('admin_productos'))
+
+
+@app.route('/admin/ordenes/<int:oid>/invoice')
+@admin_required
+def admin_orden_invoice(oid):
+    order = query_db("SELECT * FROM orders WHERE id=?", (oid,), one=True)
+    if not order:
+        flash('Orden no encontrada.', 'error')
+        return redirect(url_for('admin_ordenes'))
+    items = query_db("SELECT * FROM order_items WHERE order_id=?", (oid,))
+    return render_template('admin/invoice_venta.html', order=order, items=items)
 
 
 @app.route('/admin/productos/<int:pid>/toggle', methods=['POST'])

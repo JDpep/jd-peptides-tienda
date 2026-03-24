@@ -4,8 +4,9 @@
 
 {% block content %}
 
-<div style="margin-bottom:1.25rem">
+<div style="margin-bottom:1.25rem;display:flex;gap:0.5rem">
   <a href="{{ url_for('admin_ordenes') }}" class="btn btn-ghost btn-sm">← Volver a Órdenes</a>
+  <a href="{{ url_for('admin_orden_invoice', oid=order['id']) }}" target="_blank" class="btn btn-gold btn-sm">Invoice PDF</a>
 </div>
 
 <!-- Header bar -->

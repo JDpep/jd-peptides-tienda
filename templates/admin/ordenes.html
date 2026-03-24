@@ -45,8 +45,9 @@
             <td style="text-align:right;color:var(--gold);font-weight:700">${{ "%.2f"|format(o['total']) }}</td>
             <td><span class="badge status-{{ o['payment_status'] }}">{{ o['payment_status'] }}</span></td>
             <td><span class="badge status-{{ o['status'] }}">{{ o['status'] }}</span></td>
-            <td>
+            <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
               <a href="{{ url_for('admin_orden_detalle', oid=o['id']) }}" class="btn btn-ghost btn-sm">Ver</a>
+              <a href="{{ url_for('admin_orden_invoice', oid=o['id']) }}" target="_blank" class="btn btn-ghost btn-sm">Invoice</a>
             </td>
           </tr>
         {% else %}

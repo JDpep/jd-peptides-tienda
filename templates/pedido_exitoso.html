@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Pedido Confirmado — JD Peptides{% endblock %}
+
+{% block content %}
+<section class="success-section">
+  <div class="container" style="max-width:700px">
+
+    <div class="success-icon">✓</div>
+
+    <h1 style="margin-bottom:0.5rem">¡Pedido <span class="gold">Confirmado</span>!</h1>
+    <p style="font-size:1.05rem;margin-bottom:0.5rem">Gracias, <strong style="color:var(--text)">{{ order['customer_name'] }}</strong>. Tu pedido ha sido recibido.</p>
+
+    <div class="success-order-number">
+      Número de pedido: <span>{{ order['order_number'] }}</span>
+    </div>
+    <p style="font-size:0.82rem;color:var(--text3);margin-bottom:1.5rem">
+      Se enviará confirmación a <strong style="color:var(--text2)">{{ order['customer_email'] }}</strong>
+    </p>
+
+    <!-- Items -->
+    <div class="success-items">
+      {% for item in items %}
+        <div class="success-item">
+          <div>
+            <div class="success-item-name">{{ item['product_name'] }}</div>
+            <div class="success-item-dose">{{ item['dose'] }} · Cant: {{ item['quantity'] }}</div>
+          </div>
+          <div class="success-item-total">${{ "%.2f"|format(item['subtotal']) }}</div>
+        </div>
+      {% endfor %}
+      <div class="success-item" style="background:rgba(201,162,39,0.04)">
+        <div style="display:flex;flex-direction:column;gap:0.2rem;width:100%">
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--text2)">
+            <span>Subtotal</span><span>${{ "%.2f"|format(order['subtotal']) }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--text2)">
+            <span>Envío</span>
+            <span>{% if order['shipping'] == 0 %}Gratis{% else %}${{ "%.2f"|format(order['shipping']) }}{% endif %}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-weight:800;color:var(--gold);font-size:1.05rem;margin-top:0.25rem;padding-top:0.25rem;border-top:1px solid var(--border)">
+            <span>Total</span><span>${{ "%.2f"|format(order['total']) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment instructions -->
+    <div class="payment-instructions">
+      <h4>📋 Instrucciones de Pago — {{ order['payment_method'] }}</h4>
+      {% if order['payment_method'] == 'Transferencia Bancaria' %}
+        <p style="margin-bottom:0.75rem">Por favor realiza la transferencia a:</p>
+        <ul>
+          <li><strong style="color:var(--text)">Banco:</strong> Banco Nacional</li>
+          <li><strong style="color:var(--text)">Titular:</strong> JD Peptides S.A. de C.V.</li>
+          <li><strong style="color:var(--text)">Cuenta:</strong> 1234 5678 9012 3456</li>
+          <li><strong style="color:var(--text)">CLABE:</strong> 012345678901234567</li>
+          <li><strong style="color:var(--text)">Monto:</strong> ${{ "%.2f"|format(order['total']) }} MXN</li>
+          <li><strong style="color:var(--text)">Referencia:</strong> {{ order['order_number'] }}</li>
+        </ul>
+        <p style="margin-top:0.75rem;font-size:0.82rem">Envía tu comprobante de pago por WhatsApp o email para agilizar el proceso.</p>
+      {% elif order['payment_method'] == 'Efectivo' %}
+        <p>Tu pedido ha sido reservado. Un agente te contactará para coordinar el punto y hora de pago/entrega.</p>
+        <p style="margin-top:0.5rem">Monto a pagar: <strong style="color:var(--gold)">${{ "%.2f"|format(order['total']) }}</strong></p>
+      {% elif order['payment_method'] == 'Criptomonedas' %}
+        <p style="margin-bottom:0.75rem">Realiza el pago en criptomonedas:</p>
+        <ul>
+          <li><strong style="color:var(--text)">BTC:</strong> 1A2b3C4d5E6f7G8h9I0j... (contactar para wallet)</li>
+          <li><strong style="color:var(--text)">USDT (TRC20):</strong> Contactar para wallet</li>
+          <li><strong style="color:var(--text)">Monto:</strong> ${{ "%.2f"|format(order['total']) }} USD equivalente</li>
+        </ul>
+        <p style="margin-top:0.75rem;font-size:0.82rem">Contáctanos por WhatsApp para obtener la dirección de wallet y tasa de cambio actual.</p>
+      {% endif %}
+    </div>
+
+    <!-- Shipping info -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.5rem;text-align:left">
+      <h4 style="color:var(--text2);font-size:0.85rem;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem">Dirección de Envío</h4>
+      <p style="color:var(--text);font-size:0.9rem;line-height:1.7">
+        {{ order['address'] }}<br>
+        {{ order['city'] }}{% if order['state'] %}, {{ order['state'] }}{% endif %}{% if order['zip_code'] %} {{ order['zip_code'] }}{% endif %}
+      </p>
+    </div>
+
+    <div class="detail-disclaimer" style="margin-bottom:2rem">
+      <strong style="color:var(--gold)">⚠️ For Research Use Only</strong> — Los productos adquiridos son exclusivamente para uso en investigación científica.
+    </div>
+
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="{{ url_for('catalogo') }}" class="btn btn-gold btn-lg">Continuar Comprando</a>
+      <a href="https://wa.me/1234567890" target="_blank" class="btn btn-outline btn-lg">Contactar por WhatsApp</a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

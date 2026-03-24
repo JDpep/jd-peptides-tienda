@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — JD Peptides</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--bg);
+    }
+    .login-bg {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 60% at 30% 30%, rgba(201,162,39,0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 70% 70%, rgba(201,162,39,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .login-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 380px;
+      margin: 1rem;
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-bg"></div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">
+            <span>{% if category == 'success' %}✓{% else %}✕{% endif %}</span>
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="login-card">
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:2rem">
+      <svg width="52" height="52" viewBox="0 0 40 40" fill="none" style="margin:0 auto 0.75rem">
+        <circle cx="20" cy="20" r="4" fill="#c9a227"/>
+        <circle cx="8"  cy="12" r="3" fill="#c9a227" opacity="0.7"/>
+        <circle cx="32" cy="12" r="3" fill="#c9a227" opacity="0.7"/>
+        <circle cx="8"  cy="28" r="3" fill="#c9a227" opacity="0.7"/>
+        <circle cx="32" cy="28" r="3" fill="#c9a227" opacity="0.7"/>
+        <circle cx="20" cy="6"  r="2.5" fill="#c9a227" opacity="0.5"/>
+        <circle cx="20" cy="34" r="2.5" fill="#c9a227" opacity="0.5"/>
+        <line x1="20" y1="16" x2="8"  y2="12" stroke="#c9a227" stroke-width="1.2" opacity="0.6"/>
+        <line x1="20" y1="16" x2="32" y2="12" stroke="#c9a227" stroke-width="1.2" opacity="0.6"/>
+        <line x1="20" y1="24" x2="8"  y2="28" stroke="#c9a227" stroke-width="1.2" opacity="0.6"/>
+        <line x1="20" y1="24" x2="32" y2="28" stroke="#c9a227" stroke-width="1.2" opacity="0.6"/>
+        <line x1="20" y1="16" x2="20" y2="6"  stroke="#c9a227" stroke-width="1.2" opacity="0.4"/>
+        <line x1="20" y1="24" x2="20" y2="34" stroke="#c9a227" stroke-width="1.2" opacity="0.4"/>
+        <line x1="8"  y1="12" x2="8"  y2="28" stroke="#c9a227" stroke-width="1" opacity="0.3"/>
+        <line x1="32" y1="12" x2="32" y2="28" stroke="#c9a227" stroke-width="1" opacity="0.3"/>
+      </svg>
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.2rem;letter-spacing:0.1em;color:var(--text)">
+        JD <span style="color:var(--gold)">PEPTIDES</span>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-top:0.25rem">
+        Panel de Administración
+      </div>
+    </div>
+
+    <form method="POST">
+      <div class="form-group" style="margin-bottom:1.25rem">
+        <label style="display:block;font-size:0.78rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem">
+          Contraseña
+        </label>
+        <input
+          type="password"
+          name="password"
+          class="form-control"
+          placeholder="Ingresa tu contraseña"
+          required
+          autofocus
+          autocomplete="current-password"
+        >
+      </div>
+      <button type="submit" class="btn btn-gold btn-block" style="padding:0.8rem;font-size:0.9rem">
+        Ingresar al Panel
+      </button>
+    </form>
+
+    <div style="text-align:center;margin-top:1.5rem">
+      <a href="{{ url_for('index') }}" style="font-size:0.8rem;color:var(--text3)">← Volver a la tienda</a>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Admin — JD Peptides{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-container">
+      {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">
+          <span>{% if category == 'success' %}✓{% elif category == 'error' %}✕{% else %}ℹ{% endif %}</span>
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="admin-layout">
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar" id="adminSidebar">
+    <div class="admin-sidebar-logo">
+      <div class="logo-main">JD <span>PEPTIDES</span></div>
+      <div class="logo-sub">Panel de Administración</div>
+    </div>
+
+    <nav class="admin-nav">
+      <a href="{{ url_for('admin_dashboard') }}"
+         class="admin-nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+        <span class="nav-icon">📊</span> Dashboard
+      </a>
+      <a href="{{ url_for('admin_productos') }}"
+         class="admin-nav-link {% if request.endpoint in ['admin_productos','admin_nuevo_producto','admin_editar_producto'] %}active{% endif %}">
+        <span class="nav-icon">🧪</span> Productos
+      </a>
+      <a href="{{ url_for('admin_inventario') }}"
+         class="admin-nav-link {% if request.endpoint == 'admin_inventario' %}active{% endif %}">
+        <span class="nav-icon">📦</span> Inventario
+      </a>
+      <a href="{{ url_for('admin_ordenes') }}"
+         class="admin-nav-link {% if request.endpoint in ['admin_ordenes','admin_orden_detalle'] %}active{% endif %}">
+        <span class="nav-icon">🛒</span> Órdenes
+      </a>
+      <a href="{{ url_for('admin_ordenes_compra') }}"
+         class="admin-nav-link {% if request.endpoint in ['admin_ordenes_compra','admin_oc_detalle'] %}active{% endif %}">
+        <span class="nav-icon">📋</span> Órdenes de Compra
+      </a>
+    </nav>
+
+    <div class="admin-sidebar-footer">
+      <a href="{{ url_for('index') }}" target="_blank">
+        <span>🌐</span> Ver Tienda
+      </a>
+      <a href="{{ url_for('admin_logout') }}">
+        <span>🚪</span> Cerrar Sesión
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <button id="sidebarToggle" class="hamburger" style="display:none" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+      </div>
+      <div class="admin-topbar-actions">
+        <a href="{{ url_for('index') }}" class="btn btn-ghost btn-sm" target="_blank">🌐 Tienda</a>
+        <a href="{{ url_for('admin_logout') }}" class="btn btn-ghost btn-sm">Salir</a>
+      </div>
+    </header>
+
+    <div class="admin-content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+// Sidebar toggle for mobile
+const toggle = document.getElementById('sidebarToggle');
+const sidebar = document.getElementById('adminSidebar');
+if (toggle && sidebar) {
+  toggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+}
+// Show toggle on small screens
+const mq = window.matchMedia('(max-width: 768px)');
+function handleMQ(e) {
+  if (toggle) toggle.style.display = e.matches ? 'flex' : 'none';
+}
+mq.addEventListener('change', handleMQ);
+handleMQ(mq);
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

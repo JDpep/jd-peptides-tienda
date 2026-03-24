@@ -1,0 +1,103 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard — Admin JD Peptides{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Metrics -->
+<div class="admin-metrics">
+  <div class="metric-card">
+    <div class="metric-label">Total Ventas</div>
+    <div class="metric-value gold">${{ "%.2f"|format(total_sales) }}</div>
+    <div class="metric-sub">Todas las órdenes activas</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Órdenes Hoy</div>
+    <div class="metric-value">{{ orders_today }}</div>
+    <div class="metric-sub">Nuevas órdenes</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Productos Activos</div>
+    <div class="metric-value">{{ active_products }}</div>
+    <div class="metric-sub">En catálogo</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Stock Bajo</div>
+    <div class="metric-value {% if low_stock > 0 %}gold{% endif %}">{{ low_stock }}</div>
+    <div class="metric-sub">Productos a reabastecer</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;align-items:start">
+
+  <!-- Recent orders -->
+  <div class="admin-card">
+    <div class="admin-card-header">
+      <h3>Órdenes Recientes</h3>
+      <a href="{{ url_for('admin_ordenes') }}" class="btn btn-ghost btn-sm">Ver todas →</a>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Orden</th>
+            <th>Cliente</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Pago</th>
+            <th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in recent_orders %}
+            <tr>
+              <td>
+                <a href="{{ url_for('admin_orden_detalle', oid=o['id']) }}" class="mono">{{ o['order_number'] }}</a>
+              </td>
+              <td class="strong">{{ o['customer_name'] }}</td>
+              <td style="color:var(--gold);font-weight:700">${{ "%.2f"|format(o['total']) }}</td>
+              <td><span class="badge status-{{ o['status'] }}">{{ o['status'] }}</span></td>
+              <td><span class="badge status-{{ o['payment_status'] }}">{{ o['payment_status'] }}</span></td>
+              <td style="font-size:0.8rem;color:var(--text3)">{{ o['created_at'][:10] }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:2rem">Sin órdenes aún</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Low stock -->
+  <div class="admin-card">
+    <div class="admin-card-header">
+      <h3>⚠️ Stock Bajo</h3>
+      <a href="{{ url_for('admin_inventario') }}" class="btn btn-ghost btn-sm">Gestionar</a>
+    </div>
+    <div class="admin-card-body" style="padding:0">
+      {% if low_stock_products %}
+        {% for p in low_stock_products %}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1.25rem;border-bottom:1px solid var(--border)">
+            <div>
+              <div style="font-weight:600;font-size:0.88rem;color:var(--text)">{{ p['name'] }}</div>
+              <div style="font-size:0.75rem;color:var(--text3)">{{ p['sku'] }}</div>
+            </div>
+            <div>
+              <span class="badge {% if p['stock'] == 0 %}badge-red{% else %}badge-orange{% endif %}">
+                {{ p['stock'] }} uds
+              </span>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center;padding:2rem;color:var(--text3)">
+          <div style="font-size:1.5rem;margin-bottom:0.5rem">✓</div>
+          Stock en niveles óptimos
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

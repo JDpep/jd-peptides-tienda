@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}{{ product['name'] }} — JD Peptides{% endblock %}
+
+{% block content %}
+
+<section class="product-detail">
+  <div class="container">
+
+    <!-- Breadcrumb -->
+    <nav style="margin-bottom:2rem;font-size:0.82rem;color:var(--text3)">
+      <a href="{{ url_for('index') }}" style="color:var(--text3)">Inicio</a>
+      <span style="margin:0 0.5rem">›</span>
+      <a href="{{ url_for('catalogo') }}" style="color:var(--text3)">Catálogo</a>
+      <span style="margin:0 0.5rem">›</span>
+      <a href="{{ url_for('catalogo', categoria=product['category']) }}" style="color:var(--text3)">{{ product['category'] }}</a>
+      <span style="margin:0 0.5rem">›</span>
+      <span style="color:var(--text2)">{{ product['name'] }}</span>
+    </nav>
+
+    <div class="product-detail-grid">
+
+      <!-- Visual -->
+      <div>
+        <div class="product-detail-visual {% if product['image_path'] %}product-detail-has-img{% endif %}">
+          {% if product['image_path'] %}
+            <img src="{{ url_for('static', filename='img/' + product['image_path']) }}"
+                 alt="{{ product['name'] }}" class="product-detail-img">
+            <span class="badge badge-gold" style="position:absolute;top:1rem;left:1rem;z-index:2">{{ product['category'] }}</span>
+          {% else %}
+            <div style="position:absolute;inset:0;opacity:0.08">
+              <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                <circle cx="200" cy="200" r="24" fill="#c9a227"/>
+                <circle cx="80"  cy="120" r="16" fill="#c9a227" opacity="0.6"/>
+                <circle cx="320" cy="120" r="16" fill="#c9a227" opacity="0.6"/>
+                <circle cx="80"  cy="280" r="16" fill="#c9a227" opacity="0.6"/>
+                <circle cx="320" cy="280" r="16" fill="#c9a227" opacity="0.6"/>
+                <line x1="200" y1="176" x2="80"  y2="120" stroke="#c9a227" stroke-width="3" opacity="0.5"/>
+                <line x1="200" y1="176" x2="320" y2="120" stroke="#c9a227" stroke-width="3" opacity="0.5"/>
+                <line x1="200" y1="224" x2="80"  y2="280" stroke="#c9a227" stroke-width="3" opacity="0.5"/>
+                <line x1="200" y1="224" x2="320" y2="280" stroke="#c9a227" stroke-width="3" opacity="0.5"/>
+              </svg>
+            </div>
+            <span class="badge badge-gold" style="position:absolute;top:1rem;left:1rem">{{ product['category'] }}</span>
+            <div class="product-visual-name" style="font-size:clamp(2rem,6vw,3.5rem);position:relative">{{ product['name'] }}</div>
+            <div class="product-visual-dose" style="position:relative;font-size:0.95rem;margin-top:0.5rem">{{ product['dose'] }}</div>
+            <div style="position:absolute;bottom:1rem;right:1rem;font-size:0.75rem;color:var(--text3);letter-spacing:0.06em">{{ product['sku'] }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Stock badge -->
+        {% if product['stock'] > product['low_stock_alert'] %}
+          <div style="margin-top:1rem;display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;color:var(--green)">
+            <span>●</span> En stock ({{ product['stock'] }} unidades disponibles)
+          </div>
+        {% elif product['stock'] > 0 %}
+          <div style="margin-top:1rem;display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;color:var(--orange)">
+            <span>●</span> Stock bajo ({{ product['stock'] }} unidades)
+          </div>
+        {% else %}
+          <div style="margin-top:1rem;display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;color:var(--red)">
+            <span>●</span> Sin stock
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Info -->
+      <div class="product-detail-info">
+        <div>
+          <p class="product-detail-sku">{{ product['sku'] }}</p>
+          <h1 class="product-detail-title">{{ product['name'] }}</h1>
+        </div>
+
+        <div class="product-detail-dose-price">
+          <span class="product-detail-price">${{ "%.2f"|format(product['price']) }}</span>
+          <span class="product-detail-dose-tag">{{ product['dose'] }}</span>
+        </div>
+
+        {% if product['description'] %}
+          <p style="font-size:0.92rem;line-height:1.75;color:var(--text2)">{{ product['description'] }}</p>
+        {% endif %}
+
+        {% if benefits %}
+          <div>
+            <h4 style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.75rem">Beneficios de Investigación</h4>
+            <ul class="benefits-list">
+              {% for b in benefits %}
+                <li class="benefit-item">{{ b }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <!-- Add to cart -->
+        <div>
+          <h4 style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.75rem">Cantidad</h4>
+          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+            <div class="quantity-selector">
+              <button class="qty-btn" data-action="dec" data-target="qty-detail" type="button">−</button>
+              <input type="number" id="qty-detail" class="qty-input" value="1" min="1" max="99">
+              <button class="qty-btn" data-action="inc" data-target="qty-detail" type="button">+</button>
+            </div>
+            {% if product['stock'] > 0 %}
+              <button class="btn btn-gold btn-lg add-to-cart-btn" data-product-id="{{ product['id'] }}" style="flex:1;min-width:160px">
+                🛒 Agregar al Carrito
+              </button>
+            {% else %}
+              <button class="btn btn-ghost btn-lg" disabled style="flex:1;min-width:160px;opacity:0.5;cursor:not-allowed">
+                Sin Stock
+              </button>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="detail-disclaimer">
+          <strong style="color:var(--gold)">⚠️ For Research Use Only</strong><br>
+          Este producto es exclusivamente para investigación científica. No está destinado al uso humano, veterinario, ni como alimento o medicamento.
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Related products -->
+    {% if related %}
+      <div style="margin-top:4rem">
+        <div class="section-header" style="text-align:left;margin-bottom:1.5rem">
+          <h3>Productos <span class="gold">Relacionados</span></h3>
+        </div>
+        <div class="products-grid" style="grid-template-columns:repeat(3,1fr)">
+          {% for p in related %}
+            {% set rbenefits = p['benefits'].split('|') if p['benefits'] else [] %}
+            <div class="product-card">
+              <a href="{{ url_for('producto', pid=p['id']) }}" style="text-decoration:none;display:contents">
+                <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
+                  <div class="product-visual-cat"><span class="badge badge-gold">{{ p['category'] }}</span></div>
+                  {% if p['image_path'] %}
+                    <img src="{{ url_for('static', filename='img/' + p['image_path']) }}"
+                         alt="{{ p['name'] }}" class="product-card-img">
+                  {% else %}
+                    <div class="product-visual-pattern">
+                      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="100" cy="100" r="12" fill="#c9a227"/>
+                        <circle cx="40" cy="60" r="8" fill="#c9a227" opacity="0.6"/>
+                        <circle cx="160" cy="60" r="8" fill="#c9a227" opacity="0.6"/>
+                        <line x1="100" y1="88" x2="40" y2="60" stroke="#c9a227" stroke-width="2" opacity="0.5"/>
+                        <line x1="100" y1="88" x2="160" y2="60" stroke="#c9a227" stroke-width="2" opacity="0.5"/>
+                      </svg>
+                    </div>
+                    <div class="product-visual-name">{{ p['name'] }}</div>
+                    <div class="product-visual-dose">{{ p['dose'] }}</div>
+                  {% endif %}
+                </div>
+              </a>
+              <div class="product-body">
+                <h3 class="product-name">{{ p['name'] }}</h3>
+                <p class="product-dose">{{ p['dose'] }}</p>
+                <div class="product-price">${{ "%.2f"|format(p['price']) }}</div>
+              </div>
+              <div class="product-footer">
+                <a href="{{ url_for('producto', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver más</a>
+                <button class="btn btn-gold btn-sm add-to-cart-btn" data-product-id="{{ p['id'] }}">+ Agregar</button>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

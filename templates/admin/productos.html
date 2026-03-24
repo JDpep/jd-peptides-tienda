@@ -1,0 +1,66 @@
+{% extends "admin/base.html" %}
+{% block title %}Productos — Admin JD Peptides{% endblock %}
+{% block page_title %}Gestión de Productos{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;justify-content:flex-end;margin-bottom:1.25rem">
+  <a href="{{ url_for('admin_nuevo_producto') }}" class="btn btn-gold">+ Nuevo Producto</a>
+</div>
+
+<div class="admin-card">
+  <div class="admin-card-header">
+    <h3>Todos los Productos <span style="color:var(--text3);font-weight:400">({{ products|length }})</span></h3>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Dosis</th>
+          <th style="text-align:right">Precio</th>
+          <th style="text-align:center">Stock</th>
+          <th style="text-align:center">Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+          <tr>
+            <td class="mono">{{ p['sku'] }}</td>
+            <td class="strong">{{ p['name'] }}</td>
+            <td><span class="badge badge-gold" style="font-size:0.7rem">{{ p['category'] }}</span></td>
+            <td style="font-size:0.85rem;color:var(--text2)">{{ p['dose'] }}</td>
+            <td style="text-align:right;color:var(--gold);font-weight:700">${{ "%.2f"|format(p['price']) }}</td>
+            <td style="text-align:center">
+              <span class="stock-value {% if p['stock'] == 0 %}stock-critical{% elif p['stock'] <= p['low_stock_alert'] %}stock-low{% else %}stock-ok{% endif %}">
+                {{ p['stock'] }}
+              </span>
+            </td>
+            <td style="text-align:center">
+              <form method="POST" action="{{ url_for('admin_toggle_producto', pid=p['id']) }}" class="toggle-form">
+                <button type="submit" class="toggle-btn">
+                  <span class="toggle-pill {% if p['active'] %}on{% else %}off{% endif %}">
+                    {% if p['active'] %}✓ Activo{% else %}✕ Inactivo{% endif %}
+                  </span>
+                </button>
+              </form>
+            </td>
+            <td>
+              <div style="display:flex;gap:0.4rem">
+                <a href="{{ url_for('admin_editar_producto', pid=p['id']) }}" class="btn btn-ghost btn-sm">Editar</a>
+                <a href="{{ url_for('producto', pid=p['id']) }}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8" style="text-align:center;color:var(--text3);padding:3rem">Sin productos</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

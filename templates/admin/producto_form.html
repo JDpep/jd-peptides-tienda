@@ -1,0 +1,135 @@
+{% extends "admin/base.html" %}
+{% block title %}{% if action == 'nuevo' %}Nuevo Producto{% else %}Editar Producto{% endif %} — Admin JD Peptides{% endblock %}
+{% block page_title %}{% if action == 'nuevo' %}Nuevo Producto{% else %}Editar: {{ product['name'] }}{% endif %}{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:1rem">
+  <a href="{{ url_for('admin_productos') }}" class="btn btn-ghost btn-sm">← Volver a Productos</a>
+</div>
+
+<div class="admin-card">
+  <div class="admin-card-header">
+    <h3>{% if action == 'nuevo' %}Crear Nuevo Producto{% else %}Editar Producto{% endif %}</h3>
+  </div>
+
+  <form method="POST" style="padding:1.5rem">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+      <!-- Nombre -->
+      <div class="admin-form-group">
+        <label class="admin-label" for="name">Nombre del Producto *</label>
+        <input type="text" id="name" name="name" class="admin-input"
+               value="{{ product['name'] if product else '' }}" required
+               placeholder="ej. BPC-157">
+      </div>
+
+      <!-- SKU -->
+      <div class="admin-form-group">
+        <label class="admin-label" for="sku">SKU *</label>
+        <input type="text" id="sku" name="sku" class="admin-input"
+               value="{{ product['sku'] if product else '' }}" required
+               placeholder="ej. JDP-BPC157">
+      </div>
+
+      <!-- Categoría -->
+      <div class="admin-form-group">
+        <label class="admin-label" for="category">Categoría *</label>
+        <input type="text" id="category" name="category" class="admin-input"
+               value="{{ product['category'] if product else '' }}" required
+               placeholder="ej. Recuperación, Performance, Anti-aging…"
+               list="categories-list">
+        <datalist id="categories-list">
+          {% for cat in categories %}
+            <option value="{{ cat }}">
+          {% endfor %}
+        </datalist>
+      </div>
+
+      <!-- Dosis -->
+      <div class="admin-form-group">
+        <label class="admin-label" for="dose">Dosis *</label>
+        <input type="text" id="dose" name="dose" class="admin-input"
+               value="{{ product['dose'] if product else '' }}" required
+               placeholder="ej. 10 mg">
+      </div>
+
+      <!-- Precio -->
+      <div class="admin-form-group">
+        <label class="admin-label" for="price">Precio (USD) *</label>
+        <input type="number" id="price" name="price" class="admin-input"
+               value="{{ product['price'] if product else '' }}" required
+               min="0" step="0.01" placeholder="0.00">
+      </div>
+
+      <!-- Stock -->
+      <div class="admin-form-group">
+        <label class="admin-label" for="stock">Stock Actual *</label>
+        <input type="number" id="stock" name="stock" class="admin-input"
+               value="{{ product['stock'] if product else 0 }}" required
+               min="0" placeholder="0">
+      </div>
+
+      <!-- Alerta de stock bajo -->
+      <div class="admin-form-group">
+        <label class="admin-label" for="low_stock_alert">Alerta Stock Bajo</label>
+        <input type="number" id="low_stock_alert" name="low_stock_alert" class="admin-input"
+               value="{{ product['low_stock_alert'] if product else 5 }}"
+               min="0" placeholder="5">
+        <span style="font-size:0.75rem;color:var(--text3);margin-top:0.3rem;display:block">Se mostrará alerta cuando el stock baje de este número</span>
+      </div>
+
+      <!-- Activo -->
+      <div class="admin-form-group" style="display:flex;align-items:center;gap:0.75rem;padding-top:1.5rem">
+        <label class="toggle-switch">
+          <input type="checkbox" name="active" id="active"
+                 {% if product is none or product['active'] %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+        <label for="active" class="admin-label" style="margin:0;cursor:pointer">Producto activo (visible en tienda)</label>
+      </div>
+
+    </div>
+
+    <!-- Descripción -->
+    <div class="admin-form-group" style="margin-top:1.25rem">
+      <label class="admin-label" for="description">Descripción</label>
+      <textarea id="description" name="description" class="admin-input admin-textarea" rows="4"
+                placeholder="Descripción científica del péptido para la ficha de producto…">{{ product['description'] if product else '' }}</textarea>
+    </div>
+
+    <!-- Beneficios -->
+    <div class="admin-form-group" style="margin-top:1.25rem">
+      <label class="admin-label" for="benefits">Beneficios (uno por línea)</label>
+      <textarea id="benefits" name="benefits" class="admin-input admin-textarea" rows="6"
+                placeholder="Escribe cada beneficio en una línea separada:&#10;Acelera la recuperación de lesiones&#10;Reparación muscular y tendinosa&#10;Favorece la cicatrización">{{ benefits_text if benefits_text else (product['benefits'].replace('|', '\n') if product and product['benefits'] else '') }}</textarea>
+      <span style="font-size:0.75rem;color:var(--text3);margin-top:0.3rem;display:block">Cada línea será mostrada como un beneficio con ✓ en la ficha del producto</span>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border)">
+      <a href="{{ url_for('admin_productos') }}" class="btn btn-ghost">Cancelar</a>
+      <button type="submit" class="btn btn-gold">
+        {% if action == 'nuevo' %}Crear Producto{% else %}Guardar Cambios{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+
+<style>
+.toggle-switch { position:relative; display:inline-block; width:44px; height:24px; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-track {
+  position:absolute; inset:0; background:#2a2a2a; border-radius:12px; cursor:pointer;
+  transition:background 0.25s;
+}
+.toggle-track::after {
+  content:''; position:absolute; width:18px; height:18px; border-radius:50%;
+  background:#fff; top:3px; left:3px; transition:transform 0.25s;
+}
+.toggle-switch input:checked + .toggle-track { background:var(--gold); }
+.toggle-switch input:checked + .toggle-track::after { transform:translateX(20px); }
+.admin-textarea { resize:vertical; min-height:100px; font-family:inherit; line-height:1.5; }
+</style>
+
+{% endblock %}

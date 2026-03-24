@@ -1,0 +1,131 @@
+{% extends "admin/base.html" %}
+{% block title %}Inventario — Admin JD Peptides{% endblock %}
+{% block page_title %}Gestión de Inventario{% endblock %}
+
+{% block content %}
+
+<div class="admin-card" style="margin-bottom:1.5rem">
+  <div class="admin-card-header">
+    <h3>Stock de Productos</h3>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Producto</th>
+          <th>Categoría</th>
+          <th style="text-align:center">Stock</th>
+          <th style="text-align:center">Alerta</th>
+          <th style="text-align:center">Estado</th>
+          <th>Ajuste Rápido</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+          <tr>
+            <td class="mono">{{ p['sku'] }}</td>
+            <td class="strong">{{ p['name'] }}</td>
+            <td><span class="badge badge-gold" style="font-size:0.7rem">{{ p['category'] }}</span></td>
+            <td style="text-align:center">
+              <span class="stock-value {% if p['stock'] == 0 %}stock-critical{% elif p['stock'] <= p['low_stock_alert'] %}stock-low{% else %}stock-ok{% endif %}">
+                {{ p['stock'] }}
+              </span>
+            </td>
+            <td style="text-align:center;color:var(--text3)">{{ p['low_stock_alert'] }}</td>
+            <td style="text-align:center">
+              {% if p['stock'] == 0 %}
+                <span class="badge badge-red">Sin stock</span>
+              {% elif p['stock'] <= p['low_stock_alert'] %}
+                <span class="badge badge-orange">Bajo</span>
+              {% else %}
+                <span class="badge badge-green">OK</span>
+              {% endif %}
+            </td>
+            <td>
+              <button class="btn btn-ghost btn-sm show-adjustment-btn" data-pid="{{ p['id'] }}">
+                + Ajuste
+              </button>
+            </td>
+          </tr>
+          <!-- Adjustment form row (hidden) -->
+          <tr id="adjustment-form-{{ p['id'] }}" style="display:none;background:rgba(201,162,39,0.03)">
+            <td colspan="7">
+              <form method="POST" action="{{ url_for('admin_ajuste_stock', pid=p['id']) }}"
+                    style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;padding:0.75rem 0">
+                <div>
+                  <label class="admin-label">Tipo</label>
+                  <select name="type" class="admin-input" style="width:130px">
+                    <option value="entrada">Entrada (+)</option>
+                    <option value="salida">Salida (−)</option>
+                    <option value="ajuste">Ajuste (=)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="admin-label">Cantidad</label>
+                  <input type="number" name="quantity" class="admin-input" style="width:90px" min="1" value="1" required>
+                </div>
+                <div style="flex:1;min-width:180px">
+                  <label class="admin-label">Motivo</label>
+                  <input type="text" name="reason" class="admin-input" placeholder="Motivo del ajuste" style="width:100%">
+                </div>
+                <div style="display:flex;gap:0.5rem">
+                  <button type="submit" class="btn btn-gold btn-sm">Aplicar</button>
+                  <button type="button" class="btn btn-ghost btn-sm show-adjustment-btn" data-pid="{{ p['id'] }}">Cancelar</button>
+                </div>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Movement history -->
+<div class="admin-card">
+  <div class="admin-card-header">
+    <h3>Historial de Movimientos (últimos 50)</h3>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Producto</th>
+          <th>Tipo</th>
+          <th style="text-align:center">Cantidad</th>
+          <th>Motivo</th>
+          <th>Referencia</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in movements %}
+          <tr>
+            <td style="font-size:0.8rem;color:var(--text3)">{{ m['created_at'][:16] }}</td>
+            <td>
+              <div class="strong" style="font-size:0.88rem">{{ m['product_name'] }}</div>
+              <div style="font-size:0.74rem;color:var(--text3)">{{ m['sku'] }}</div>
+            </td>
+            <td>
+              {% if m['type'] == 'entrada' %}
+                <span class="badge badge-green">↑ Entrada</span>
+              {% elif m['type'] == 'salida' %}
+                <span class="badge badge-red">↓ Salida</span>
+              {% else %}
+                <span class="badge badge-gray">= Ajuste</span>
+              {% endif %}
+            </td>
+            <td style="text-align:center;font-weight:700;color:var(--text)">{{ m['quantity'] }}</td>
+            <td style="color:var(--text2);font-size:0.85rem">{{ m['reason'] or '—' }}</td>
+            <td class="mono" style="font-size:0.8rem">{{ m['reference'] or '—' }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:2rem">Sin movimientos registrados</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "admin/base.html" %}
+{% block title %}Órdenes — Admin JD Peptides{% endblock %}
+{% block page_title %}Gestión de Órdenes{% endblock %}
+
+{% block content %}
+
+<!-- Status filter -->
+<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+  <a href="{{ url_for('admin_ordenes') }}" class="pill {% if not status_filter %}active{% endif %}">Todas</a>
+  <a href="{{ url_for('admin_ordenes', status='nuevo') }}"     class="pill {% if status_filter == 'nuevo' %}active{% endif %}">Nuevas</a>
+  <a href="{{ url_for('admin_ordenes', status='procesando') }}" class="pill {% if status_filter == 'procesando' %}active{% endif %}">Procesando</a>
+  <a href="{{ url_for('admin_ordenes', status='enviado') }}"   class="pill {% if status_filter == 'enviado' %}active{% endif %}">Enviadas</a>
+  <a href="{{ url_for('admin_ordenes', status='entregado') }}" class="pill {% if status_filter == 'entregado' %}active{% endif %}">Entregadas</a>
+  <a href="{{ url_for('admin_ordenes', status='cancelado') }}" class="pill {% if status_filter == 'cancelado' %}active{% endif %}">Canceladas</a>
+</div>
+
+<div class="admin-card">
+  <div class="admin-card-header">
+    <h3>
+      {% if status_filter %}Órdenes: {{ status_filter }}{% else %}Todas las Órdenes{% endif %}
+      <span style="margin-left:0.5rem;color:var(--text3);font-weight:400">({{ orders|length }})</span>
+    </h3>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th># Orden</th>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>Email</th>
+          <th style="text-align:right">Total</th>
+          <th>Pago</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+          <tr>
+            <td class="mono">{{ o['order_number'] }}</td>
+            <td style="font-size:0.8rem;color:var(--text3);white-space:nowrap">{{ o['created_at'][:16] }}</td>
+            <td class="strong">{{ o['customer_name'] }}</td>
+            <td style="font-size:0.82rem;color:var(--text2)">{{ o['customer_email'] }}</td>
+            <td style="text-align:right;color:var(--gold);font-weight:700">${{ "%.2f"|format(o['total']) }}</td>
+            <td><span class="badge status-{{ o['payment_status'] }}">{{ o['payment_status'] }}</span></td>
+            <td><span class="badge status-{{ o['status'] }}">{{ o['status'] }}</span></td>
+            <td>
+              <a href="{{ url_for('admin_orden_detalle', oid=o['id']) }}" class="btn btn-ghost btn-sm">Ver</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align:center;color:var(--text3);padding:3rem">
+              No hay órdenes
+              {% if status_filter %}con estado "{{ status_filter }}"{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

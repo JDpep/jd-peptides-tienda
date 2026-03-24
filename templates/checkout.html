@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Checkout — JD Peptides{% endblock %}
+
+{% block content %}
+<div class="page-strip">
+  <div class="container">
+    <h1>Finalizar <span class="gold">Pedido</span></h1>
+    <p>Completa tu información para procesar el pedido</p>
+  </div>
+</div>
+
+<section class="checkout-section">
+  <div class="container">
+    <form method="POST" action="{{ url_for('procesar_checkout') }}" id="checkoutForm">
+      <div class="checkout-grid">
+
+        <!-- Left: Forms -->
+        <div style="display:flex;flex-direction:column;gap:1.5rem">
+
+          <!-- Personal info -->
+          <div class="form-card">
+            <h3>Información Personal</h3>
+            <div class="form-group">
+              <label class="form-group label">Nombre completo *</label>
+              <input type="text" name="name" class="form-control" placeholder="Tu nombre" required autocomplete="name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Email *</label>
+                <input type="email" name="email" class="form-control" placeholder="tu@email.com" required autocomplete="email">
+              </div>
+              <div class="form-group">
+                <label>Teléfono</label>
+                <input type="tel" name="phone" class="form-control" placeholder="+52 xxx xxx xxxx" autocomplete="tel">
+              </div>
+            </div>
+          </div>
+
+          <!-- Shipping -->
+          <div class="form-card">
+            <h3>Dirección de Envío</h3>
+            <div class="form-group">
+              <label>Dirección *</label>
+              <input type="text" name="address" class="form-control" placeholder="Calle, número, colonia" required autocomplete="street-address">
+            </div>
+            <div class="form-row form-row-3">
+              <div class="form-group">
+                <label>Ciudad *</label>
+                <input type="text" name="city" class="form-control" placeholder="Ciudad" required autocomplete="address-level2">
+              </div>
+              <div class="form-group">
+                <label>Estado</label>
+                <input type="text" name="state" class="form-control" placeholder="Estado" autocomplete="address-level1">
+              </div>
+              <div class="form-group">
+                <label>C.P.</label>
+                <input type="text" name="zip_code" class="form-control" placeholder="00000" autocomplete="postal-code">
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment -->
+          <div class="form-card">
+            <h3>Método de Pago</h3>
+            <div class="form-group">
+              <label>Selecciona tu método de pago *</label>
+              <select name="payment_method" class="form-control" required>
+                <option value="">— Selecciona una opción —</option>
+                <option value="Transferencia Bancaria">🏦 Transferencia Bancaria</option>
+                <option value="Efectivo">💵 Efectivo (pago contra entrega en zona)</option>
+                <option value="Criptomonedas">₿ Criptomonedas (BTC / USDT)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Notas adicionales</label>
+              <textarea name="notes" class="form-control" placeholder="Instrucciones especiales, referencias, etc."></textarea>
+            </div>
+          </div>
+
+          <!-- Disclaimer -->
+          <div class="form-card" style="border-color:rgba(201,162,39,0.2)">
+            <h3 style="color:var(--gold)">⚠️ Aviso Research Use Only</h3>
+            <p style="font-size:0.85rem;margin-bottom:1rem">
+              Al completar este pedido confirmo que los productos son para <strong style="color:var(--text)">uso exclusivo de investigación científica</strong> y no para consumo humano o veterinario.
+            </p>
+            <label style="display:flex;align-items:flex-start;gap:0.6rem;cursor:pointer">
+              <input type="checkbox" required style="margin-top:0.2rem;accent-color:var(--gold)">
+              <span style="font-size:0.85rem;color:var(--text2)">Acepto que los productos son para uso en investigación científica exclusivamente y cumpliré con todas las regulaciones aplicables.</span>
+            </label>
+          </div>
+
+        </div>
+
+        <!-- Right: Summary -->
+        <div>
+          <div class="order-summary" style="position:sticky;top:88px">
+            <h3>Resumen del Pedido</h3>
+            {% for pid, item in cart.items() %}
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.6rem 0;border-bottom:1px solid var(--border);font-size:0.88rem">
+                <div>
+                  <div style="color:var(--text);font-weight:600">{{ item['name'] }}</div>
+                  <div style="font-size:0.75rem;color:var(--text3)">{{ item['dose'] }} × {{ item['quantity'] }}</div>
+                </div>
+                <span style="color:var(--gold);font-weight:700;white-space:nowrap;margin-left:0.75rem">
+                  ${{ "%.2f"|format(item['quantity'] * item['price']) }}
+                </span>
+              </div>
+            {% endfor %}
+            <div class="summary-row" style="margin-top:0.5rem">
+              <span>Subtotal</span>
+              <span>${{ "%.2f"|format(subtotal) }}</span>
+            </div>
+            <div class="summary-row">
+              <span>Envío</span>
+              {% if shipping == 0 %}
+                <span class="free-shipping">Gratis</span>
+              {% else %}
+                <span>${{ "%.2f"|format(shipping) }}</span>
+              {% endif %}
+            </div>
+            <div class="summary-row total">
+              <span>Total</span>
+              <span>${{ "%.2f"|format(total) }}</span>
+            </div>
+            <div style="margin-top:1.25rem">
+              <button type="submit" class="btn btn-gold btn-block btn-lg">
+                Confirmar Pedido →
+              </button>
+            </div>
+            <a href="{{ url_for('carrito') }}" class="btn btn-ghost btn-block" style="margin-top:0.5rem">
+              ← Volver al Carrito
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+  const btn = this.querySelector('button[type=submit]');
+  btn.disabled = true;
+  btn.innerHTML = '⟳ Procesando…';
+});
+</script>
+{% endblock %}

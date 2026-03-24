@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Carrito — JD Peptides{% endblock %}
+
+{% block content %}
+<div class="page-strip">
+  <div class="container">
+    <h1>Mi <span class="gold">Carrito</span></h1>
+    <p>{{ cart|length }} producto{{ 's' if cart|length != 1 else '' }}</p>
+  </div>
+</div>
+
+<section class="cart-section">
+  <div class="container">
+    {% if cart %}
+      <form method="POST" action="{{ url_for('actualizar_carrito') }}">
+        <div class="cart-layout">
+
+          <!-- Items table -->
+          <div>
+            <div class="cart-table-wrap">
+              <table class="cart-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Precio</th>
+                    <th style="text-align:center">Cantidad</th>
+                    <th style="text-align:right">Subtotal</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for pid, item in cart.items() %}
+                    <tr id="cart-row-{{ pid }}">
+                      <td>
+                        <div class="cart-product-name">{{ item['name'] }}</div>
+                        <div class="cart-product-dose">{{ item['dose'] }} · {{ item['sku'] }}</div>
+                      </td>
+                      <td data-price="{{ item['price'] }}">${{ "%.2f"|format(item['price']) }}</td>
+                      <td style="text-align:center">
+                        <input
+                          type="number"
+                          name="qty_{{ pid }}"
+                          class="cart-qty-input"
+                          value="{{ item['quantity'] }}"
+                          min="0"
+                          max="99"
+                          data-price="{{ item['price'] }}"
+                        >
+                      </td>
+                      <td style="text-align:right;color:var(--gold);font-weight:700" class="line-subtotal">
+                        ${{ "%.2f"|format(item['quantity'] * item['price']) }}
+                      </td>
+                      <td>
+                        <button type="button" class="remove-btn remove-from-cart" data-pid="{{ pid }}" title="Eliminar">✕</button>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;flex-wrap:wrap;gap:1rem">
+              <a href="{{ url_for('catalogo') }}" class="btn btn-ghost">← Continuar Comprando</a>
+              <button type="submit" class="btn btn-outline btn-sm">Actualizar Carrito</button>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div>
+            <div class="order-summary">
+              <h3>Resumen del Pedido</h3>
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <span id="cart-subtotal">${{ "%.2f"|format(subtotal) }}</span>
+              </div>
+              <div class="summary-row">
+                <span>Envío</span>
+                <span id="cart-shipping">
+                  {% if shipping == 0 %}
+                    <span class="free-shipping">Gratis</span>
+                  {% else %}
+                    ${{ "%.2f"|format(shipping) }}
+                  {% endif %}
+                </span>
+              </div>
+              {% if subtotal < 200 %}
+                <p style="font-size:0.78rem;color:var(--text3);margin-top:0.25rem">
+                  Agrega ${{ "%.2f"|format(200 - subtotal) }} más para envío gratis
+                </p>
+              {% endif %}
+              <div class="summary-row total">
+                <span>Total</span>
+                <span id="cart-total">${{ "%.2f"|format(total) }}</span>
+              </div>
+              <div style="margin-top:1.25rem">
+                <a href="{{ url_for('checkout') }}" class="btn btn-gold btn-block btn-lg">
+                  Proceder al Checkout →
+                </a>
+              </div>
+              <div class="detail-disclaimer" style="margin-top:1rem">
+                <strong style="color:var(--gold)">⚠️ For Research Use Only</strong><br>
+                Al proceder confirmas que los productos son para uso exclusivo de investigación científica.
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+
+    {% else %}
+      <!-- Empty cart -->
+      <div class="cart-empty">
+        <div style="font-size:4rem;margin-bottom:1rem">🛒</div>
+        <h3>Tu carrito está vacío</h3>
+        <p style="margin:0.5rem 0 1.5rem;max-width:300px;margin-left:auto;margin-right:auto">
+          Explora nuestro catálogo y agrega los péptidos de investigación que necesitas.
+        </p>
+        <a href="{{ url_for('catalogo') }}" class="btn btn-gold btn-lg">Ver Catálogo</a>
+      </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

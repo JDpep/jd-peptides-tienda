@@ -1,0 +1,165 @@
+{% extends "admin/base.html" %}
+{% block title %}Orden {{ order['order_number'] }} — Admin JD Peptides{% endblock %}
+{% block page_title %}Detalle de Orden{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:1.25rem">
+  <a href="{{ url_for('admin_ordenes') }}" class="btn btn-ghost btn-sm">← Volver a Órdenes</a>
+</div>
+
+<!-- Header bar -->
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+  <div>
+    <div class="mono" style="font-size:1.1rem;margin-bottom:0.25rem">{{ order['order_number'] }}</div>
+    <div style="font-size:0.82rem;color:var(--text3)">{{ order['created_at'][:16] }}</div>
+  </div>
+  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
+    <span class="badge status-{{ order['status'] }}" style="font-size:0.85rem;padding:0.3rem 0.75rem">{{ order['status'] }}</span>
+    <span class="badge status-{{ order['payment_status'] }}" style="font-size:0.85rem;padding:0.3rem 0.75rem">{{ order['payment_status'] }}</span>
+  </div>
+</div>
+
+<div class="order-detail-grid">
+
+  <!-- Left: info + items -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+    <!-- Customer info -->
+    <div class="admin-card">
+      <div class="admin-card-header"><h3>Información del Cliente</h3></div>
+      <div class="admin-card-body">
+        <dl class="info-list">
+          <div class="info-block">
+            <dt>Nombre</dt>
+            <dd>{{ order['customer_name'] }}</dd>
+          </div>
+          <div class="info-block">
+            <dt>Email</dt>
+            <dd>{{ order['customer_email'] }}</dd>
+          </div>
+          <div class="info-block">
+            <dt>Teléfono</dt>
+            <dd>{{ order['customer_phone'] or '—' }}</dd>
+          </div>
+          <div class="info-block">
+            <dt>Método de pago</dt>
+            <dd>{{ order['payment_method'] }}</dd>
+          </div>
+          <div class="info-block" style="grid-column:1/-1">
+            <dt>Dirección de envío</dt>
+            <dd>{{ order['address'] }}, {{ order['city'] }}{% if order['state'] %}, {{ order['state'] }}{% endif %}{% if order['zip_code'] %} {{ order['zip_code'] }}{% endif %}</dd>
+          </div>
+          {% if order['notes'] %}
+            <div class="info-block" style="grid-column:1/-1">
+              <dt>Notas</dt>
+              <dd>{{ order['notes'] }}</dd>
+            </div>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+
+    <!-- Items -->
+    <div class="admin-card">
+      <div class="admin-card-header"><h3>Productos Ordenados</h3></div>
+      <div style="overflow-x:auto">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Producto</th>
+              <th>Dosis</th>
+              <th style="text-align:center">Cantidad</th>
+              <th style="text-align:right">Precio Unit.</th>
+              <th style="text-align:right">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+              <tr>
+                <td class="mono" style="font-size:0.8rem">{{ item['product_sku'] or '—' }}</td>
+                <td class="strong">{{ item['product_name'] }}</td>
+                <td style="font-size:0.85rem;color:var(--text2)">{{ item['dose'] }}</td>
+                <td style="text-align:center">{{ item['quantity'] }}</td>
+                <td style="text-align:right">${{ "%.2f"|format(item['unit_price']) }}</td>
+                <td style="text-align:right;color:var(--gold);font-weight:700">${{ "%.2f"|format(item['subtotal']) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr style="border-top:2px solid var(--border)">
+              <td colspan="5" style="text-align:right;padding:0.75rem 0.85rem;font-size:0.82rem;color:var(--text3)">Subtotal</td>
+              <td style="text-align:right;padding:0.75rem 0.85rem;color:var(--text)">${{ "%.2f"|format(order['subtotal']) }}</td>
+            </tr>
+            <tr>
+              <td colspan="5" style="text-align:right;padding:0.4rem 0.85rem;font-size:0.82rem;color:var(--text3)">Envío</td>
+              <td style="text-align:right;padding:0.4rem 0.85rem;color:var(--text)">
+                {% if order['shipping'] == 0 %}Gratis{% else %}${{ "%.2f"|format(order['shipping']) }}{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td colspan="5" style="text-align:right;padding:0.75rem 0.85rem;font-weight:700">Total</td>
+              <td style="text-align:right;padding:0.75rem 0.85rem;color:var(--gold);font-weight:800;font-size:1.05rem">
+                ${{ "%.2f"|format(order['total']) }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: status update -->
+  <div>
+    <div class="admin-card" style="position:sticky;top:80px">
+      <div class="admin-card-header"><h3>Actualizar Estado</h3></div>
+      <div class="admin-card-body">
+        <form method="POST" action="{{ url_for('admin_actualizar_estado', oid=order['id']) }}">
+          <div class="admin-form-group" style="margin-bottom:1rem">
+            <label class="admin-label">Estado del Pedido</label>
+            <select name="status" class="admin-input">
+              <option value="nuevo"       {% if order['status'] == 'nuevo' %}selected{% endif %}>Nuevo</option>
+              <option value="procesando"  {% if order['status'] == 'procesando' %}selected{% endif %}>Procesando</option>
+              <option value="enviado"     {% if order['status'] == 'enviado' %}selected{% endif %}>Enviado</option>
+              <option value="entregado"   {% if order['status'] == 'entregado' %}selected{% endif %}>Entregado</option>
+              <option value="cancelado"   {% if order['status'] == 'cancelado' %}selected{% endif %}>Cancelado</option>
+            </select>
+          </div>
+          <div class="admin-form-group" style="margin-bottom:1.25rem">
+            <label class="admin-label">Estado del Pago</label>
+            <select name="payment_status" class="admin-input">
+              <option value="pendiente"   {% if order['payment_status'] == 'pendiente' %}selected{% endif %}>Pendiente</option>
+              <option value="pagado"      {% if order['payment_status'] == 'pagado' %}selected{% endif %}>Pagado</option>
+              <option value="reembolsado" {% if order['payment_status'] == 'reembolsado' %}selected{% endif %}>Reembolsado</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-gold btn-block">Actualizar Estado</button>
+        </form>
+
+        <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+          <div style="font-size:0.78rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem">
+            Resumen
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.4rem;font-size:0.88rem">
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:var(--text3)">Subtotal</span>
+              <span>${{ "%.2f"|format(order['subtotal']) }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:var(--text3)">Envío</span>
+              <span>{% if order['shipping'] == 0 %}Gratis{% else %}${{ "%.2f"|format(order['shipping']) }}{% endif %}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-weight:800;color:var(--gold);margin-top:0.25rem;padding-top:0.5rem;border-top:1px solid var(--border)">
+              <span>Total</span>
+              <span>${{ "%.2f"|format(order['total']) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

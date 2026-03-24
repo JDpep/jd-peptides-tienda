@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Catálogo — JD Peptides{% endblock %}
+
+{% block content %}
+
+<!-- Page header -->
+<div class="page-strip">
+  <div class="container">
+    <h1>Catálogo de <span class="gold">Péptidos</span></h1>
+    <p>{{ products|length }} producto{{ 's' if products|length != 1 else '' }} disponible{{ 's' if products|length != 1 else '' }}
+      {% if current_category %} en <strong style="color:var(--gold)">{{ current_category }}</strong>{% endif %}
+    </p>
+  </div>
+</div>
+
+<section class="section" style="padding-top:2rem">
+  <div class="container">
+
+    <!-- Filters row -->
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;margin-bottom:1.75rem">
+      <!-- Search -->
+      <div class="search-wrap" style="flex:1;min-width:220px;max-width:360px">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="catalogSearch"
+          class="form-control"
+          placeholder="Buscar péptido…"
+          value="{{ search }}"
+        >
+      </div>
+
+      <!-- Category pills -->
+      <div class="category-pills" style="margin-bottom:0;flex:1">
+        <a href="{{ url_for('catalogo') }}" class="pill {% if not current_category %}active{% endif %}">Todos</a>
+        {% for cat in categories %}
+          <a href="{{ url_for('catalogo', categoria=cat['category']) }}" class="pill {% if current_category == cat['category'] %}active{% endif %}">
+            {{ cat['category'] }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Grid -->
+    {% if products %}
+      <div class="products-grid">
+        {% for p in products %}
+          {% set benefits = p['benefits'].split('|') if p['benefits'] else [] %}
+          <div class="product-card">
+            <a href="{{ url_for('producto', pid=p['id']) }}" style="text-decoration:none;display:contents">
+              <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
+                <div class="product-visual-cat">
+                  <span class="badge badge-gold">{{ p['category'] }}</span>
+                </div>
+                {% if p['image_path'] %}
+                  <img src="{{ url_for('static', filename='img/' + p['image_path']) }}"
+                       alt="{{ p['name'] }}" class="product-card-img">
+                {% else %}
+                  <div class="product-visual-pattern">
+                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="100" cy="100" r="12" fill="#c9a227"/>
+                      <circle cx="40"  cy="60"  r="8"  fill="#c9a227" opacity="0.6"/>
+                      <circle cx="160" cy="60"  r="8"  fill="#c9a227" opacity="0.6"/>
+                      <circle cx="40"  cy="140" r="8"  fill="#c9a227" opacity="0.6"/>
+                      <circle cx="160" cy="140" r="8"  fill="#c9a227" opacity="0.6"/>
+                      <line x1="100" y1="88"  x2="40"  y2="60"  stroke="#c9a227" stroke-width="2" opacity="0.5"/>
+                      <line x1="100" y1="88"  x2="160" y2="60"  stroke="#c9a227" stroke-width="2" opacity="0.5"/>
+                      <line x1="100" y1="112" x2="40"  y2="140" stroke="#c9a227" stroke-width="2" opacity="0.5"/>
+                      <line x1="100" y1="112" x2="160" y2="140" stroke="#c9a227" stroke-width="2" opacity="0.5"/>
+                    </svg>
+                  </div>
+                  <div class="product-visual-name">{{ p['name'] }}</div>
+                  <div class="product-visual-dose">{{ p['dose'] }}</div>
+                {% endif %}
+              </div>
+            </a>
+            <div class="product-body">
+              <h3 class="product-name">{{ p['name'] }}</h3>
+              <p class="product-dose">{{ p['sku'] }} · {{ p['dose'] }}</p>
+              {% if benefits %}
+                <p style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">{{ benefits[0] }}</p>
+              {% endif %}
+              <div class="product-price">${{ "%.2f"|format(p['price']) }}</div>
+            </div>
+            <div class="product-footer">
+              <a href="{{ url_for('producto', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver detalle</a>
+              <button class="btn btn-gold btn-sm add-to-cart-btn" data-product-id="{{ p['id'] }}">
+                + Agregar
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <div class="cart-empty" style="padding:4rem 2rem">
+        <div style="font-size:3rem;margin-bottom:1rem">🔬</div>
+        <h3>No se encontraron productos</h3>
+        <p style="margin:0.5rem 0 1.5rem">Intenta con otra categoría o término de búsqueda.</p>
+        <a href="{{ url_for('catalogo') }}" class="btn btn-outline">Ver todos los productos</a>
+      </div>
+    {% endif %}
+
+    <!-- Disclaimer -->
+    <div class="disclaimer-banner" style="margin-top:3rem">
+      <p><strong>FOR RESEARCH USE ONLY</strong> — Todos los péptidos listados son exclusivamente para investigación científica y no están destinados al uso humano o veterinario.</p>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

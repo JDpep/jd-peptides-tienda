@@ -13,7 +13,7 @@
     <h3>{% if action == 'nuevo' %}Crear Nuevo Producto{% else %}Editar Producto{% endif %}</h3>
   </div>
 
-  <form method="POST" style="padding:1.5rem">
+  <form method="POST" enctype="multipart/form-data" style="padding:1.5rem">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
 
       <!-- Nombre -->
@@ -91,6 +91,33 @@
 
     </div>
 
+    <!-- Imagen del producto -->
+    <div class="admin-form-group" style="margin-top:1.25rem">
+      <label class="admin-label">Imagen del Producto</label>
+      <div style="display:flex;align-items:flex-start;gap:1.5rem;flex-wrap:wrap">
+        <div id="img-preview-wrap" style="{% if product and product['image_path'] %}display:block{% else %}display:none{% endif %}">
+          <img id="img-preview"
+               src="{{ url_for('static', filename='img/' + product['image_path']) if product and product['image_path'] else '' }}"
+               style="width:140px;height:140px;object-fit:cover;border-radius:8px;border:2px solid var(--border)">
+          <div style="font-size:0.72rem;color:var(--text3);margin-top:0.3rem;text-align:center">
+            {% if product and product['image_path'] %}{{ product['image_path'] }}{% endif %}
+          </div>
+        </div>
+        <div style="flex:1;min-width:220px">
+          <label for="image" class="img-upload-label">
+            <span id="img-upload-text">
+              {% if product and product['image_path'] %}Cambiar imagen{% else %}Seleccionar imagen{% endif %}
+            </span>
+            <input type="file" id="image" name="image" accept="image/*"
+                   style="display:none" onchange="previewImg(this)">
+          </label>
+          <div style="font-size:0.75rem;color:var(--text3);margin-top:0.4rem">
+            PNG, JPG, WEBP. Si no seleccionas una imagen {% if action == 'editar' %}se conserva la actual{% else %}el producto no tendrá imagen{% endif %}.
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Descripción -->
     <div class="admin-form-group" style="margin-top:1.25rem">
       <label class="admin-label" for="description">Descripción</label>
@@ -130,6 +157,34 @@
 .toggle-switch input:checked + .toggle-track { background:var(--gold); }
 .toggle-switch input:checked + .toggle-track::after { transform:translateX(20px); }
 .admin-textarea { resize:vertical; min-height:100px; font-family:inherit; line-height:1.5; }
+.img-upload-label {
+  display:inline-block;
+  padding:0.5rem 1.1rem;
+  background:var(--bg2,#1a1a1a);
+  border:1px solid var(--border);
+  border-radius:6px;
+  cursor:pointer;
+  font-size:0.85rem;
+  color:var(--gold,#c9a227);
+  transition:border-color 0.2s;
+}
+.img-upload-label:hover { border-color:var(--gold,#c9a227); }
 </style>
+<script>
+function previewImg(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const wrap = document.getElementById('img-preview-wrap');
+  const img  = document.getElementById('img-preview');
+  const txt  = document.getElementById('img-upload-text');
+  const reader = new FileReader();
+  reader.onload = e => {
+    img.src = e.target.result;
+    wrap.style.display = 'block';
+    txt.textContent = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+</script>
 
 {% endblock %}

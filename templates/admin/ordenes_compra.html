@@ -60,6 +60,8 @@
               <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
                 <button class="btn btn-ghost btn-sm"
                         onclick="togglePoDetail({{ po['id'] }})">Ver Detalle</button>
+                <a href="{{ url_for('admin_oc_invoice', po_id=po['id']) }}"
+                   target="_blank" class="btn btn-ghost btn-sm">Invoice PDF</a>
                 {% if po['status'] == 'pendiente' %}
                   <form method="POST" action="{{ url_for('admin_recibir_oc', po_id=po['id']) }}"
                         onsubmit="return confirm('¿Marcar como recibida? Esto actualizará el inventario.')">

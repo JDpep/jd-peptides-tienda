@@ -10,9 +10,16 @@ from datetime import datetime, date
 from functools import wraps
 from flask import (Flask, render_template, request, redirect, url_for,
                    session, flash, jsonify, g)
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = 'jdp_secret_key_2024_ultra_secure'
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'img')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 DATABASE = os.path.join(os.path.dirname(__file__), 'database', 'jdp.db')
 
@@ -888,11 +895,18 @@ def admin_nuevo_producto():
         benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
         active = 1 if request.form.get('active') else 0
 
+        image_path = ''
+        file = request.files.get('image')
+        if file and file.filename and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(UPLOAD_FOLDER, filename))
+            image_path = filename
+
         try:
             execute_db(
-                """INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active)
+                """INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active, image_path)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active, image_path)
             )
             flash('Producto creado exitosamente.', 'success')
             return redirect(url_for('admin_productos'))
@@ -924,11 +938,18 @@ def admin_editar_producto(pid):
         benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
         active = 1 if request.form.get('active') else 0
 
+        image_path = product['image_path'] or ''
+        file = request.files.get('image')
+        if file and file.filename and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(UPLOAD_FOLDER, filename))
+            image_path = filename
+
         try:
             execute_db(
                 """UPDATE products SET sku=?, name=?, category=?, dose=?, price=?, stock=?,
-                   low_stock_alert=?, description=?, benefits=?, active=? WHERE id=?""",
-                (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active, pid)
+                   low_stock_alert=?, description=?, benefits=?, active=?, image_path=? WHERE id=?""",
+                (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active, image_path, pid)
             )
             flash('Producto actualizado.', 'success')
             return redirect(url_for('admin_productos'))
@@ -1125,6 +1146,23 @@ def admin_oc_detalle(po_id):
     return render_template('admin/ordenes_compra.html', po_detail=po, po_items=items,
                            pos=query_db("SELECT po.*, COUNT(poi.id) as items_count FROM purchase_orders po LEFT JOIN purchase_order_items poi ON po.id = poi.po_id GROUP BY po.id ORDER BY po.created_at DESC"),
                            products=query_db("SELECT * FROM products WHERE active=1 ORDER BY name"))
+
+
+@app.route('/admin/ordenes-compra/<int:po_id>/invoice')
+@admin_required
+def admin_oc_invoice(po_id):
+    po = query_db("SELECT * FROM purchase_orders WHERE id=?", (po_id,), one=True)
+    if not po:
+        flash('Orden de compra no encontrada.', 'error')
+        return redirect(url_for('admin_ordenes_compra'))
+    items = query_db(
+        """SELECT poi.*, p.name as product_name, p.sku, p.dose
+           FROM purchase_order_items poi
+           JOIN products p ON poi.product_id = p.id
+           WHERE poi.po_id=?""",
+        (po_id,)
+    )
+    return render_template('admin/invoice_oc.html', po=po, items=items)
 
 
 @app.route('/admin/ordenes-compra/<int:po_id>/recibir', methods=['POST'])

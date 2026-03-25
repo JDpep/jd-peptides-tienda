@@ -380,6 +380,7 @@ CREATE TABLE IF NOT EXISTS products (
     stock INTEGER DEFAULT 0,
     low_stock_alert INTEGER DEFAULT 5,
     active INTEGER DEFAULT 1,
+    image_path TEXT DEFAULT '',
     created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -600,6 +601,11 @@ def init_db():
     db = get_db()
     db.executescript(SCHEMA)
     db.commit()
+    # Agregar columna image_path si no existe (migration para DBs antiguas)
+    cols = [row[1] for row in db.execute("PRAGMA table_info(products)").fetchall()]
+    if 'image_path' not in cols:
+        db.execute("ALTER TABLE products ADD COLUMN image_path TEXT DEFAULT ''")
+        db.commit()
     # Seed / migrate admin users
     user_count = db.execute("SELECT COUNT(*) FROM admin_users").fetchone()[0]
     if user_count == 0:

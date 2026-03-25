@@ -82,15 +82,47 @@
   </div>
 </div>
 
+<!-- Datos de movimientos para JS -->
+<script>
+var MOVIMIENTOS = [
+  {% for m in movements %}
+  {
+    id: {{ m['id'] }},
+    fecha: "{{ m['created_at'][:16] }}",
+    producto: "{{ m['product_name']|replace('"','&quot;') }}",
+    sku: "{{ m['sku'] }}",
+    tipo: "{{ m['type'] }}",
+    cantidad: {{ m['quantity'] }},
+    motivo: "{{ (m['reason'] or '')|replace('"','&quot;') }}",
+    referencia: "{{ (m['reference'] or '')|replace('"','&quot;') }}"
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+</script>
+
+<!-- Barra de acciones flotante -->
+<div id="acciones-bar" style="display:none;position:sticky;top:0;z-index:100;background:var(--surface,#1a1a2e);border:1px solid var(--gold,#c9a227);border-radius:8px;padding:0.6rem 1rem;margin-bottom:1rem;display:none;align-items:center;gap:0.75rem;flex-wrap:wrap;box-shadow:0 4px 20px rgba(0,0,0,0.4)">
+  <span id="acciones-count" style="color:var(--gold,#c9a227);font-weight:600;font-size:0.9rem;margin-right:0.25rem"></span>
+  <button type="button" class="btn btn-ghost btn-sm" onclick="verSeleccionados()">👁 Ver</button>
+  <button type="button" class="btn btn-ghost btn-sm" onclick="descargarPDF()">📄 Descargar PDF</button>
+  <button type="button" class="btn btn-sm" style="background:#c0392b;color:#fff;border:none;cursor:pointer" onclick="confirmarEliminar()">🗑 Eliminar</button>
+  <button type="button" class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="deseleccionarTodos()">✕ Cancelar</button>
+</div>
+
 <!-- Movement history -->
 <div class="admin-card">
-  <div class="admin-card-header">
+  <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
     <h3>Historial de Movimientos (últimos 50)</h3>
+    <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.82rem;color:var(--text3);cursor:pointer;user-select:none">
+      <input type="checkbox" id="check-all" onchange="toggleTodos(this)"> Seleccionar todo
+    </label>
   </div>
+  <form id="form-eliminar-movimientos" method="POST" action="{{ url_for('admin_eliminar_movimientos') }}">
   <div style="overflow-x:auto">
     <table class="admin-table">
       <thead>
         <tr>
+          <th style="width:36px;text-align:center"></th>
           <th>Fecha</th>
           <th>Producto</th>
           <th>Tipo</th>
@@ -102,6 +134,9 @@
       <tbody>
         {% for m in movements %}
           <tr>
+            <td style="text-align:center;vertical-align:middle">
+              <input type="checkbox" name="movement_ids" value="{{ m['id'] }}" class="mov-checkbox" onchange="actualizarAcciones()" style="width:15px;height:15px;cursor:pointer;accent-color:var(--gold,#c9a227)">
+            </td>
             <td style="font-size:0.8rem;color:var(--text3)">{{ m['created_at'][:16] }}</td>
             <td>
               <div class="strong" style="font-size:0.88rem">{{ m['product_name'] }}</div>
@@ -121,11 +156,132 @@
             <td class="mono" style="font-size:0.8rem">{{ m['reference'] or '—' }}</td>
           </tr>
         {% else %}
-          <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:2rem">Sin movimientos registrados</td></tr>
+          <tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">Sin movimientos registrados</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  </form>
 </div>
+
+<!-- Modal Ver -->
+<div id="modal-ver" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center">
+  <div style="background:var(--surface,#1a1a2e);border:1px solid var(--gold,#c9a227);border-radius:10px;width:min(90vw,720px);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(201,162,39,0.2)">
+      <h3 style="margin:0;font-size:1rem">Movimientos Seleccionados</h3>
+      <button onclick="cerrarModal()" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div id="modal-body" style="overflow-y:auto;padding:1rem 1.25rem;flex:1"></div>
+    <div style="padding:0.75rem 1.25rem;border-top:1px solid rgba(201,162,39,0.2);display:flex;justify-content:flex-end;gap:0.5rem">
+      <button class="btn btn-ghost btn-sm" onclick="descargarPDF()">📄 Descargar PDF</button>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+function getSeleccionados() {
+  var ids = Array.from(document.querySelectorAll('.mov-checkbox:checked')).map(function(cb){ return parseInt(cb.value); });
+  return MOVIMIENTOS.filter(function(m){ return ids.indexOf(m.id) !== -1; });
+}
+
+function actualizarAcciones() {
+  var sel = document.querySelectorAll('.mov-checkbox:checked').length;
+  var bar = document.getElementById('acciones-bar');
+  var count = document.getElementById('acciones-count');
+  if (sel > 0) {
+    bar.style.display = 'flex';
+    count.textContent = sel + ' seleccionado' + (sel > 1 ? 's' : '');
+  } else {
+    bar.style.display = 'none';
+  }
+  var total = document.querySelectorAll('.mov-checkbox').length;
+  document.getElementById('check-all').checked = sel === total && total > 0;
+  document.getElementById('check-all').indeterminate = sel > 0 && sel < total;
+}
+
+function toggleTodos(cb) {
+  document.querySelectorAll('.mov-checkbox').forEach(function(c){ c.checked = cb.checked; });
+  actualizarAcciones();
+}
+
+function deseleccionarTodos() {
+  document.querySelectorAll('.mov-checkbox').forEach(function(c){ c.checked = false; });
+  document.getElementById('check-all').checked = false;
+  actualizarAcciones();
+}
+
+function tipoLabel(t) {
+  if (t === 'entrada') return '↑ Entrada';
+  if (t === 'salida') return '↓ Salida';
+  return '= Ajuste';
+}
+
+function verSeleccionados() {
+  var movs = getSeleccionados();
+  if (!movs.length) return;
+  var html = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem">';
+  html += '<thead><tr style="border-bottom:1px solid rgba(201,162,39,0.3)">';
+  ['Fecha','Producto','SKU','Tipo','Cantidad','Motivo','Referencia'].forEach(function(h){
+    html += '<th style="padding:0.4rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.78rem">' + h + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  movs.forEach(function(m){
+    html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">';
+    html += '<td style="padding:0.4rem 0.5rem;color:var(--text3)">' + m.fecha + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem;font-weight:600">' + m.producto + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem;font-family:monospace;font-size:0.78rem">' + m.sku + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem">' + tipoLabel(m.tipo) + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem;text-align:center;font-weight:700">' + m.cantidad + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem">' + (m.motivo || '—') + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem;font-family:monospace;font-size:0.78rem">' + (m.referencia || '—') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-ver').style.display = 'flex';
+}
+
+function cerrarModal() {
+  document.getElementById('modal-ver').style.display = 'none';
+}
+
+document.getElementById('modal-ver').addEventListener('click', function(e){
+  if (e.target === this) cerrarModal();
+});
+
+function descargarPDF() {
+  var movs = getSeleccionados();
+  if (!movs.length) return;
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF({ orientation: 'landscape' });
+  doc.setFontSize(14);
+  doc.text('JD Peptides — Historial de Movimientos', 14, 16);
+  doc.setFontSize(9);
+  doc.setTextColor(150);
+  doc.text('Generado: ' + new Date().toLocaleString('es-MX'), 14, 22);
+  doc.autoTable({
+    startY: 27,
+    head: [['Fecha','Producto','SKU','Tipo','Cantidad','Motivo','Referencia']],
+    body: movs.map(function(m){
+      return [m.fecha, m.producto, m.sku, tipoLabel(m.tipo), m.cantidad, m.motivo || '—', m.referencia || '—'];
+    }),
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [201,162,39], textColor: [0,0,0], fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245,245,245] }
+  });
+  doc.save('movimientos_' + new Date().toISOString().slice(0,10) + '.pdf');
+}
+
+function confirmarEliminar() {
+  var n = getSeleccionados().length;
+  if (!n) return;
+  if (confirm('¿Eliminar ' + n + ' movimiento(s) del historial? Esta acción no se puede deshacer.')) {
+    document.getElementById('form-eliminar-movimientos').submit();
+  }
+}
+</script>
 
 {% endblock %}

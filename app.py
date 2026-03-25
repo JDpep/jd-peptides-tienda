@@ -1022,6 +1022,47 @@ def admin_inventario():
     return render_template('admin/inventario.html', products=products, movements=movements)
 
 
+@app.route('/admin/ordenes/eliminar', methods=['POST'])
+@admin_required
+def admin_eliminar_ordenes():
+    ids = request.form.getlist('order_ids')
+    if not ids:
+        flash('No se seleccionaron órdenes.', 'error')
+        return redirect(url_for('admin_ordenes'))
+    placeholders = ','.join('?' * len(ids))
+    execute_db(f"DELETE FROM order_items WHERE order_id IN ({placeholders})", ids)
+    execute_db(f"DELETE FROM orders WHERE id IN ({placeholders})", ids)
+    flash(f'{len(ids)} orden(es) eliminada(s).', 'success')
+    return redirect(request.referrer or url_for('admin_ordenes'))
+
+
+@app.route('/admin/ordenes-compra/eliminar', methods=['POST'])
+@admin_required
+def admin_eliminar_ocs():
+    ids = request.form.getlist('oc_ids')
+    if not ids:
+        flash('No se seleccionaron órdenes de compra.', 'error')
+        return redirect(url_for('admin_ordenes_compra'))
+    placeholders = ','.join('?' * len(ids))
+    execute_db(f"DELETE FROM purchase_order_items WHERE po_id IN ({placeholders})", ids)
+    execute_db(f"DELETE FROM purchase_orders WHERE id IN ({placeholders})", ids)
+    flash(f'{len(ids)} orden(es) de compra eliminada(s).', 'success')
+    return redirect(url_for('admin_ordenes_compra'))
+
+
+@app.route('/admin/movimientos/eliminar', methods=['POST'])
+@admin_required
+def admin_eliminar_movimientos():
+    ids = request.form.getlist('movement_ids')
+    if not ids:
+        flash('No se seleccionaron movimientos.', 'error')
+        return redirect(url_for('admin_inventario'))
+    placeholders = ','.join('?' * len(ids))
+    execute_db(f"DELETE FROM stock_movements WHERE id IN ({placeholders})", ids)
+    flash(f'{len(ids)} movimiento(s) eliminado(s).', 'success')
+    return redirect(url_for('admin_inventario'))
+
+
 @app.route('/admin/inventario/<int:pid>/ajuste', methods=['POST'])
 @admin_required
 def admin_ajuste_stock(pid):

@@ -30,16 +30,42 @@
 
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;align-items:start">
 
+  <!-- Datos órdenes recientes para JS -->
+  <script>
+  var DASH_ORDENES = [
+    {% for o in recent_orders %}
+    { id: {{ o['id'] }}, numero: {{ o['order_number']|tojson }}, cliente: {{ o['customer_name']|tojson }},
+      email: {{ o['customer_email']|tojson }}, total: "{{ '%.2f'|format(o['total']) }}",
+      estado: {{ o['status']|tojson }}, pago: {{ o['payment_status']|tojson }}, fecha: "{{ o['created_at'][:16] }}" }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+  </script>
+
   <!-- Recent orders -->
   <div class="admin-card">
-    <div class="admin-card-header">
-      <h3>Órdenes Recientes</h3>
-      <a href="{{ url_for('admin_ordenes') }}" class="btn btn-ghost btn-sm">Ver todas →</a>
+    <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <h3>Órdenes Recientes</h3>
+        <div id="dash-acciones" style="display:none;align-items:center;gap:0.4rem;flex-wrap:wrap">
+          <span id="dash-count" style="color:var(--gold,#c9a227);font-size:0.82rem;font-weight:600"></span>
+          <button class="btn btn-ghost btn-sm" onclick="dashVer()">👁 Ver</button>
+          <button class="btn btn-ghost btn-sm" onclick="dashPDF()">📄 PDF</button>
+          <button class="btn btn-sm" style="background:#c0392b;color:#fff;border:none;cursor:pointer" onclick="dashEliminar()">🗑 Eliminar</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;color:var(--text3);cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="dash-check-all" onchange="dashToggleTodos(this)"> Sel. todo
+        </label>
+        <a href="{{ url_for('admin_ordenes') }}" class="btn btn-ghost btn-sm">Ver todas →</a>
+      </div>
     </div>
+    <form id="dash-form-eliminar" method="POST" action="{{ url_for('admin_eliminar_ordenes') }}">
     <div style="overflow-x:auto">
       <table class="admin-table">
         <thead>
           <tr>
+            <th style="width:32px"></th>
             <th>Orden</th>
             <th>Cliente</th>
             <th>Total</th>
@@ -51,6 +77,9 @@
         <tbody>
           {% for o in recent_orders %}
             <tr>
+              <td style="text-align:center;vertical-align:middle">
+                <input type="checkbox" name="order_ids" value="{{ o['id'] }}" class="dash-cb" onchange="dashActualizar()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold,#c9a227)">
+              </td>
               <td>
                 <a href="{{ url_for('admin_orden_detalle', oid=o['id']) }}" class="mono">{{ o['order_number'] }}</a>
               </td>
@@ -61,12 +90,100 @@
               <td style="font-size:0.8rem;color:var(--text3)">{{ o['created_at'][:10] }}</td>
             </tr>
           {% else %}
-            <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:2rem">Sin órdenes aún</td></tr>
+            <tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">Sin órdenes aún</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+    </form>
   </div>
+
+  <!-- Modal Ver (dashboard) -->
+  <div id="dash-modal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center">
+    <div style="background:var(--surface,#1a1a2e);border:1px solid var(--gold,#c9a227);border-radius:10px;width:min(92vw,700px);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(201,162,39,0.2)">
+        <h3 style="margin:0;font-size:1rem">Órdenes Seleccionadas</h3>
+        <button onclick="document.getElementById('dash-modal').style.display='none'" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer">✕</button>
+      </div>
+      <div id="dash-modal-body" style="overflow-y:auto;padding:1rem 1.25rem;flex:1"></div>
+      <div style="padding:0.75rem 1.25rem;border-top:1px solid rgba(201,162,39,0.2);display:flex;justify-content:flex-end;gap:0.5rem">
+        <button class="btn btn-ghost btn-sm" onclick="dashPDF()">📄 PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('dash-modal').style.display='none'">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script>
+  function dashGetSel() {
+    var ids = Array.from(document.querySelectorAll('.dash-cb:checked')).map(function(c){ return parseInt(c.value); });
+    return DASH_ORDENES.filter(function(o){ return ids.indexOf(o.id) !== -1; });
+  }
+  function dashActualizar() {
+    var n = document.querySelectorAll('.dash-cb:checked').length;
+    var bar = document.getElementById('dash-acciones');
+    var total = document.querySelectorAll('.dash-cb').length;
+    bar.style.display = n > 0 ? 'flex' : 'none';
+    document.getElementById('dash-count').textContent = n + ' seleccionada' + (n > 1 ? 's' : '');
+    document.getElementById('dash-check-all').checked = n === total && total > 0;
+    document.getElementById('dash-check-all').indeterminate = n > 0 && n < total;
+  }
+  function dashToggleTodos(cb) {
+    document.querySelectorAll('.dash-cb').forEach(function(c){ c.checked = cb.checked; });
+    dashActualizar();
+  }
+  function dashVer() {
+    var items = dashGetSel();
+    if (!items.length) return;
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:0.83rem"><thead><tr style="border-bottom:1px solid rgba(201,162,39,0.3)">';
+    ['# Orden','Cliente','Email','Total','Estado','Pago','Fecha'].forEach(function(h){
+      html += '<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.76rem">' + h + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+    items.forEach(function(o){
+      html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">';
+      html += '<td style="padding:0.35rem 0.5rem;font-family:monospace;font-size:0.78rem">' + o.numero + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem;font-weight:600">' + o.cliente + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem;font-size:0.78rem">' + o.email + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold,#c9a227)">$' + o.total + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem">' + o.estado + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem">' + o.pago + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem;color:var(--text3)">' + o.fecha + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('dash-modal-body').innerHTML = html;
+    document.getElementById('dash-modal').style.display = 'flex';
+  }
+  function dashPDF() {
+    var items = dashGetSel();
+    if (!items.length) return;
+    var { jsPDF } = window.jspdf;
+    var doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(14);
+    doc.text('JD Peptides — Órdenes Recientes', 14, 16);
+    doc.setFontSize(9); doc.setTextColor(150);
+    doc.text('Generado: ' + new Date().toLocaleString('es-MX'), 14, 22);
+    doc.autoTable({
+      startY: 27,
+      head: [['# Orden','Cliente','Email','Total','Estado','Pago','Fecha']],
+      body: items.map(function(o){ return [o.numero, o.cliente, o.email, '$'+o.total, o.estado, o.pago, o.fecha]; }),
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [201,162,39], textColor: [0,0,0], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245,245,245] }
+    });
+    doc.save('ordenes_recientes_' + new Date().toISOString().slice(0,10) + '.pdf');
+  }
+  function dashEliminar() {
+    var n = dashGetSel().length;
+    if (!n) return;
+    if (confirm('¿Eliminar ' + n + ' orden(es)? Esta acción no se puede deshacer.')) {
+      document.getElementById('dash-form-eliminar').submit();
+    }
+  }
+  document.getElementById('dash-modal').addEventListener('click', function(e){ if(e.target===this) this.style.display='none'; });
+  </script>
 
   <!-- Low stock -->
   <div class="admin-card">

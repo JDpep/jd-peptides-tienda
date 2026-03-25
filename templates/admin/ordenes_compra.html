@@ -19,15 +19,38 @@
   <button class="btn btn-gold" data-modal="newPoModal">+ Nueva Orden de Compra</button>
 </div>
 
+<script>
+var OC_DATA = [
+  {% for po in pos %}
+  { id: {{ po['id'] }}, numero: {{ po['po_number']|tojson }}, proveedor: {{ po['supplier']|tojson }},
+    fecha: "{{ po['created_at'][:10] }}", esperada: "{{ po['expected_date'] or '—' }}",
+    articulos: {{ po['items_count'] }}, total: "{{ '%.2f'|format(po['total']) }}", estado: {{ po['status']|tojson }} }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+</script>
+
 <!-- PO List -->
 <div class="admin-card">
-  <div class="admin-card-header">
-    <h3>Órdenes de Compra <span style="color:var(--text3);font-weight:400">({{ pos|length }})</span></h3>
+  <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      <h3>Órdenes de Compra <span style="color:var(--text3);font-weight:400">({{ pos|length }})</span></h3>
+      <div id="oc-acciones" style="display:none;align-items:center;gap:0.4rem;flex-wrap:wrap">
+        <span id="oc-count" style="color:var(--gold,#c9a227);font-size:0.82rem;font-weight:600"></span>
+        <button class="btn btn-ghost btn-sm" onclick="ocVer()">👁 Ver</button>
+        <button class="btn btn-ghost btn-sm" onclick="ocPDF()">📄 PDF</button>
+        <button class="btn btn-sm" style="background:#c0392b;color:#fff;border:none;cursor:pointer" onclick="ocEliminar()">🗑 Eliminar</button>
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;color:var(--text3);cursor:pointer;white-space:nowrap">
+      <input type="checkbox" id="oc-check-all" onchange="ocToggleTodos(this)"> Sel. todo
+    </label>
   </div>
+  <form id="oc-form-eliminar" method="POST" action="{{ url_for('admin_eliminar_ocs') }}">
   <div style="overflow-x:auto">
     <table class="admin-table">
       <thead>
         <tr>
+          <th style="width:32px"></th>
           <th>N° OC</th>
           <th>Proveedor</th>
           <th>Fecha</th>
@@ -41,6 +64,9 @@
       <tbody>
         {% for po in pos %}
           <tr>
+            <td style="text-align:center;vertical-align:middle">
+              <input type="checkbox" name="oc_ids" value="{{ po['id'] }}" class="oc-cb" onchange="ocActualizar()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold,#c9a227)">
+            </td>
             <td class="mono" style="font-weight:700;color:var(--gold)">{{ po['po_number'] }}</td>
             <td class="strong">{{ po['supplier'] }}</td>
             <td style="font-size:0.82rem;color:var(--text3)">{{ po['created_at'][:10] }}</td>
@@ -82,7 +108,7 @@
           </tr>
           <!-- Detail sub-row -->
           <tr id="po-detail-{{ po['id'] }}" style="display:none">
-            <td colspan="8" style="padding:0">
+            <td colspan="9" style="padding:0">
               <div style="padding:1rem 1.5rem;background:var(--bg);border-top:1px solid var(--border)">
                 <p style="font-size:0.8rem;color:var(--text3);margin-bottom:0.5rem">
                   Notas: {{ po['notes'] or 'Sin notas' }}
@@ -95,7 +121,7 @@
           </tr>
         {% else %}
           <tr>
-            <td colspan="8" style="text-align:center;color:var(--text3);padding:3rem">
+            <td colspan="9" style="text-align:center;color:var(--text3);padding:3rem">
               Sin órdenes de compra. Crea la primera usando el botón de arriba.
             </td>
           </tr>
@@ -103,6 +129,7 @@
       </tbody>
     </table>
   </div>
+  </form>
 </div>
 
 <!-- If viewing detail of a specific PO -->
@@ -227,11 +254,75 @@
   </div>
 </div>
 
+<!-- Modal Ver OC -->
+<div id="oc-modal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center">
+  <div style="background:var(--surface,#1a1a2e);border:1px solid var(--gold,#c9a227);border-radius:10px;width:min(92vw,780px);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(201,162,39,0.2)">
+      <h3 style="margin:0;font-size:1rem">Órdenes de Compra Seleccionadas</h3>
+      <button onclick="document.getElementById('oc-modal').style.display='none'" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer">✕</button>
+    </div>
+    <div id="oc-modal-body" style="overflow-y:auto;padding:1rem 1.25rem;flex:1"></div>
+    <div style="padding:0.75rem 1.25rem;border-top:1px solid rgba(201,162,39,0.2);display:flex;justify-content:flex-end;gap:0.5rem">
+      <button class="btn btn-ghost btn-sm" onclick="ocPDF()">📄 PDF</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('oc-modal').style.display='none'">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
 function togglePoDetail(id) {
   const row = document.getElementById('po-detail-' + id);
   if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
 }
+function ocGetSel(){ var ids=Array.from(document.querySelectorAll('.oc-cb:checked')).map(function(c){return parseInt(c.value);}); return OC_DATA.filter(function(o){return ids.indexOf(o.id)!==-1;}); }
+function ocActualizar(){
+  var n=document.querySelectorAll('.oc-cb:checked').length, total=document.querySelectorAll('.oc-cb').length;
+  document.getElementById('oc-acciones').style.display=n>0?'flex':'none';
+  document.getElementById('oc-count').textContent=n+' seleccionada'+(n>1?'s':'');
+  document.getElementById('oc-check-all').checked=n===total&&total>0;
+  document.getElementById('oc-check-all').indeterminate=n>0&&n<total;
+}
+function ocToggleTodos(cb){ document.querySelectorAll('.oc-cb').forEach(function(c){c.checked=cb.checked;}); ocActualizar(); }
+function estadoOC(s){ return s==='recibido'?'Recibido':s==='cancelado'?'Cancelado':'Pendiente'; }
+function ocVer(){
+  var items=ocGetSel(); if(!items.length) return;
+  var html='<table style="width:100%;border-collapse:collapse;font-size:0.83rem"><thead><tr style="border-bottom:1px solid rgba(201,162,39,0.3)">';
+  ['N° OC','Proveedor','Fecha','F. Esperada','Artículos','Total','Estado'].forEach(function(h){html+='<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.76rem">'+h+'</th>';});
+  html+='</tr></thead><tbody>';
+  items.forEach(function(o){
+    html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">';
+    html+='<td style="padding:0.35rem 0.5rem;font-family:monospace;font-weight:700;color:var(--gold,#c9a227)">'+o.numero+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;font-weight:600">'+o.proveedor+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;color:var(--text3)">'+o.fecha+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem">'+o.esperada+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;text-align:center">'+o.articulos+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold,#c9a227)">$'+o.total+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem">'+estadoOC(o.estado)+'</td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('oc-modal-body').innerHTML=html;
+  document.getElementById('oc-modal').style.display='flex';
+}
+function ocPDF(){
+  var items=ocGetSel(); if(!items.length) return;
+  var {jsPDF}=window.jspdf; var doc=new jsPDF({orientation:'landscape'});
+  doc.setFontSize(14); doc.text('JD Peptides — Órdenes de Compra',14,16);
+  doc.setFontSize(9); doc.setTextColor(150); doc.text('Generado: '+new Date().toLocaleString('es-MX'),14,22);
+  doc.autoTable({startY:27,head:[['N° OC','Proveedor','Fecha','F. Esperada','Artículos','Total','Estado']],
+    body:items.map(function(o){return[o.numero,o.proveedor,o.fecha,o.esperada,o.articulos,'$'+o.total,estadoOC(o.estado)];}),
+    styles:{fontSize:8,cellPadding:3},headStyles:{fillColor:[201,162,39],textColor:[0,0,0],fontStyle:'bold'},alternateRowStyles:{fillColor:[245,245,245]}});
+  doc.save('ordenes_compra_'+new Date().toISOString().slice(0,10)+'.pdf');
+}
+function ocEliminar(){
+  var n=ocGetSel().length; if(!n) return;
+  if(confirm('¿Eliminar '+n+' orden(es) de compra? Esta acción no se puede deshacer.')){
+    document.getElementById('oc-form-eliminar').submit();
+  }
+}
+document.getElementById('oc-modal').addEventListener('click',function(e){if(e.target===this)this.style.display='none';});
 </script>
 
 {% endblock %}

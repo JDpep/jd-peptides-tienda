@@ -1097,23 +1097,37 @@ def admin_actualizar_estado(oid):
     status_changed = new_status in valid_statuses and new_status != old_status
     payment_changed = new_payment in valid_payments and new_payment != old_payment
 
+    # Estado efectivo antes y después del cambio
+    eff_status  = new_status  if status_changed  else old_status
+    eff_payment = new_payment if payment_changed else old_payment
+
+    # Stock debe estar "libre" (devuelto) cuando la orden es cancelada O reembolsada
+    def stock_libre(status, payment):
+        return status == 'cancelado' or payment == 'reembolsado'
+
+    era_libre  = stock_libre(old_status, old_payment)
+    sera_libre = stock_libre(eff_status, eff_payment)
+
     if status_changed:
         execute_db("UPDATE orders SET status=? WHERE id=?", (new_status, oid))
+    if payment_changed:
+        execute_db("UPDATE orders SET payment_status=? WHERE id=?", (new_payment, oid))
 
+    # Mover inventario solo si cambia el estado de "libre"
+    if era_libre != sera_libre:
         items = query_db("SELECT * FROM order_items WHERE order_id=?", (oid,))
-
-        # Cancelar orden → devolver stock
-        if new_status == 'cancelado' and old_status != 'cancelado':
+        if sera_libre:
+            # Orden pasa a cancelada/reembolsada → devolver stock
+            reason = 'Cancelación de orden' if eff_status == 'cancelado' else 'Reembolso de orden'
             for item in items:
                 execute_db("UPDATE products SET stock = stock + ? WHERE id=?",
                            (item['quantity'], item['product_id']))
                 execute_db(
-                    "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'entrada', ?, 'Cancelación de orden', ?)",
-                    (item['product_id'], item['quantity'], order['order_number'])
+                    "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'entrada', ?, ?, ?)",
+                    (item['product_id'], item['quantity'], reason, order['order_number'])
                 )
-
-        # Reactivar orden cancelada → volver a descontar stock
-        elif old_status == 'cancelado' and new_status != 'cancelado':
+        else:
+            # Orden reactivada → volver a descontar stock
             for item in items:
                 execute_db("UPDATE products SET stock = MAX(0, stock - ?) WHERE id=?",
                            (item['quantity'], item['product_id']))
@@ -1121,9 +1135,6 @@ def admin_actualizar_estado(oid):
                     "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'salida', ?, 'Reactivación de orden', ?)",
                     (item['product_id'], item['quantity'], order['order_number'])
                 )
-
-    if payment_changed:
-        execute_db("UPDATE orders SET payment_status=? WHERE id=?", (new_payment, oid))
 
     # Notificar al cliente si hubo un cambio relevante
     notify_status = new_status if status_changed else ''
@@ -1182,8 +1193,14 @@ def admin_nueva_oc():
                 "INSERT INTO purchase_order_items (po_id, product_id, quantity, unit_cost, subtotal) VALUES (?, ?, ?, ?, ?)",
                 (po_id, int(pid), qty_int, cost_float, qty_int * cost_float)
             )
+            # Sumar stock inmediatamente (fecha futura incluida)
+            execute_db("UPDATE products SET stock = stock + ? WHERE id=?", (qty_int, int(pid)))
+            execute_db(
+                "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'entrada', ?, 'Orden de Compra', ?)",
+                (int(pid), qty_int, po_number)
+            )
 
-    flash(f'Orden de compra {po_number} creada.', 'success')
+    flash(f'Orden de compra {po_number} creada. Inventario actualizado.', 'success')
     return redirect(url_for('admin_ordenes_compra'))
 
 
@@ -1230,20 +1247,9 @@ def admin_recibir_oc(po_id):
     if not po or po['status'] == 'recibido':
         flash('Orden no válida o ya fue recibida.', 'error')
         return redirect(url_for('admin_ordenes_compra'))
-
-    items = query_db(
-        "SELECT * FROM purchase_order_items WHERE po_id=?", (po_id,)
-    )
-    for item in items:
-        execute_db("UPDATE products SET stock = stock + ? WHERE id=?",
-                   (item['quantity'], item['product_id']))
-        execute_db(
-            "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'entrada', ?, 'Orden de Compra', ?)",
-            (item['product_id'], item['quantity'], po['po_number'])
-        )
-
+    # Stock ya fue sumado al crear la OC — solo actualizar status
     execute_db("UPDATE purchase_orders SET status='recibido' WHERE id=?", (po_id,))
-    flash(f'Orden {po["po_number"]} marcada como recibida. Inventario actualizado.', 'success')
+    flash(f'Orden {po["po_number"]} marcada como recibida.', 'success')
     return redirect(url_for('admin_ordenes_compra'))
 
 
@@ -1254,11 +1260,20 @@ def admin_cancelar_oc(po_id):
     if not po:
         flash('Orden no encontrada.', 'error')
         return redirect(url_for('admin_ordenes_compra'))
-    if po['status'] == 'recibido':
-        flash('No se puede cancelar una orden ya recibida. Haz un ajuste manual en inventario si es necesario.', 'error')
+    if po['status'] == 'cancelado':
+        flash('Esta orden ya está cancelada.', 'error')
         return redirect(url_for('admin_ordenes_compra'))
+    # Revertir el stock que se sumó al crear (tanto pendiente como recibido)
+    items = query_db("SELECT * FROM purchase_order_items WHERE po_id=?", (po_id,))
+    for item in items:
+        execute_db("UPDATE products SET stock = MAX(0, stock - ?) WHERE id=?",
+                   (item['quantity'], item['product_id']))
+        execute_db(
+            "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'salida', ?, 'Cancelación OC', ?)",
+            (item['product_id'], item['quantity'], po['po_number'])
+        )
     execute_db("UPDATE purchase_orders SET status='cancelado' WHERE id=?", (po_id,))
-    flash(f'Orden {po["po_number"]} cancelada.', 'success')
+    flash(f'Orden {po["po_number"]} cancelada. Inventario revertido.', 'success')
     return redirect(url_for('admin_ordenes_compra'))
 
 

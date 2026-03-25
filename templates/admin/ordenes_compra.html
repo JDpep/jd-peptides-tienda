@@ -64,11 +64,16 @@
                    target="_blank" class="btn btn-ghost btn-sm">Invoice PDF</a>
                 {% if po['status'] == 'pendiente' %}
                   <form method="POST" action="{{ url_for('admin_recibir_oc', po_id=po['id']) }}"
-                        onsubmit="return confirm('¿Marcar como recibida? Esto sumará el stock al inventario.')">
-                    <button type="submit" class="btn btn-gold btn-sm">✓ Recibir</button>
+                        onsubmit="return confirm('¿Confirmar recepción física de esta orden?')">
+                    <button type="submit" class="btn btn-gold btn-sm">✓ Confirmar recepción</button>
                   </form>
                   <form method="POST" action="{{ url_for('admin_cancelar_oc', po_id=po['id']) }}"
-                        onsubmit="return confirm('¿Cancelar esta orden de compra?')">
+                        onsubmit="return confirm('¿Cancelar esta OC? El stock sumado al crearla se revertirá.')">
+                    <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
+                  </form>
+                {% elif po['status'] == 'recibido' %}
+                  <form method="POST" action="{{ url_for('admin_cancelar_oc', po_id=po['id']) }}"
+                        onsubmit="return confirm('¿Cancelar esta OC ya recibida? El stock se revertirá del inventario.')">
                     <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
                   </form>
                 {% endif %}

@@ -54,9 +54,9 @@
       <tbody>
         {% for u in users %}
           <tr>
-            <td class="strong" style="display:flex;align-items:center;gap:0.5rem">
+            <td class="strong">
               {% if u['username'] == session.get('admin_user') %}
-                <span style="color:var(--gold)">●</span>
+                <span style="color:var(--gold)">● </span>
               {% endif %}
               {{ u['username'] }}
             </td>
@@ -90,15 +90,16 @@
             <td>
               <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
                 {% if u['username'] != session.get('admin_user') %}
-                  <form method="POST" action="{{ url_for('admin_toggle_usuario', uid=u['id']) }}"
-                        onsubmit="return confirm('¿{{ 'Desactivar' if u['active'] else 'Activar' }} al usuario {{ u['username'] }}?')">
-                    <button type="submit" class="btn btn-ghost btn-sm">
-                      {{ '⏸ Desactivar' if u['active'] else '▶ Activar' }}
+                  <form method="POST" action="{{ url_for('admin_toggle_usuario', uid=u['id']) }}">
+                    <button type="submit" class="btn btn-ghost btn-sm"
+                            onclick="return confirm('¿Cambiar estado del usuario?')">
+                      {% if u['active'] %}⏸ Desactivar{% else %}▶ Activar{% endif %}
                     </button>
                   </form>
-                  <form method="POST" action="{{ url_for('admin_eliminar_usuario', uid=u['id']) }}"
-                        onsubmit="return confirm('¿Eliminar permanentemente al usuario {{ u[\'username\'] }}? Esta acción no se puede deshacer.')">
-                    <button type="submit" class="btn btn-sm" style="background:#c0392b;color:#fff;border:none;cursor:pointer">
+                  <form method="POST" action="{{ url_for('admin_eliminar_usuario', uid=u['id']) }}">
+                    <button type="submit" class="btn btn-sm"
+                            style="background:#c0392b;color:#fff;border:none;cursor:pointer"
+                            onclick="return confirm('¿Eliminar usuario permanentemente? Esta acción no se puede deshacer.')">
                       🗑 Eliminar
                     </button>
                   </form>

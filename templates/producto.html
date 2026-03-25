@@ -46,7 +46,7 @@
         {% else %}
         <div class="product-detail-visual {% if product['image_path'] %}product-detail-has-img{% endif %}">
           {% if product['image_path'] %}
-            <img src="{{ url_for('static', filename='img/' + product['image_path']) }}"
+            <img src="/media/{{ product['image_path'] }}"
                  alt="{{ product['name'] }}" class="product-detail-img">
             <span class="badge badge-gold" style="position:absolute;top:1rem;left:1rem;z-index:2">{{ product['category'] }}</span>
           {% else %}
@@ -157,7 +157,7 @@
                 <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
                   <div class="product-visual-cat"><span class="badge badge-gold">{{ p['category'] }}</span></div>
                   {% if p['image_path'] %}
-                    <img src="{{ url_for('static', filename='img/' + p['image_path']) }}"
+                    <img src="/media/{{ p['image_path'] }}"
                          alt="{{ p['name'] }}" class="product-card-img">
                   {% else %}
                     <div class="product-visual-pattern">

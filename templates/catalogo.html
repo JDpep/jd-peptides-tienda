@@ -53,7 +53,7 @@
                   <span class="badge badge-gold">{{ p['category'] }}</span>
                 </div>
                 {% if p['image_path'] %}
-                  <img src="{{ url_for('static', filename='img/' + p['image_path']) }}"
+                  <img src="/media/{{ p['image_path'] }}"
                        alt="{{ p['name'] }}" class="product-card-img">
                 {% else %}
                   <div class="product-visual-pattern">

@@ -1141,11 +1141,16 @@ def admin_nuevo_producto():
                 (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active)
             )
             files = request.files.getlist('images')
+            first_uploaded = None
             for i, file in enumerate(files):
                 if file and file.filename and allowed_file(file.filename):
                     filename = secure_filename(file.filename)
                     file.save(os.path.join(UPLOAD_FOLDER, filename))
                     execute_db("INSERT INTO product_images (product_id, filename, sort_order) VALUES (?, ?, ?)", (pid, filename, i))
+                    if first_uploaded is None:
+                        first_uploaded = filename
+            if first_uploaded:
+                execute_db("UPDATE products SET image_path=? WHERE id=?", (first_uploaded, pid))
             flash('Producto creado exitosamente.', 'success')
             return redirect(url_for('admin_productos'))
         except Exception as e:
@@ -1184,11 +1189,17 @@ def admin_editar_producto(pid):
             )
             files = request.files.getlist('images')
             existing_count = query_db("SELECT COUNT(*) as c FROM product_images WHERE product_id=?", (pid,), one=True)['c']
+            first_uploaded = None
             for i, file in enumerate(files):
                 if file and file.filename and allowed_file(file.filename):
                     filename = secure_filename(file.filename)
                     file.save(os.path.join(UPLOAD_FOLDER, filename))
                     execute_db("INSERT INTO product_images (product_id, filename, sort_order) VALUES (?, ?, ?)", (pid, filename, existing_count + i))
+                    if first_uploaded is None:
+                        first_uploaded = filename
+            # Siempre actualizar image_path con la primera imagen subida
+            if first_uploaded:
+                execute_db("UPDATE products SET image_path=? WHERE id=?", (first_uploaded, pid))
             flash('Producto actualizado.', 'success')
             return redirect(url_for('admin_productos'))
         except Exception as e:

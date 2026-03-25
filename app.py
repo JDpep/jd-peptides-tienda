@@ -572,14 +572,28 @@ def init_db():
     db = get_db()
     db.executescript(SCHEMA)
     db.commit()
-    # Seed superadmin if no users exist
+    # Seed / migrate admin users
     user_count = db.execute("SELECT COUNT(*) FROM admin_users").fetchone()[0]
     if user_count == 0:
-        db.execute(
-            "INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)",
-            ('alberto', generate_password_hash('Aa52902763'), 'superadmin')
-        )
+        # Primera instalación: crear ambos usuarios
+        db.execute("INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)",
+                   ('Alb.peptide10', generate_password_hash('Aa52902763'), 'superadmin'))
+        db.execute("INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)",
+                   ('JacoM.JDP', generate_password_hash('Peptideed398'), 'admin'))
         db.commit()
+    else:
+        # Migración: renombrar 'alberto' → 'Alb.peptide10' si existe
+        old = db.execute("SELECT id FROM admin_users WHERE username='alberto'").fetchone()
+        if old:
+            db.execute("UPDATE admin_users SET username=?, password_hash=? WHERE username='alberto'",
+                       ('Alb.peptide10', generate_password_hash('Aa52902763')))
+            db.commit()
+        # Agregar JacoM.JDP si no existe
+        jaco = db.execute("SELECT id FROM admin_users WHERE username='JacoM.JDP'").fetchone()
+        if not jaco:
+            db.execute("INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)",
+                       ('JacoM.JDP', generate_password_hash('Peptideed398'), 'admin'))
+            db.commit()
     # Seed products if empty
     count = db.execute("SELECT COUNT(*) FROM products").fetchone()[0]
     if count == 0:

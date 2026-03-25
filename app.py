@@ -772,7 +772,11 @@ def producto(pid):
         (product['category'], pid)
     )
     benefits = product['benefits'].split('|') if product['benefits'] else []
-    images = query_db("SELECT * FROM product_images WHERE product_id=? ORDER BY sort_order, id", (pid,))
+    images_raw = query_db("SELECT * FROM product_images WHERE product_id=? ORDER BY sort_order, id", (pid,))
+    # Solo pasar imágenes cuyos archivos existen (evita entradas huérfanas de uploads borrados)
+    images = [img for img in images_raw if
+              os.path.exists(os.path.join(UPLOAD_FOLDER, img['filename'])) or
+              os.path.exists(os.path.join(_static_img, img['filename']))]
     return render_template('producto.html', product=product, related=related, benefits=benefits, images=images)
 
 

@@ -620,13 +620,15 @@ def admin_required(f):
     return decorated
 
 
+OWNER_USER = 'Alb.peptide10'
+
 def superadmin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if not session.get('admin_logged_in'):
             return redirect(url_for('admin_login'))
-        if session.get('admin_role') != 'superadmin':
-            flash('Acceso restringido a superadministradores.', 'error')
+        if session.get('admin_user') != OWNER_USER:
+            flash('Acceso restringido al propietario del sistema.', 'error')
             return redirect(url_for('admin_dashboard'))
         return f(*args, **kwargs)
     return decorated
@@ -1008,13 +1010,63 @@ def admin_dashboard():
         "SELECT * FROM products WHERE active=1 AND stock <= low_stock_alert ORDER BY stock ASC LIMIT 10"
     )
 
+    # ── Comparativo mes actual: costos (OC) vs ventas ──────────────────────
+    mes_actual = date.today().strftime('%Y-%m')
+
+    costos_mes = query_db("""
+        SELECT p.name AS product_name, p.sku,
+               COALESCE(SUM(poi.quantity),0) AS qty_compra,
+               COALESCE(SUM(poi.subtotal),0) AS costo_total
+        FROM purchase_order_items poi
+        JOIN purchase_orders po ON poi.po_id = po.id
+        JOIN products p ON poi.product_id = p.id
+        WHERE strftime('%Y-%m', po.created_at) = ?
+          AND po.status != 'cancelado'
+        GROUP BY p.id
+    """, (mes_actual,))
+
+    ventas_mes = query_db("""
+        SELECT p.name AS product_name, p.sku,
+               COALESCE(SUM(oi.quantity),0) AS qty_venta,
+               COALESCE(SUM(oi.subtotal),0) AS venta_total
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        JOIN products p ON oi.product_id = p.id
+        WHERE strftime('%Y-%m', o.created_at) = ?
+          AND o.status != 'cancelado'
+        GROUP BY p.id
+    """, (mes_actual,))
+
+    # Merge por sku
+    costos_dict  = {r['sku']: dict(r) for r in costos_mes}
+    ventas_dict  = {r['sku']: dict(r) for r in ventas_mes}
+    all_skus = sorted(set(list(costos_dict.keys()) + list(ventas_dict.keys())))
+    comparativo = []
+    for sku in all_skus:
+        c = costos_dict.get(sku, {})
+        v = ventas_dict.get(sku, {})
+        name = c.get('product_name') or v.get('product_name', sku)
+        costo = c.get('costo_total', 0)
+        venta = v.get('venta_total', 0)
+        comparativo.append({
+            'sku': sku,
+            'name': name,
+            'qty_compra': c.get('qty_compra', 0),
+            'costo_total': costo,
+            'qty_venta': v.get('qty_venta', 0),
+            'venta_total': venta,
+            'margen': venta - costo,
+        })
+
     return render_template('admin/dashboard.html',
                            total_sales=total_sales,
                            orders_today=orders_today,
                            active_products=active_products,
                            low_stock=low_stock,
                            recent_orders=recent_orders,
-                           low_stock_products=low_stock_products)
+                           low_stock_products=low_stock_products,
+                           comparativo=comparativo,
+                           mes_actual=mes_actual)
 
 
 @app.route('/admin/productos')

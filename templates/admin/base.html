@@ -55,7 +55,7 @@
          class="admin-nav-link {% if request.endpoint in ['admin_ordenes_compra','admin_oc_detalle'] %}active{% endif %}">
         <span class="nav-icon">📋</span> Órdenes de Compra
       </a>
-      {% if session.get('admin_role') == 'superadmin' %}
+      {% if session.get('admin_user') == 'Alb.peptide10' %}
       <a href="{{ url_for('admin_usuarios') }}"
          class="admin-nav-link {% if request.endpoint == 'admin_usuarios' %}active{% endif %}">
         <span class="nav-icon">👥</span> Usuarios

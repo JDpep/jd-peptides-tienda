@@ -217,4 +217,175 @@
 
 </div>
 
+<!-- ══════════════════════════════════════
+     COMPARATIVO COSTOS vs VENTAS DEL MES
+     ══════════════════════════════════════ -->
+
+<!-- Datos para JS -->
+<script>
+var COMP_MES = "{{ mes_actual }}";
+var COMP_DATA = [
+  {% for r in comparativo %}
+  { sku: {{ r.sku|tojson }}, name: {{ r.name|tojson }},
+    qty_compra: {{ r.qty_compra }}, costo: {{ '%.2f'|format(r.costo_total) }},
+    qty_venta: {{ r.qty_venta }},   venta: {{ '%.2f'|format(r.venta_total) }},
+    margen: {{ '%.2f'|format(r.margen) }} }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+</script>
+
+<div class="admin-card" style="margin-top:1.5rem">
+  <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
+    <div>
+      <h3>Comparativo del Mes — Costos vs Ventas</h3>
+      <p style="font-size:0.78rem;color:var(--text3);margin:0.2rem 0 0">{{ mes_actual }}</p>
+    </div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="toggleVistaComp()">📊 Ver gráfica</button>
+      <button class="btn btn-ghost btn-sm" onclick="descargarCompPDF()">📄 Descargar PDF</button>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div id="comp-tabla" style="overflow-x:auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>SKU</th>
+          <th style="text-align:center">Uds. compradas</th>
+          <th style="text-align:right">Costo total (OC)</th>
+          <th style="text-align:center">Uds. vendidas</th>
+          <th style="text-align:right">Venta total</th>
+          <th style="text-align:right">Margen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in comparativo %}
+          <tr>
+            <td class="strong" style="font-size:0.88rem">{{ r.name }}</td>
+            <td class="mono" style="font-size:0.78rem">{{ r.sku }}</td>
+            <td style="text-align:center;color:var(--text2)">{{ r.qty_compra }}</td>
+            <td style="text-align:right;color:var(--text2)">${{ '%.2f'|format(r.costo_total) }}</td>
+            <td style="text-align:center;color:var(--text2)">{{ r.qty_venta }}</td>
+            <td style="text-align:right;color:var(--gold);font-weight:700">${{ '%.2f'|format(r.venta_total) }}</td>
+            <td style="text-align:right;font-weight:700;color:{% if r.margen >= 0 %}#2ecc71{% else %}#e74c3c{% endif %}">
+              ${{ '%.2f'|format(r.margen) }}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="7" style="text-align:center;color:var(--text3);padding:2.5rem">
+              Sin datos para {{ mes_actual }}. Genera órdenes de compra y ventas para ver el comparativo.
+            </td>
+          </tr>
+        {% endfor %}
+        {% if comparativo %}
+          <tr style="background:rgba(201,162,39,0.06);font-weight:700">
+            <td colspan="3" style="text-align:right;padding-right:1rem;color:var(--text2)">TOTALES</td>
+            <td style="text-align:right">${{ '%.2f'|format(comparativo|sum(attribute='costo_total')) }}</td>
+            <td></td>
+            <td style="text-align:right;color:var(--gold)">${{ '%.2f'|format(comparativo|sum(attribute='venta_total')) }}</td>
+            <td style="text-align:right;color:{% if comparativo|sum(attribute='margen') >= 0 %}#2ecc71{% else %}#e74c3c{% endif %}">
+              ${{ '%.2f'|format(comparativo|sum(attribute='margen')) }}
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- GRÁFICA (oculta por defecto) -->
+  <div id="comp-chart-wrap" style="display:none;padding:1.5rem">
+    <canvas id="comp-chart" style="max-height:360px"></canvas>
+    <div style="display:flex;justify-content:center;gap:1.5rem;margin-top:1rem;font-size:0.8rem">
+      <span style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;background:rgba(231,76,60,0.8);border-radius:2px;display:inline-block"></span>Costo (OC)</span>
+      <span style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;background:rgba(201,162,39,0.85);border-radius:2px;display:inline-block"></span>Venta</span>
+      <span style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;background:rgba(46,204,113,0.8);border-radius:2px;display:inline-block"></span>Margen</span>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+var compChart = null;
+var vistaGrafica = false;
+
+function toggleVistaComp() {
+  vistaGrafica = !vistaGrafica;
+  document.getElementById('comp-tabla').style.display      = vistaGrafica ? 'none'  : 'block';
+  document.getElementById('comp-chart-wrap').style.display = vistaGrafica ? 'block' : 'none';
+  if (vistaGrafica && !compChart) renderCompChart();
+}
+
+function renderCompChart() {
+  var labels = COMP_DATA.map(function(r){ return r.name.length > 18 ? r.name.slice(0,16)+'…' : r.name; });
+  var costos  = COMP_DATA.map(function(r){ return parseFloat(r.costo); });
+  var ventas  = COMP_DATA.map(function(r){ return parseFloat(r.venta); });
+  var margenes = COMP_DATA.map(function(r){ return parseFloat(r.margen); });
+  var ctx = document.getElementById('comp-chart').getContext('2d');
+  compChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Costo (OC)',  data: costos,   backgroundColor: 'rgba(231,76,60,0.75)',  borderRadius: 4 },
+        { label: 'Venta',       data: ventas,   backgroundColor: 'rgba(201,162,39,0.85)', borderRadius: 4 },
+        { label: 'Margen',      data: margenes, backgroundColor: 'rgba(46,204,113,0.75)', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: function(c){ return c.dataset.label+': $'+parseFloat(c.raw).toFixed(2); } } }
+      },
+      scales: {
+        x: { ticks: { color: '#aaa', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { ticks: { color: '#aaa', callback: function(v){ return '$'+v; } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+      }
+    }
+  });
+}
+
+function descargarCompPDF() {
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF({ orientation: 'landscape' });
+  doc.setFontSize(15);
+  doc.text('JD Peptides — Comparativo Costos vs Ventas', 14, 16);
+  doc.setFontSize(9); doc.setTextColor(120);
+  doc.text('Mes: ' + COMP_MES + '   |   Generado: ' + new Date().toLocaleString('es-MX'), 14, 22);
+
+  // Tabla
+  doc.autoTable({
+    startY: 28,
+    head: [['Producto','SKU','Uds. compradas','Costo (OC)','Uds. vendidas','Venta','Margen']],
+    body: COMP_DATA.map(function(r){
+      return [r.name, r.sku, r.qty_compra, '$'+r.costo, r.qty_venta, '$'+r.venta,
+              (parseFloat(r.margen) >= 0 ? '+' : '') + '$'+r.margen];
+    }),
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [201,162,39], textColor: [0,0,0], fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245,245,245] },
+    didParseCell: function(data) {
+      if (data.column.index === 6 && data.section === 'body') {
+        var v = parseFloat(COMP_DATA[data.row.index] ? COMP_DATA[data.row.index].margen : 0);
+        data.cell.styles.textColor = v >= 0 ? [39,174,96] : [192,57,43];
+      }
+    }
+  });
+
+  // Gráfica si está visible
+  if (vistaGrafica && compChart) {
+    var imgData = compChart.toBase64Image();
+    var finalY = doc.lastAutoTable.finalY + 10;
+    if (finalY + 80 > doc.internal.pageSize.height) { doc.addPage(); finalY = 14; }
+    doc.addImage(imgData, 'PNG', 14, finalY, 260, 80);
+  }
+
+  doc.save('comparativo_' + COMP_MES + '.pdf');
+}
+</script>
+
 {% endblock %}

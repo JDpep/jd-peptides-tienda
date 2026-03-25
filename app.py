@@ -9,20 +9,27 @@ from email.mime.text import MIMEText
 from datetime import datetime, date
 from functools import wraps
 from flask import (Flask, render_template, request, redirect, url_for,
-                   session, flash, jsonify, g)
+                   session, flash, jsonify, g, send_from_directory)
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'jdp_secret_key_2024_ultra_secure'
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'img')
+DATABASE = os.environ.get('DATABASE_PATH', os.path.join(os.path.dirname(__file__), 'database', 'jdp.db'))
+
+# Si DATABASE_PATH apunta a un volumen externo (ej. /data/tienda.db),
+# guardamos las imágenes subidas en ese mismo volumen para que persistan.
+_static_img = os.path.join(os.path.dirname(__file__), 'static', 'img')
+_data_dir = os.path.dirname(DATABASE) if os.environ.get('DATABASE_PATH') else None
+UPLOAD_FOLDER = os.path.join(_data_dir, 'img') if _data_dir else _static_img
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-DATABASE = os.environ.get('DATABASE_PATH', os.path.join(os.path.dirname(__file__), 'database', 'jdp.db'))
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ---------------------------------------------------------------------------
 # Email configuration
@@ -658,6 +665,20 @@ def cart_total():
 
 
 app.jinja_env.globals['cart_count'] = cart_count
+
+
+# ---------------------------------------------------------------------------
+# Media serving — uploaded images (persistent volume or static/img fallback)
+# ---------------------------------------------------------------------------
+
+@app.route('/media/<path:filename>')
+def media_file(filename):
+    """Serve uploaded product images from the persistent volume.
+    Falls back to static/img for images bundled with the app."""
+    upload_path = os.path.join(UPLOAD_FOLDER, filename)
+    if os.path.exists(upload_path):
+        return send_from_directory(UPLOAD_FOLDER, filename)
+    return send_from_directory(_static_img, filename)
 
 
 # ---------------------------------------------------------------------------

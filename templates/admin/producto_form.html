@@ -100,7 +100,7 @@
       <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem">
         {% for img in product_images %}
         <div style="position:relative;display:inline-block">
-          <img src="{{ url_for('static', filename='img/' + img['filename']) }}"
+          <img src="/media/{{ img['filename'] }}"
                style="width:120px;height:120px;object-fit:cover;border-radius:8px;border:2px solid var(--border)">
           <form method="POST" action="{{ url_for('admin_eliminar_imagen', img_id=img['id']) }}"
                 onsubmit="return confirm('¿Eliminar esta imagen?')"

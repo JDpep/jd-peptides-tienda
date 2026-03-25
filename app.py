@@ -771,7 +771,15 @@ def procesar_checkout():
     shipping = 0 if subtotal >= 200 else 15
     total = subtotal + shipping
 
-    order_number = f'JDP-{datetime.now().strftime("%Y%m%d")}-{str(uuid.uuid4())[:6].upper()}'
+    # Generar número consecutivo: JD-DD/MM/YY-NNNN (inicia en 420)
+    last_order = query_db("SELECT order_number FROM orders ORDER BY id DESC LIMIT 1", one=True)
+    next_seq = 420
+    if last_order:
+        try:
+            next_seq = int(last_order['order_number'].rsplit('-', 1)[-1]) + 1
+        except (ValueError, IndexError):
+            next_seq = 420
+    order_number = f'JD-{datetime.now().strftime("%d/%m/%y")}-{next_seq}'
 
     order_id = execute_db(
         """INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,

@@ -30,7 +30,7 @@ DATABASE = os.environ.get('DATABASE_PATH', os.path.join(os.path.dirname(__file__
 # Para activar: pon tu cuenta Gmail remitente y una "Contraseña de aplicación"
 # (Google → Seguridad → Verificación en 2 pasos → Contraseñas de aplicación)
 EMAIL_SENDER   = 'jdpeptides@gmail.com'
-EMAIL_PASSWORD = 'jnubbtghjzmqmxnp'
+EMAIL_PASSWORD = 'vpbgsbvilqrptanz'
 EMAIL_NOTIFY   = ['aamiga2006@gmail.com', 'jdpeptides@gmail.com']
 
 def _build_items_rows(items):

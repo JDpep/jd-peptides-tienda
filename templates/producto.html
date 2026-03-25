@@ -2,6 +2,8 @@
 {% block title %}{{ product['name'] }} — JD Peptides{% endblock %}
 
 {% block content %}
+{% set img_map = {'JDP-IGF1':'igf1_lr3.jpeg','JDP-KPV':'kpv.jpeg','JDP-MOTSC':'mots_c.jpeg','JDP-BPC157':'bpc157.jpeg','JDP-TB500':'tb500.jpeg','JDP-GHKCU':'ghk_cu.jpeg','JDP-RETA':'retatrutide.jpeg','JDP-DSIP':'dsip.png','JDP-TA1':'thymosin_alpha1.png','JDP-IPA':'ipamorelin.png','JDP-TESA':'tesamorelin.png'} %}
+{% set prod_img = img_map.get(product['sku'], product['image_path'] or '') %}
 
 <section class="product-detail">
   <div class="container">
@@ -44,9 +46,9 @@
             {% endif %}
           </div>
         {% else %}
-        <div class="product-detail-visual {% if product['image_path'] %}product-detail-has-img{% endif %}">
-          {% if product['image_path'] %}
-            <img src="{{ url_for('static', filename='img/' + product['image_path']) }}"
+        <div class="product-detail-visual {% if prod_img %}product-detail-has-img{% endif %}">
+          {% if prod_img %}
+            <img src="{{ url_for('static', filename='img/' + prod_img) }}"
                  alt="{{ product['name'] }}" class="product-detail-img">
             <span class="badge badge-gold" style="position:absolute;top:1rem;left:1rem;z-index:2">{{ product['category'] }}</span>
           {% else %}
@@ -156,8 +158,8 @@
               <a href="{{ url_for('producto', pid=p['id']) }}" style="text-decoration:none;display:contents">
                 <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
                   <div class="product-visual-cat"><span class="badge badge-gold">{{ p['category'] }}</span></div>
-                  {% if p['image_path'] %}
-                    <img src="{{ url_for('static', filename='img/' + p['image_path']) }}"
+                  {% if img_map.get(p['sku'], p['image_path'] or '') %}
+                    <img src="{{ url_for('static', filename='img/' + img_map.get(p['sku'], p['image_path'] or '')) }}"
                          alt="{{ p['name'] }}" class="product-card-img">
                   {% else %}
                     <div class="product-visual-pattern">

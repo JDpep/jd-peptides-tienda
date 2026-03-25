@@ -4,26 +4,52 @@
 
 {% block content %}
 
+<!-- Toolbar inventario -->
+<div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1.25rem">
+  <div style="flex:1;min-width:220px;position:relative">
+    <input type="text" id="inv-search" placeholder="Buscar producto o SKU…"
+           class="admin-input" style="width:100%;padding-left:2.25rem"
+           oninput="filtrarInventario()">
+    <span style="position:absolute;left:0.7rem;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none">🔍</span>
+  </div>
+  <select id="inv-filter-cat" class="admin-input" style="width:170px" onchange="filtrarInventario()">
+    <option value="">Todas las categorías</option>
+    {% for p in products %}
+      <option value="{{ p['category']|lower }}">{{ p['category'] }}</option>
+    {% endfor %}
+  </select>
+  <select id="inv-filter-stock" class="admin-input" style="width:150px" onchange="filtrarInventario()">
+    <option value="">Todo el stock</option>
+    <option value="ok">Stock OK</option>
+    <option value="bajo">Stock bajo</option>
+    <option value="sin">Sin stock</option>
+  </select>
+</div>
+
 <div class="admin-card" style="margin-bottom:1.5rem">
-  <div class="admin-card-header">
-    <h3>Stock de Productos</h3>
+  <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center">
+    <h3>Stock de Productos <span id="inv-count" style="color:var(--text3);font-weight:400"></span></h3>
+    <span id="inv-filter-active" style="font-size:0.78rem;color:var(--gold);display:none"><a href="#" onclick="limpiarFiltrosInv();return false" style="color:var(--gold)">✕ Limpiar filtros</a></span>
   </div>
   <div style="overflow-x:auto">
     <table class="admin-table">
       <thead>
         <tr>
-          <th>SKU</th>
-          <th>Producto</th>
-          <th>Categoría</th>
-          <th style="text-align:center">Stock</th>
+          <th class="inv-sortable" onclick="sortInv(0)" style="cursor:pointer;user-select:none">SKU <span class="inv-sort-icon">↕</span></th>
+          <th class="inv-sortable" onclick="sortInv(1)" style="cursor:pointer;user-select:none">Producto <span class="inv-sort-icon">↕</span></th>
+          <th class="inv-sortable" onclick="sortInv(2)" style="cursor:pointer;user-select:none">Categoría <span class="inv-sort-icon">↕</span></th>
+          <th class="inv-sortable" onclick="sortInv(3)" style="cursor:pointer;user-select:none;text-align:center">Stock <span class="inv-sort-icon">↕</span></th>
           <th style="text-align:center">Alerta</th>
-          <th style="text-align:center">Estado</th>
+          <th class="inv-sortable" onclick="sortInv(5)" style="cursor:pointer;user-select:none;text-align:center">Estado <span class="inv-sort-icon">↕</span></th>
           <th>Ajuste Rápido</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="inv-stock-tbody">
         {% for p in products %}
-          <tr>
+          <tr data-inv-sku="{{ p['sku']|lower }}"
+              data-inv-name="{{ p['name']|lower }}"
+              data-inv-cat="{{ p['category']|lower }}"
+              data-inv-stock="{% if p['stock'] == 0 %}sin{% elif p['stock'] <= p['low_stock_alert'] %}bajo{% else %}ok{% endif %}">
             <td class="mono">{{ p['sku'] }}</td>
             <td class="strong">{{ p['name'] }}</td>
             <td><span class="badge badge-gold" style="font-size:0.7rem">{{ p['category'] }}</span></td>
@@ -282,6 +308,74 @@ function confirmarEliminar() {
     document.getElementById('form-eliminar-movimientos').submit();
   }
 }
+</script>
+
+<script>
+var invSortDir = {};
+
+function filtrarInventario() {
+  var q   = (document.getElementById('inv-search').value || '').toLowerCase().trim();
+  var cat = (document.getElementById('inv-filter-cat').value || '').toLowerCase();
+  var stk = document.getElementById('inv-filter-stock').value;
+
+  var rows = document.querySelectorAll('tr[data-inv-sku]');
+  var visible = 0;
+  rows.forEach(function(row) {
+    var adjRow = document.getElementById('adjustment-form-' + (row.querySelector('[id]') ? '' : ''));
+    var matchQ   = !q   || row.dataset.invSku.includes(q) || row.dataset.invName.includes(q) || row.dataset.invCat.includes(q);
+    var matchCat = !cat || row.dataset.invCat === cat;
+    var matchStk = !stk || row.dataset.invStock === stk;
+    var show = matchQ && matchCat && matchStk;
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  var countEl = document.getElementById('inv-count');
+  if (countEl) countEl.textContent = '(' + visible + ')';
+  var active = q || cat || stk;
+  document.getElementById('inv-filter-active').style.display = active ? 'inline' : 'none';
+}
+
+function limpiarFiltrosInv() {
+  document.getElementById('inv-search').value = '';
+  document.getElementById('inv-filter-cat').value = '';
+  document.getElementById('inv-filter-stock').value = '';
+  filtrarInventario();
+}
+
+function sortInv(colIdx) {
+  var tbody = document.querySelector('#inv-stock-tbody');
+  if (!tbody) {
+    // fallback: find tbody of stock table
+    var tables = document.querySelectorAll('.admin-table');
+    if (tables[0]) tbody = tables[0].querySelector('tbody');
+  }
+  if (!tbody) return;
+  var rows = Array.from(tbody.querySelectorAll('tr[data-inv-sku]'));
+  var dir = invSortDir[colIdx] === 'asc' ? 'desc' : 'asc';
+  invSortDir = {}; invSortDir[colIdx] = dir;
+  document.querySelectorAll('th.inv-sortable').forEach(function(th){ th.classList.remove('asc','desc'); });
+  document.querySelectorAll('th.inv-sortable')[colIdx] && document.querySelectorAll('th.inv-sortable')[colIdx].classList.add(dir);
+  rows.sort(function(a,b){
+    var aT = (a.cells[colIdx] ? a.cells[colIdx].textContent : '').trim();
+    var bT = (b.cells[colIdx] ? b.cells[colIdx].textContent : '').trim();
+    var aN = parseFloat(aT.replace(/[^0-9.-]/g,''));
+    var bN = parseFloat(bT.replace(/[^0-9.-]/g,''));
+    var cmp = isNaN(aN)||isNaN(bN) ? aT.localeCompare(bT,'es') : aN-bN;
+    return dir==='asc'?cmp:-cmp;
+  });
+  rows.forEach(function(r){ tbody.appendChild(r); });
+}
+
+// Dedup category options
+(function(){
+  var sel = document.getElementById('inv-filter-cat');
+  if (!sel) return;
+  var seen = {};
+  Array.from(sel.options).forEach(function(o){ if(seen[o.value]) o.remove(); else seen[o.value]=true; });
+})();
+
+// Init count
+filtrarInventario();
 </script>
 
 {% endblock %}

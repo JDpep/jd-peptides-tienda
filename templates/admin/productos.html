@@ -4,31 +4,61 @@
 
 {% block content %}
 
-<div style="display:flex;justify-content:flex-end;margin-bottom:1.25rem">
+<!-- Toolbar -->
+<div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1.25rem">
+  <div style="flex:1;min-width:220px;position:relative">
+    <input type="text" id="prod-search" placeholder="Buscar por nombre, SKU o categoría…"
+           class="admin-input" style="width:100%;padding-left:2.25rem"
+           oninput="filtrarProductos()">
+    <span style="position:absolute;left:0.7rem;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none">🔍</span>
+  </div>
+  <select id="prod-filter-cat" class="admin-input" style="width:170px" onchange="filtrarProductos()">
+    <option value="">Todas las categorías</option>
+    {% for p in products %}
+      <option value="{{ p['category'] }}">{{ p['category'] }}</option>
+    {% endfor %}
+  </select>
+  <select id="prod-filter-estado" class="admin-input" style="width:140px" onchange="filtrarProductos()">
+    <option value="">Todos los estados</option>
+    <option value="activo">Activo</option>
+    <option value="inactivo">Inactivo</option>
+  </select>
+  <select id="prod-filter-stock" class="admin-input" style="width:150px" onchange="filtrarProductos()">
+    <option value="">Todo el stock</option>
+    <option value="ok">Stock OK</option>
+    <option value="bajo">Stock bajo</option>
+    <option value="sin">Sin stock</option>
+  </select>
   <a href="{{ url_for('admin_nuevo_producto') }}" class="btn btn-gold">+ Nuevo Producto</a>
 </div>
 
 <div class="admin-card">
-  <div class="admin-card-header">
-    <h3>Todos los Productos <span style="color:var(--text3);font-weight:400">({{ products|length }})</span></h3>
+  <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center">
+    <h3>Todos los Productos <span style="color:var(--text3);font-weight:400" id="prod-count">({{ products|length }})</span></h3>
+    <span id="prod-filter-active" style="font-size:0.78rem;color:var(--gold);display:none">Filtro activo — <a href="#" onclick="limpiarFiltros();return false" style="color:var(--gold)">Limpiar</a></span>
   </div>
   <div style="overflow-x:auto">
-    <table class="admin-table">
+    <table class="admin-table" id="prod-table">
       <thead>
         <tr>
-          <th>SKU</th>
-          <th>Nombre</th>
-          <th>Categoría</th>
-          <th>Dosis</th>
-          <th style="text-align:right">Precio</th>
-          <th style="text-align:center">Stock</th>
+          <th class="sortable" data-col="0" onclick="sortTable(0)" style="cursor:pointer;user-select:none">SKU <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-col="1" onclick="sortTable(1)" style="cursor:pointer;user-select:none">Nombre <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-col="2" onclick="sortTable(2)" style="cursor:pointer;user-select:none">Categoría <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-col="3" onclick="sortTable(3)" style="cursor:pointer;user-select:none">Dosis <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-col="4" onclick="sortTable(4)" style="cursor:pointer;user-select:none;text-align:right">Precio <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-col="5" onclick="sortTable(5)" style="cursor:pointer;user-select:none;text-align:center">Stock <span class="sort-icon">↕</span></th>
           <th style="text-align:center">Estado</th>
           <th>Acciones</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="prod-tbody">
         {% for p in products %}
-          <tr>
+          <tr data-name="{{ p['name']|lower }}"
+              data-sku="{{ p['sku']|lower }}"
+              data-cat="{{ p['category']|lower }}"
+              data-dose="{{ p['dose']|lower }}"
+              data-estado="{{ 'activo' if p['active'] else 'inactivo' }}"
+              data-stock-status="{% if p['stock'] == 0 %}sin{% elif p['stock'] <= p['low_stock_alert'] %}bajo{% else %}ok{% endif %}">
             <td class="mono">{{ p['sku'] }}</td>
             <td class="strong">{{ p['name'] }}</td>
             <td><span class="badge badge-gold" style="font-size:0.7rem">{{ p['category'] }}</span></td>
@@ -60,7 +90,93 @@
         {% endfor %}
       </tbody>
     </table>
+    <div id="prod-empty" style="display:none;text-align:center;padding:2.5rem;color:var(--text3)">
+      Sin resultados para la búsqueda actual.
+    </div>
   </div>
 </div>
+
+<style>
+th.sortable:hover { color: var(--gold); }
+th.sortable.asc .sort-icon::after  { content: ' ▲'; }
+th.sortable.desc .sort-icon::after { content: ' ▼'; }
+</style>
+<script>
+var sortDir = {};
+
+function filtrarProductos() {
+  var q    = document.getElementById('prod-search').value.toLowerCase().trim();
+  var cat  = document.getElementById('prod-filter-cat').value.toLowerCase();
+  var est  = document.getElementById('prod-filter-estado').value;
+  var stk  = document.getElementById('prod-filter-stock').value;
+
+  var rows = document.querySelectorAll('#prod-tbody tr[data-name]');
+  var visible = 0;
+  rows.forEach(function(row) {
+    var name  = row.dataset.name  || '';
+    var sku   = row.dataset.sku   || '';
+    var rcat  = row.dataset.cat   || '';
+    var dose  = row.dataset.dose  || '';
+    var resto = row.dataset.estado || '';
+    var rstk  = row.dataset.stockStatus || '';
+
+    var matchQ   = !q   || name.includes(q) || sku.includes(q) || rcat.includes(q) || dose.includes(q);
+    var matchCat = !cat || rcat === cat;
+    var matchEst = !est || resto === est;
+    var matchStk = !stk || rstk === stk;
+
+    var show = matchQ && matchCat && matchEst && matchStk;
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  document.getElementById('prod-count').textContent = '(' + visible + ')';
+  document.getElementById('prod-empty').style.display = visible === 0 ? 'block' : 'none';
+  var active = q || cat || est || stk;
+  document.getElementById('prod-filter-active').style.display = active ? 'inline' : 'none';
+}
+
+function limpiarFiltros() {
+  document.getElementById('prod-search').value = '';
+  document.getElementById('prod-filter-cat').value = '';
+  document.getElementById('prod-filter-estado').value = '';
+  document.getElementById('prod-filter-stock').value = '';
+  filtrarProductos();
+}
+
+function sortTable(colIdx) {
+  var tbody = document.getElementById('prod-tbody');
+  var rows  = Array.from(tbody.querySelectorAll('tr[data-name]'));
+  var dir   = sortDir[colIdx] === 'asc' ? 'desc' : 'asc';
+  sortDir   = {};
+  sortDir[colIdx] = dir;
+
+  document.querySelectorAll('th.sortable').forEach(function(th) {
+    th.classList.remove('asc','desc');
+  });
+  document.querySelectorAll('th.sortable')[colIdx].classList.add(dir);
+
+  rows.sort(function(a, b) {
+    var aText = (a.cells[colIdx] ? a.cells[colIdx].textContent : '').trim();
+    var bText = (b.cells[colIdx] ? b.cells[colIdx].textContent : '').trim();
+    var aNum = parseFloat(aText.replace(/[^0-9.-]/g,''));
+    var bNum = parseFloat(bText.replace(/[^0-9.-]/g,''));
+    var cmp = isNaN(aNum) || isNaN(bNum)
+      ? aText.localeCompare(bText, 'es')
+      : aNum - bNum;
+    return dir === 'asc' ? cmp : -cmp;
+  });
+  rows.forEach(function(r){ tbody.appendChild(r); });
+}
+
+// Dedup category options
+(function(){
+  var sel = document.getElementById('prod-filter-cat');
+  var seen = {};
+  Array.from(sel.options).forEach(function(o){
+    if (seen[o.value]) o.remove(); else seen[o.value] = true;
+  });
+})();
+</script>
 
 {% endblock %}

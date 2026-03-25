@@ -22,7 +22,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-DATABASE = os.path.join(os.path.dirname(__file__), 'database', 'jdp.db')
+DATABASE = os.environ.get('DATABASE_PATH', os.path.join(os.path.dirname(__file__), 'database', 'jdp.db'))
 
 # ---------------------------------------------------------------------------
 # Email configuration

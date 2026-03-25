@@ -13,16 +13,34 @@
 <body>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="flash-container">
-      {% for category, message in messages %}
-        <div class="flash flash-{{ category }}">
-          <span>{% if category == 'success' %}✓{% elif category == 'error' %}✕{% else %}ℹ{% endif %}</span>
-          {{ message }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
+{% if messages %}
+<div id="toast-container" style="position:fixed;top:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:0.6rem;pointer-events:none">
+  {% for category, message in messages %}
+  <div class="admin-toast admin-toast-{{ category }}"
+       style="pointer-events:all;display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1.1rem;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.35);min-width:280px;max-width:400px;font-size:0.88rem;font-weight:500;animation:toastIn .25s ease;
+       {% if category == 'success' %}background:#1a2e1a;border:1px solid #2ecc71;color:#2ecc71;
+       {% elif category == 'error' %}background:#2e1a1a;border:1px solid #e74c3c;color:#e74c3c;
+       {% else %}background:#1a1f2e;border:1px solid #c9a227;color:#c9a227;{% endif %}">
+    <span style="font-size:1.1rem;flex-shrink:0">
+      {% if category == 'success' %}✓{% elif category == 'error' %}✕{% else %}ℹ{% endif %}
+    </span>
+    <span style="flex:1;color:#fff">{{ message }}</span>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;font-size:1rem;opacity:0.6;padding:0;line-height:1">✕</button>
+  </div>
+  {% endfor %}
+</div>
+<style>
+@keyframes toastIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
+</style>
+<script>
+(function(){
+  var toasts = document.querySelectorAll('.admin-toast');
+  toasts.forEach(function(t, i){
+    setTimeout(function(){ t.style.transition='opacity .4s'; t.style.opacity='0'; setTimeout(function(){ t.remove(); }, 400); }, 4000 + i*500);
+  });
+})();
+</script>
+{% endif %}
 {% endwith %}
 
 <div class="admin-layout">

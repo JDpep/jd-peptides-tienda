@@ -31,6 +31,16 @@ def allowed_file(filename):
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Al arrancar: si el volumen está vacío, copiar las imágenes del repo al volumen
+# para que /media/ siempre las encuentre aunque sea el primer deploy.
+if UPLOAD_FOLDER != _static_img and os.path.isdir(_static_img):
+    import shutil as _shutil
+    for _fname in os.listdir(_static_img):
+        _src = os.path.join(_static_img, _fname)
+        _dst = os.path.join(UPLOAD_FOLDER, _fname)
+        if os.path.isfile(_src) and not os.path.exists(_dst):
+            _shutil.copy2(_src, _dst)
+
 # ---------------------------------------------------------------------------
 # Email configuration
 # ---------------------------------------------------------------------------
@@ -625,12 +635,22 @@ def init_db():
             )
         db.commit()
     else:
-        # Migration: assign image_path to existing products that have none
+        # Migration: restore image_path, description, benefits from seed if missing/empty
         for p in PRODUCTS_SEED:
             if p.get('image_path'):
                 db.execute(
                     "UPDATE products SET image_path=? WHERE sku=? AND (image_path IS NULL OR image_path='')",
                     (p['image_path'], p['sku'])
+                )
+            if p.get('description'):
+                db.execute(
+                    "UPDATE products SET description=? WHERE sku=? AND (description IS NULL OR description='')",
+                    (p['description'], p['sku'])
+                )
+            if p.get('benefits'):
+                db.execute(
+                    "UPDATE products SET benefits=? WHERE sku=? AND (benefits IS NULL OR benefits='')",
+                    (p['benefits'], p['sku'])
                 )
         db.commit()
 

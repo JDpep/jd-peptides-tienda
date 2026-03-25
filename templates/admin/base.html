@@ -55,9 +55,22 @@
          class="admin-nav-link {% if request.endpoint in ['admin_ordenes_compra','admin_oc_detalle'] %}active{% endif %}">
         <span class="nav-icon">📋</span> Órdenes de Compra
       </a>
+      {% if session.get('admin_role') == 'superadmin' %}
+      <a href="{{ url_for('admin_usuarios') }}"
+         class="admin-nav-link {% if request.endpoint == 'admin_usuarios' %}active{% endif %}">
+        <span class="nav-icon">👥</span> Usuarios
+      </a>
+      {% endif %}
     </nav>
 
     <div class="admin-sidebar-footer">
+      {% if session.get('admin_user') %}
+      <div style="padding:0.5rem 0.75rem;font-size:0.75rem;color:var(--text3);border-bottom:1px solid var(--border);margin-bottom:0.5rem">
+        <span style="color:var(--gold)">●</span>
+        {{ session['admin_user'] }}
+        <span style="opacity:0.5;font-size:0.7rem">({{ session.get('admin_role','admin') }})</span>
+      </div>
+      {% endif %}
       <a href="{{ url_for('index') }}" target="_blank">
         <span>🌐</span> Ver Tienda
       </a>

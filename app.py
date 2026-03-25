@@ -11,6 +11,7 @@ from functools import wraps
 from flask import (Flask, render_template, request, redirect, url_for,
                    session, flash, jsonify, g)
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'jdp_secret_key_2024_ultra_secure'
@@ -341,6 +342,15 @@ def execute_db(query, args=()):
 # ---------------------------------------------------------------------------
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS admin_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT DEFAULT 'admin',
+    active INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     sku TEXT UNIQUE NOT NULL,
@@ -562,6 +572,14 @@ def init_db():
     db = get_db()
     db.executescript(SCHEMA)
     db.commit()
+    # Seed superadmin if no users exist
+    user_count = db.execute("SELECT COUNT(*) FROM admin_users").fetchone()[0]
+    if user_count == 0:
+        db.execute(
+            "INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)",
+            ('alberto', generate_password_hash('Aa52902763'), 'superadmin')
+        )
+        db.commit()
     # Seed products if empty
     count = db.execute("SELECT COUNT(*) FROM products").fetchone()[0]
     if count == 0:
@@ -584,6 +602,18 @@ def admin_required(f):
     def decorated(*args, **kwargs):
         if not session.get('admin_logged_in'):
             return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def superadmin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            return redirect(url_for('admin_login'))
+        if session.get('admin_role') != 'superadmin':
+            flash('Acceso restringido a superadministradores.', 'error')
+            return redirect(url_for('admin_dashboard'))
         return f(*args, **kwargs)
     return decorated
 
@@ -834,21 +864,104 @@ def admin_login():
     if session.get('admin_logged_in'):
         return redirect(url_for('admin_dashboard'))
     if request.method == 'POST':
+        username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-        if password == 'Aa52902763':
+        user = query_db("SELECT * FROM admin_users WHERE username=? AND active=1", (username,), one=True)
+        if user and check_password_hash(user['password_hash'], password):
             session['admin_logged_in'] = True
-            flash('Bienvenido al panel de administración.', 'success')
+            session['admin_user'] = user['username']
+            session['admin_role'] = user['role']
+            flash(f'Bienvenido, {user["username"]}.', 'success')
             return redirect(url_for('admin_dashboard'))
         else:
-            flash('Contraseña incorrecta.', 'error')
+            flash('Usuario o contraseña incorrectos.', 'error')
     return render_template('admin/login.html')
 
 
 @app.route('/admin/logout')
 def admin_logout():
     session.pop('admin_logged_in', None)
+    session.pop('admin_user', None)
+    session.pop('admin_role', None)
     flash('Sesión cerrada.', 'success')
     return redirect(url_for('admin_login'))
+
+
+# ---------------------------------------------------------------------------
+# Gestión de usuarios admin
+# ---------------------------------------------------------------------------
+
+@app.route('/admin/usuarios')
+@superadmin_required
+def admin_usuarios():
+    users = query_db("SELECT * FROM admin_users ORDER BY created_at DESC")
+    return render_template('admin/usuarios.html', users=users)
+
+
+@app.route('/admin/usuarios/nuevo', methods=['POST'])
+@superadmin_required
+def admin_nuevo_usuario():
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '').strip()
+    role = request.form.get('role', 'admin')
+    if not username or not password:
+        flash('Usuario y contraseña son requeridos.', 'error')
+        return redirect(url_for('admin_usuarios'))
+    existing = query_db("SELECT id FROM admin_users WHERE username=?", (username,), one=True)
+    if existing:
+        flash('Ese nombre de usuario ya existe.', 'error')
+        return redirect(url_for('admin_usuarios'))
+    execute_db(
+        "INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)",
+        (username, generate_password_hash(password), role)
+    )
+    flash(f'Usuario "{username}" creado correctamente.', 'success')
+    return redirect(url_for('admin_usuarios'))
+
+
+@app.route('/admin/usuarios/<int:uid>/password', methods=['POST'])
+@superadmin_required
+def admin_cambiar_password(uid):
+    new_password = request.form.get('password', '').strip()
+    if not new_password:
+        flash('La nueva contraseña no puede estar vacía.', 'error')
+        return redirect(url_for('admin_usuarios'))
+    execute_db("UPDATE admin_users SET password_hash=? WHERE id=?",
+               (generate_password_hash(new_password), uid))
+    flash('Contraseña actualizada.', 'success')
+    return redirect(url_for('admin_usuarios'))
+
+
+@app.route('/admin/usuarios/<int:uid>/toggle', methods=['POST'])
+@superadmin_required
+def admin_toggle_usuario(uid):
+    user = query_db("SELECT * FROM admin_users WHERE id=?", (uid,), one=True)
+    if not user:
+        flash('Usuario no encontrado.', 'error')
+        return redirect(url_for('admin_usuarios'))
+    if user['username'] == session.get('admin_user'):
+        flash('No puedes desactivar tu propia cuenta.', 'error')
+        return redirect(url_for('admin_usuarios'))
+    new_status = 0 if user['active'] else 1
+    execute_db("UPDATE admin_users SET active=? WHERE id=?", (new_status, uid))
+    estado = 'activado' if new_status else 'desactivado'
+    flash(f'Usuario "{user["username"]}" {estado}.', 'success')
+    return redirect(url_for('admin_usuarios'))
+
+
+@app.route('/admin/usuarios/<int:uid>/eliminar', methods=['POST'])
+@superadmin_required
+def admin_eliminar_usuario(uid):
+    user = query_db("SELECT * FROM admin_users WHERE id=?", (uid,), one=True)
+    if not user:
+        flash('Usuario no encontrado.', 'error')
+        return redirect(url_for('admin_usuarios'))
+    if user['username'] == session.get('admin_user'):
+        flash('No puedes eliminar tu propia cuenta.', 'error')
+        return redirect(url_for('admin_usuarios'))
+    execute_db("DELETE FROM admin_users WHERE id=?", (uid,))
+    flash(f'Usuario "{user["username"]}" eliminado.', 'success')
+    return redirect(url_for('admin_usuarios'))
 
 
 @app.route('/admin')

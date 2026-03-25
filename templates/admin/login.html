@@ -83,6 +83,20 @@
     </div>
 
     <form method="POST">
+      <div class="form-group" style="margin-bottom:1.1rem">
+        <label style="display:block;font-size:0.78rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem">
+          Usuario
+        </label>
+        <input
+          type="text"
+          name="username"
+          class="form-control"
+          placeholder="Nombre de usuario"
+          required
+          autofocus
+          autocomplete="username"
+        >
+      </div>
       <div class="form-group" style="margin-bottom:1.25rem">
         <label style="display:block;font-size:0.78rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem">
           Contraseña
@@ -91,9 +105,8 @@
           type="password"
           name="password"
           class="form-control"
-          placeholder="Ingresa tu contraseña"
+          placeholder="Contraseña"
           required
-          autofocus
           autocomplete="current-password"
         >
       </div>

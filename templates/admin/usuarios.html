@@ -1,0 +1,117 @@
+{% extends "admin/base.html" %}
+{% block title %}Usuarios — Admin JD Peptides{% endblock %}
+{% block page_title %}Gestión de Usuarios{% endblock %}
+
+{% block content %}
+
+<!-- Crear nuevo usuario -->
+<div class="admin-card" style="margin-bottom:1.5rem">
+  <div class="admin-card-header">
+    <h3>Nuevo Usuario</h3>
+  </div>
+  <div style="padding:1.25rem 1.5rem">
+    <form method="POST" action="{{ url_for('admin_nuevo_usuario') }}"
+          style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end">
+      <div>
+        <label class="admin-label">Usuario</label>
+        <input type="text" name="username" class="admin-input" style="width:180px"
+               placeholder="nombre_usuario" required autocomplete="off">
+      </div>
+      <div>
+        <label class="admin-label">Contraseña</label>
+        <input type="password" name="password" class="admin-input" style="width:200px"
+               placeholder="Contraseña segura" required autocomplete="new-password">
+      </div>
+      <div>
+        <label class="admin-label">Rol</label>
+        <select name="role" class="admin-input" style="width:150px">
+          <option value="admin">Admin</option>
+          <option value="superadmin">Superadmin</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-gold btn-sm">+ Crear usuario</button>
+    </form>
+  </div>
+</div>
+
+<!-- Lista de usuarios -->
+<div class="admin-card">
+  <div class="admin-card-header">
+    <h3>Usuarios registrados <span style="color:var(--text3);font-weight:400">({{ users|length }})</span></h3>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Creado</th>
+          <th>Cambiar contraseña</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <td class="strong" style="display:flex;align-items:center;gap:0.5rem">
+              {% if u['username'] == session.get('admin_user') %}
+                <span style="color:var(--gold)">●</span>
+              {% endif %}
+              {{ u['username'] }}
+            </td>
+            <td>
+              {% if u['role'] == 'superadmin' %}
+                <span class="badge badge-gold">Superadmin</span>
+              {% else %}
+                <span class="badge badge-gray">Admin</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u['active'] %}
+                <span class="badge badge-green">Activo</span>
+              {% else %}
+                <span class="badge badge-red">Inactivo</span>
+              {% endif %}
+            </td>
+            <td style="font-size:0.8rem;color:var(--text3)">{{ u['created_at'][:16] }}</td>
+            <td>
+              {% if u['username'] != session.get('admin_user') %}
+              <form method="POST" action="{{ url_for('admin_cambiar_password', uid=u['id']) }}"
+                    style="display:flex;gap:0.4rem;align-items:center">
+                <input type="password" name="password" class="admin-input" style="width:160px"
+                       placeholder="Nueva contraseña" required autocomplete="new-password">
+                <button type="submit" class="btn btn-ghost btn-sm">Actualizar</button>
+              </form>
+              {% else %}
+                <span style="font-size:0.8rem;color:var(--text3)">Tu cuenta</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+                {% if u['username'] != session.get('admin_user') %}
+                  <form method="POST" action="{{ url_for('admin_toggle_usuario', uid=u['id']) }}"
+                        onsubmit="return confirm('¿{{ 'Desactivar' if u['active'] else 'Activar' }} al usuario {{ u['username'] }}?')">
+                    <button type="submit" class="btn btn-ghost btn-sm">
+                      {{ '⏸ Desactivar' if u['active'] else '▶ Activar' }}
+                    </button>
+                  </form>
+                  <form method="POST" action="{{ url_for('admin_eliminar_usuario', uid=u['id']) }}"
+                        onsubmit="return confirm('¿Eliminar permanentemente al usuario {{ u[\'username\'] }}? Esta acción no se puede deshacer.')">
+                    <button type="submit" class="btn btn-sm" style="background:#c0392b;color:#fff;border:none;cursor:pointer">
+                      🗑 Eliminar
+                    </button>
+                  </form>
+                {% else %}
+                  <span style="font-size:0.8rem;color:var(--text3);padding:0.3rem 0">—</span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

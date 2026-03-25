@@ -1099,6 +1099,29 @@ def admin_actualizar_estado(oid):
 
     if status_changed:
         execute_db("UPDATE orders SET status=? WHERE id=?", (new_status, oid))
+
+        items = query_db("SELECT * FROM order_items WHERE order_id=?", (oid,))
+
+        # Cancelar orden → devolver stock
+        if new_status == 'cancelado' and old_status != 'cancelado':
+            for item in items:
+                execute_db("UPDATE products SET stock = stock + ? WHERE id=?",
+                           (item['quantity'], item['product_id']))
+                execute_db(
+                    "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'entrada', ?, 'Cancelación de orden', ?)",
+                    (item['product_id'], item['quantity'], order['order_number'])
+                )
+
+        # Reactivar orden cancelada → volver a descontar stock
+        elif old_status == 'cancelado' and new_status != 'cancelado':
+            for item in items:
+                execute_db("UPDATE products SET stock = MAX(0, stock - ?) WHERE id=?",
+                           (item['quantity'], item['product_id']))
+                execute_db(
+                    "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'salida', ?, 'Reactivación de orden', ?)",
+                    (item['product_id'], item['quantity'], order['order_number'])
+                )
+
     if payment_changed:
         execute_db("UPDATE orders SET payment_status=? WHERE id=?", (new_payment, oid))
 
@@ -1221,6 +1244,21 @@ def admin_recibir_oc(po_id):
 
     execute_db("UPDATE purchase_orders SET status='recibido' WHERE id=?", (po_id,))
     flash(f'Orden {po["po_number"]} marcada como recibida. Inventario actualizado.', 'success')
+    return redirect(url_for('admin_ordenes_compra'))
+
+
+@app.route('/admin/ordenes-compra/<int:po_id>/cancelar', methods=['POST'])
+@admin_required
+def admin_cancelar_oc(po_id):
+    po = query_db("SELECT * FROM purchase_orders WHERE id=?", (po_id,), one=True)
+    if not po:
+        flash('Orden no encontrada.', 'error')
+        return redirect(url_for('admin_ordenes_compra'))
+    if po['status'] == 'recibido':
+        flash('No se puede cancelar una orden ya recibida. Haz un ajuste manual en inventario si es necesario.', 'error')
+        return redirect(url_for('admin_ordenes_compra'))
+    execute_db("UPDATE purchase_orders SET status='cancelado' WHERE id=?", (po_id,))
+    flash(f'Orden {po["po_number"]} cancelada.', 'success')
     return redirect(url_for('admin_ordenes_compra'))
 
 

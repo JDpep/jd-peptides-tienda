@@ -471,7 +471,7 @@ PRODUCTS_SEED = [
         'benefits': 'Potente efecto anabólico|Favorece el crecimiento muscular|Estimula la pérdida de grasa|Apoya la recuperación de lesiones',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'igf1_main.jpeg',
+        'image_path': 'igf1_lr3.jpeg',
     },
     {
         'sku': 'JDP-KPV',
@@ -483,7 +483,7 @@ PRODUCTS_SEED = [
         'benefits': 'Reduce la inflamación|Protege y repara tejidos|Alivia el dolor y molestias|Favorece la barrera intestinal',
         'stock': 30,
         'low_stock_alert': 5,
-        'image_path': 'kpv_main.jpeg',
+        'image_path': 'kpv.jpeg',
     },
     {
         'sku': 'JDP-MOTSC',
@@ -495,7 +495,7 @@ PRODUCTS_SEED = [
         'benefits': 'Incrementa la sensibilidad a la insulina|Mejora el metabolismo celular|Favorece energía y vitalidad|Apoyo en pérdida de grasa',
         'stock': 20,
         'low_stock_alert': 5,
-        'image_path': 'motsc_main.jpeg',
+        'image_path': 'mots_c.jpeg',
     },
     {
         'sku': 'JDP-BPC157',
@@ -507,7 +507,7 @@ PRODUCTS_SEED = [
         'benefits': 'Regenera tejidos intestinales y úlceras|Favorece tendones y ligamentos|Potente efecto reparador sistémico|Ayuda en condiciones inflamatorias',
         'stock': 35,
         'low_stock_alert': 5,
-        'image_path': 'bpc157_main.jpeg',
+        'image_path': 'bpc157.jpeg',
     },
     {
         'sku': 'JDP-TB500',
@@ -519,7 +519,7 @@ PRODUCTS_SEED = [
         'benefits': 'Acelera la recuperación de lesiones|Reparación muscular y tendinosa|Favorece la cicatrización|Mejora la flexibilidad y movilidad|Útil en rehabilitación deportiva',
         'stock': 28,
         'low_stock_alert': 5,
-        'image_path': 'tb500_main.jpeg',
+        'image_path': 'tb500.jpeg',
     },
     {
         'sku': 'JDP-GHKCU',
@@ -531,7 +531,7 @@ PRODUCTS_SEED = [
         'benefits': 'Efecto anti-envejecimiento notable|Estimula el crecimiento capilar|Mejora la cicatrización de la piel|Reduce la inflamación en tejidos|Potencia la regeneración celular',
         'stock': 40,
         'low_stock_alert': 8,
-        'image_path': 'ghkcu_main.jpeg',
+        'image_path': 'ghk_cu.jpeg',
     },
     {
         'sku': 'JDP-RETA',
@@ -543,7 +543,7 @@ PRODUCTS_SEED = [
         'benefits': 'Ayuda en la Pérdida de Peso|Mejora el Control del Apetito|Reduce los Niveles de Azúcar en Sangre|Promueve Buena Salud Metabólica',
         'stock': 15,
         'low_stock_alert': 3,
-        'image_path': 'retatrutide_main.jpeg',
+        'image_path': 'retatrutide.jpeg',
     },
     {
         'sku': 'JDP-DSIP',
@@ -555,7 +555,7 @@ PRODUCTS_SEED = [
         'benefits': 'Mejora la calidad del sueño|Reduce el estrés oxidativo|Regulación del ritmo circadiano|Efectos neuroprotectores',
         'stock': 22,
         'low_stock_alert': 5,
-        'image_path': 'dsip_main.png',
+        'image_path': 'dsip.png',
     },
     {
         'sku': 'JDP-TA1',
@@ -567,7 +567,7 @@ PRODUCTS_SEED = [
         'benefits': 'Fortalece el sistema inmune|Acción antiviral y antibacteriana|Apoyo en enfermedades autoinmunes|Estimula células T y NK',
         'stock': 18,
         'low_stock_alert': 4,
-        'image_path': 'thymosin_main.png',
+        'image_path': 'thymosin_alpha1.png',
     },
     {
         'sku': 'JDP-IPA',
@@ -579,7 +579,7 @@ PRODUCTS_SEED = [
         'benefits': 'Estimula la hormona de crecimiento|Mejora la composición corporal|Favorece la recuperación muscular|Mejora el sueño profundo',
         'stock': 32,
         'low_stock_alert': 6,
-        'image_path': 'ipamorelin_main.png',
+        'image_path': 'ipamorelin.png',
     },
     {
         'sku': 'JDP-TESA',
@@ -591,7 +591,7 @@ PRODUCTS_SEED = [
         'benefits': 'Estimula la hormona de crecimiento|Reduce grasa visceral|Mejora la composición corporal|Efectos neuroprotectores',
         'stock': 3,
         'low_stock_alert': 5,
-        'image_path': 'tesamorelin_main.png',
+        'image_path': 'tesamorelin.png',
     },
 ]
 

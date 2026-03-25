@@ -1319,6 +1319,20 @@ def admin_cancelar_oc(po_id):
 
 
 # ---------------------------------------------------------------------------
+# Páginas informativas
+# ---------------------------------------------------------------------------
+
+@app.route('/sobre-nosotros')
+def sobre_nosotros():
+    return render_template('sobre_nosotros.html')
+
+
+@app.route('/info')
+def info():
+    return render_template('info.html')
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 

@@ -635,11 +635,11 @@ def init_db():
             )
         db.commit()
     else:
-        # Migration: restore image_path, description, benefits from seed if missing/empty
+        # Migration: always restore image_path from seed (ensures images show after deploys)
         for p in PRODUCTS_SEED:
             if p.get('image_path'):
                 db.execute(
-                    "UPDATE products SET image_path=? WHERE sku=? AND (image_path IS NULL OR image_path='')",
+                    "UPDATE products SET image_path=? WHERE sku=?",
                     (p['image_path'], p['sku'])
                 )
             if p.get('description'):

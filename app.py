@@ -289,35 +289,45 @@ def send_status_email(order, new_status, new_payment):
         print(f"[Email] Error enviando notificación de estado: {e}")
 
 
+def _do_send_emails(smtp, order, items):
+    admin_html = _admin_html(order, items)
+    for recipient in EMAIL_NOTIFY:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f'⚡ Nueva Orden JD Peptides — {order["order_number"]}'
+        msg['From']    = f'JD Peptides <{EMAIL_SENDER}>'
+        msg['To']      = recipient
+        msg.attach(MIMEText(admin_html, 'html'))
+        smtp.sendmail(EMAIL_SENDER, recipient, msg.as_string())
+    customer_html = _customer_html(order, items)
+    msg2 = MIMEMultipart('alternative')
+    msg2['Subject'] = f'✅ Confirmación de tu pedido — {order["order_number"]}'
+    msg2['From']    = f'JD Peptides <{EMAIL_SENDER}>'
+    msg2['To']      = order['customer_email']
+    msg2.attach(MIMEText(customer_html, 'html'))
+    smtp.sendmail(EMAIL_SENDER, order['customer_email'], msg2.as_string())
+    print(f"[Email] OK — admins {EMAIL_NOTIFY} + cliente {order['customer_email']}")
+
+
 def send_order_email(order, items):
-    """Envía notificación a admins y confirmación al cliente."""
-    context = ssl.create_default_context()
+    """Envía notificación a admins y confirmación al cliente. Intenta 587 luego 465."""
+    # Intento 1: puerto 587 STARTTLS (más compatible con cloud providers)
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=20) as smtp:
+            smtp.ehlo()
+            smtp.starttls(context=ssl.create_default_context())
+            smtp.ehlo()
             smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
-
-            # 1) Email interno a los 2 admins
-            admin_html = _admin_html(order, items)
-            for recipient in EMAIL_NOTIFY:
-                msg = MIMEMultipart('alternative')
-                msg['Subject'] = f'⚡ Nueva Orden JD Peptides — {order["order_number"]}'
-                msg['From']    = f'JD Peptides <{EMAIL_SENDER}>'
-                msg['To']      = recipient
-                msg.attach(MIMEText(admin_html, 'html'))
-                smtp.sendmail(EMAIL_SENDER, recipient, msg.as_string())
-
-            # 2) Email de confirmación al cliente
-            customer_html = _customer_html(order, items)
-            msg2 = MIMEMultipart('alternative')
-            msg2['Subject'] = f'✓ Confirmación de tu pedido JD Peptides — {order["order_number"]}'
-            msg2['From']    = f'JD Peptides <{EMAIL_SENDER}>'
-            msg2['To']      = order['customer_email']
-            msg2.attach(MIMEText(customer_html, 'html'))
-            smtp.sendmail(EMAIL_SENDER, order['customer_email'], msg2.as_string())
-
-        print(f"[Email] Enviado a admins {EMAIL_NOTIFY} y al cliente {order['customer_email']}")
-    except Exception as e:
-        print(f"[Email] Error: {e}")
+            _do_send_emails(smtp, order, items)
+        return
+    except Exception as e1:
+        print(f"[Email] Puerto 587 falló: {e1} — intentando 465")
+    # Intento 2: puerto 465 SSL
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=ssl.create_default_context(), timeout=20) as smtp:
+            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            _do_send_emails(smtp, order, items)
+    except Exception as e2:
+        print(f"[Email] Error definitivo: {e2}")
 
 # ---------------------------------------------------------------------------
 # Database helpers
@@ -964,6 +974,20 @@ def admin_login():
         else:
             flash('Usuario o contraseña incorrectos.', 'error')
     return render_template('admin/login.html')
+
+
+@app.route('/admin/test-email')
+@admin_required
+def admin_test_email():
+    """Envía un email de prueba para verificar la configuración SMTP."""
+    fake_order = {'order_number': 'JD-TEST-000', 'created_at': datetime.now().isoformat(),
+                  'customer_name': 'Test', 'customer_email': EMAIL_NOTIFY[0],
+                  'customer_phone': '000', 'shipping_address': 'Test',
+                  'payment_method': 'transferencia', 'total': 0, 'status': 'pendiente', 'notes': ''}
+    import threading
+    threading.Thread(target=send_order_email, args=(fake_order, []), daemon=True).start()
+    flash('Email de prueba enviado — revisa los logs y tu bandeja.', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 
 @app.route('/admin/logout')

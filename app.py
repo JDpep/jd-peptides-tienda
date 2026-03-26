@@ -979,14 +979,41 @@ def admin_login():
 @app.route('/admin/test-email')
 @admin_required
 def admin_test_email():
-    """Envía un email de prueba para verificar la configuración SMTP."""
-    fake_order = {'order_number': 'JD-TEST-000', 'created_at': datetime.now().isoformat(),
-                  'customer_name': 'Test', 'customer_email': EMAIL_NOTIFY[0],
-                  'customer_phone': '000', 'shipping_address': 'Test',
-                  'payment_method': 'transferencia', 'total': 0, 'status': 'pendiente', 'notes': ''}
-    import threading
-    threading.Thread(target=send_order_email, args=(fake_order, []), daemon=True).start()
-    flash('Email de prueba enviado — revisa los logs y tu bandeja.', 'success')
+    """Prueba SMTP sincrónico y muestra el error exacto."""
+    error587 = error465 = None
+    success = False
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as smtp:
+            smtp.ehlo()
+            smtp.starttls(context=ssl.create_default_context())
+            smtp.ehlo()
+            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = 'Test email JD Peptides'
+            msg['From'] = EMAIL_SENDER
+            msg['To'] = EMAIL_NOTIFY[0]
+            msg.attach(MIMEText('<p>Email de prueba funcionando ✅</p>', 'html'))
+            smtp.sendmail(EMAIL_SENDER, EMAIL_NOTIFY[0], msg.as_string())
+            success = True
+    except Exception as e:
+        error587 = str(e)
+    if not success:
+        try:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=ssl.create_default_context(), timeout=15) as smtp:
+                smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = 'Test email JD Peptides'
+                msg['From'] = EMAIL_SENDER
+                msg['To'] = EMAIL_NOTIFY[0]
+                msg.attach(MIMEText('<p>Email de prueba funcionando ✅</p>', 'html'))
+                smtp.sendmail(EMAIL_SENDER, EMAIL_NOTIFY[0], msg.as_string())
+                success = True
+        except Exception as e:
+            error465 = str(e)
+    if success:
+        flash(f'✅ Email enviado a {EMAIL_NOTIFY[0]} — revisa tu bandeja (y spam).', 'success')
+    else:
+        flash(f'❌ Puerto 587: {error587} | Puerto 465: {error465}', 'error')
     return redirect(url_for('admin_dashboard'))
 
 

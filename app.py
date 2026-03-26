@@ -936,9 +936,11 @@ def procesar_checkout():
     order = query_db("SELECT * FROM orders WHERE id=?", (order_id,), one=True)
     items = query_db("SELECT * FROM order_items WHERE order_id=?", (order_id,))
 
-    # Enviar notificación por email (en background para no bloquear la respuesta)
-    import threading
-    threading.Thread(target=send_order_email, args=(dict(order), [dict(i) for i in items]), daemon=True).start()
+    # Enviar email de confirmación (sincrónico para garantizar envío en Railway)
+    try:
+        send_order_email(dict(order), [dict(i) for i in items])
+    except Exception as e:
+        print(f"[Email] Error al enviar: {e}")
 
     return render_template('pedido_exitoso.html', order=order, items=items)
 

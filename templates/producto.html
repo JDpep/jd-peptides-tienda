@@ -37,10 +37,9 @@
               {% for img in images %}
               <img src="/media/{{ img['filename'] }}"
                    alt="{{ product['name'] }}"
-                   onclick="document.getElementById('gallery-main-img').src=this.src"
-                   style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:2px solid {% if loop.first %}var(--gold){% else %}var(--border){% endif %};cursor:pointer;transition:border-color 0.2s"
-                   onmouseover="this.style.borderColor='var(--gold)'"
-                   onmouseout="this.style.borderColor='var(--border)'">
+                   class="gallery-thumb {% if loop.first %}active{% endif %}"
+                   data-src="/media/{{ img['filename'] }}"
+                   style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:2px solid {% if loop.first %}var(--gold){% else %}var(--border){% endif %};cursor:pointer;transition:border-color 0.2s">
               {% endfor %}
             </div>
             {% endif %}
@@ -73,20 +72,20 @@
         </div>
         {% endif %}
 
-        <!-- Stock badge -->
-        {% if product['stock'] > product['low_stock_alert'] %}
-          <div style="margin-top:1rem;display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;color:var(--green)">
-            <span>●</span> En stock ({{ product['stock'] }} unidades disponibles)
-          </div>
-        {% elif product['stock'] > 0 %}
-          <div style="margin-top:1rem;display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;color:var(--orange)">
-            <span>●</span> Stock bajo ({{ product['stock'] }} unidades)
-          </div>
-        {% else %}
-          <div style="margin-top:1rem;display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;color:var(--red)">
-            <span>●</span> Sin stock
-          </div>
-        {% endif %}
+        <!-- Stock badge — updated in real time via SSE -->
+        <div style="margin-top:1rem;display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;
+                    color:{% if product['stock'] > product['low_stock_alert'] %}var(--green){% elif product['stock'] > 0 %}var(--orange){% else %}var(--red){% endif %}">
+          <span>●</span>
+          <span id="product-stock-badge-{{ product['id'] }}">
+            {% if product['stock'] > product['low_stock_alert'] %}
+              En stock ({{ product['stock'] }} unidades disponibles)
+            {% elif product['stock'] > 0 %}
+              Stock bajo ({{ product['stock'] }} unidades)
+            {% else %}
+              Sin stock
+            {% endif %}
+          </span>
+        </div>
       </div>
 
       <!-- Info -->

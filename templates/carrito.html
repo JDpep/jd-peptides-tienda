@@ -30,7 +30,7 @@
                 </thead>
                 <tbody>
                   {% for pid, item in cart.items() %}
-                    <tr id="cart-row-{{ pid }}">
+                    <tr id="cart-row-{{ pid }}" data-pid="{{ pid }}">
                       <td>
                         <div class="cart-product-name">{{ item['name'] }}</div>
                         <div class="cart-product-dose">{{ item['dose'] }} · {{ item['sku'] }}</div>

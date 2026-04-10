@@ -28,26 +28,38 @@
           class="form-control"
           placeholder="Buscar péptido…"
           value="{{ search }}"
+          autocomplete="off"
         >
       </div>
 
       <!-- Category pills -->
       <div class="category-pills" style="margin-bottom:0;flex:1">
-        <a href="{{ url_for('catalogo') }}" class="pill {% if not current_category %}active{% endif %}">Todos</a>
+        <a href="{{ url_for('catalogo') }}"
+           class="pill category-pill {% if not current_category %}active{% endif %}"
+           data-category="">Todos</a>
         {% for cat in categories %}
-          <a href="{{ url_for('catalogo', categoria=cat['category']) }}" class="pill {% if current_category == cat['category'] %}active{% endif %}">
+          <a href="{{ url_for('catalogo', categoria=cat['category']) }}"
+             class="pill category-pill {% if current_category == cat['category'] %}active{% endif %}"
+             data-category="{{ cat['category'] }}">
             {{ cat['category'] }}
           </a>
         {% endfor %}
       </div>
     </div>
 
-    <!-- Grid -->
+    <!-- Product count -->
+    <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem">
+      <span id="catalog-count">{{ products|length }} producto{{ 's' if products|length != 1 else '' }}</span>
+      {% if current_category %} en <strong style="color:var(--gold)">{{ current_category }}</strong>{% endif %}
+    </p>
+
+    <!-- Grid (AJAX target) -->
+    <div id="catalog-grid">
     {% if products %}
       <div class="products-grid">
         {% for p in products %}
           {% set benefits = p['benefits'].split('|') if p['benefits'] else [] %}
-          <div class="product-card">
+          <div class="product-card" data-product-id="{{ p['id'] }}">
             <a href="{{ url_for('producto', pid=p['id']) }}" style="text-decoration:none;display:contents">
               <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
                 <div class="product-visual-cat">
@@ -81,13 +93,17 @@
               {% if benefits %}
                 <p style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">{{ benefits[0] }}</p>
               {% endif %}
-              <div class="product-price">${{ "%.2f"|format(p['price']) }}</div>
+              <div class="product-price" style="color:var(--gold)">${{ "%.2f"|format(p['price']) }}</div>
             </div>
             <div class="product-footer">
               <a href="{{ url_for('producto', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver detalle</a>
-              <button class="btn btn-gold btn-sm add-to-cart-btn" data-product-id="{{ p['id'] }}">
-                + Agregar
-              </button>
+              {% if p['stock'] > 0 %}
+                <button class="btn btn-gold btn-sm add-to-cart-btn" data-product-id="{{ p['id'] }}">
+                  + Agregar
+                </button>
+              {% else %}
+                <span style="font-size:0.78rem;color:var(--red);font-weight:600">Sin stock</span>
+              {% endif %}
             </div>
           </div>
         {% endfor %}
@@ -101,6 +117,7 @@
         <a href="{{ url_for('catalogo') }}" class="btn btn-outline">Ver todos los productos</a>
       </div>
     {% endif %}
+    </div><!-- #catalog-grid -->
 
     <!-- Disclaimer -->
     <div class="disclaimer-banner" style="margin-top:3rem">

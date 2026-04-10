@@ -146,5 +146,55 @@
 
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   {% block extra_js %}{% endblock %}
+
+  <!-- Real-time store sync via SSE -->
+  <script>
+  (function() {
+    if (!window.EventSource) return;
+    var es = new EventSource('/events');
+
+    es.addEventListener('product_updated', function(e) {
+      var d = JSON.parse(e.data);
+      // Remove/hide deactivated product cards
+      if (d.active === 0) {
+        document.querySelectorAll('.product-card[data-product-id="' + d.id + '"]').forEach(function(card) {
+          card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.94)';
+          setTimeout(function() { card.remove(); }, 520);
+        });
+      }
+      // Update price displays
+      if (d.price !== undefined) {
+        document.querySelectorAll('[data-product-id="' + d.id + '"] .product-price').forEach(function(el) {
+          el.textContent = '$' + parseFloat(d.price).toFixed(2);
+          el.classList.add('price-updated');
+          setTimeout(function() { el.classList.remove('price-updated'); }, 1400);
+        });
+      }
+      // Update stock badge on product detail page
+      if (d.stock !== undefined) {
+        var stockEl = document.querySelector('#product-stock-badge-' + d.id);
+        if (stockEl) {
+          stockEl.textContent = d.stock > 0 ? d.stock + ' disponibles' : 'Sin stock';
+          stockEl.classList.add('stock-flash');
+          setTimeout(function() { stockEl.classList.remove('stock-flash'); }, 1000);
+        }
+      }
+    });
+
+    es.addEventListener('stock_updated', function(e) {
+      var d = JSON.parse(e.data);
+      var el = document.querySelector('#product-stock-badge-' + d.id);
+      if (el) {
+        el.textContent = d.stock > 0 ? d.stock + ' disponibles' : 'Sin stock';
+        el.classList.add('stock-flash');
+        setTimeout(function() { el.classList.remove('stock-flash'); }, 1000);
+      }
+    });
+
+    es.onerror = function() { /* Browser auto-reconnects */ };
+  })();
+  </script>
 </body>
 </html>

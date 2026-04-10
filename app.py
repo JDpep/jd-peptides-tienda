@@ -1,20 +1,73 @@
 import os
+import csv
+import io
 import sqlite3
 import json
 import uuid
 import smtplib
 import ssl
+import threading
+import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, date
 from functools import wraps
 from flask import (Flask, render_template, request, redirect, url_for,
-                   session, flash, jsonify, g, send_from_directory)
+                   session, flash, jsonify, g, send_from_directory,
+                   Response, stream_with_context, make_response)
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'jdp_secret_key_2024_ultra_secure'
+app.secret_key = os.environ.get('SECRET_KEY', 'jdp_secret_key_2024_ultra_secure')
+
+# ---------------------------------------------------------------------------
+# Server-Sent Events bus — broadcasts real-time updates to connected clients
+# ---------------------------------------------------------------------------
+
+class SSEBus:
+    """Thread-safe in-process SSE message broadcaster.
+    Works correctly with a single gunicorn worker (--workers=1 --threads=N)."""
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._listeners = []
+
+    def subscribe(self):
+        q = []
+        with self._lock:
+            self._listeners.append(q)
+        return q
+
+    def unsubscribe(self, q):
+        with self._lock:
+            if q in self._listeners:
+                self._listeners.remove(q)
+
+    def publish(self, event_type, data):
+        payload = f'event: {event_type}\ndata: {json.dumps(data)}\n\n'
+        with self._lock:
+            for q in self._listeners:
+                q.append(payload)
+
+sse_bus = SSEBus()
+
+
+# ---------------------------------------------------------------------------
+# Input validation helpers
+# ---------------------------------------------------------------------------
+
+def safe_float(val, default=0.0):
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return default
+
+
+def safe_int(val, default=0):
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return default
 
 DATABASE = os.environ.get('DATABASE_PATH', os.path.join(os.path.dirname(__file__), 'database', 'jdp.db'))
 
@@ -306,6 +359,136 @@ def _do_send_emails(smtp, order, items):
     msg2.attach(MIMEText(customer_html, 'html'))
     smtp.sendmail(EMAIL_SENDER, order['customer_email'], msg2.as_string())
     print(f"[Email] OK — admins {EMAIL_NOTIFY} + cliente {order['customer_email']}")
+
+
+def send_low_stock_alert(product):
+    """Envía alerta de stock bajo a los admins."""
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff">
+      <div style="background:#0d0d0d;padding:24px 32px;text-align:center">
+        <h1 style="margin:0;color:#c9a227;font-size:20px;letter-spacing:2px">JD PEPTIDES</h1>
+        <p style="margin:6px 0 0;color:#999;font-size:12px">Alerta de Inventario</p>
+      </div>
+      <div style="background:#f97316;padding:14px 32px;text-align:center">
+        <span style="color:#fff;font-weight:700;font-size:16px">⚠️ Stock Bajo Detectado</span>
+      </div>
+      <div style="padding:28px 32px">
+        <p style="font-size:15px;color:#333;margin:0 0 20px">
+          El siguiente producto ha alcanzado el umbral mínimo de stock:
+        </p>
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:20px;margin-bottom:24px">
+          <table style="width:100%;border-collapse:collapse;font-size:14px">
+            <tr><td style="padding:6px 0;color:#666;width:160px">Producto</td>
+                <td style="padding:6px 0;font-weight:700;color:#111">{product['name']}</td></tr>
+            <tr><td style="padding:6px 0;color:#666">SKU</td>
+                <td style="padding:6px 0;color:#555;font-family:monospace">{product['sku']}</td></tr>
+            <tr><td style="padding:6px 0;color:#666">Stock actual</td>
+                <td style="padding:6px 0;font-weight:700;color:#ef4444;font-size:18px">{product['stock']} unidades</td></tr>
+            <tr><td style="padding:6px 0;color:#666">Umbral alerta</td>
+                <td style="padding:6px 0;color:#f97316">{product['low_stock_alert']} unidades</td></tr>
+            <tr><td style="padding:6px 0;color:#666">Categoría</td>
+                <td style="padding:6px 0;color:#555">{product.get('category', '')}</td></tr>
+          </table>
+        </div>
+        <p style="font-size:13px;color:#777;margin:0">
+          Considera crear una nueva orden de compra para reponer este producto.
+        </p>
+      </div>
+      <div style="background:#f9f9f9;padding:14px 32px;text-align:center;border-top:1px solid #eee">
+        <p style="margin:0;color:#999;font-size:11px">JD Peptides · Panel Admin · Alerta automática de inventario</p>
+      </div>
+    </div>"""
+
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as smtp:
+            smtp.ehlo()
+            smtp.starttls(context=ssl.create_default_context())
+            smtp.ehlo()
+            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = f'⚠️ Stock bajo: {product["name"]} ({product["stock"]} uds) — JD Peptides'
+            msg['From'] = f'JD Peptides <{EMAIL_SENDER}>'
+            for recipient in EMAIL_NOTIFY:
+                msg['To'] = recipient
+                msg.attach(MIMEText(html, 'html'))
+                smtp.sendmail(EMAIL_SENDER, recipient, msg.as_string())
+        print(f"[Email] Alerta stock bajo enviada: {product['name']}")
+    except Exception as e:
+        print(f"[Email] Alerta stock bajo falló (587): {e}")
+        try:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=ssl.create_default_context(), timeout=15) as smtp:
+                smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = f'⚠️ Stock bajo: {product["name"]} ({product["stock"]} uds) — JD Peptides'
+                msg['From'] = f'JD Peptides <{EMAIL_SENDER}>'
+                for recipient in EMAIL_NOTIFY:
+                    msg['To'] = recipient
+                    msg.attach(MIMEText(html, 'html'))
+                    smtp.sendmail(EMAIL_SENDER, recipient, msg.as_string())
+        except Exception as e2:
+            print(f"[Email] Alerta stock bajo error definitivo: {e2}")
+
+
+def send_po_received_email(po, items):
+    """Envía confirmación de OC recibida a los admins."""
+    rows = ''.join(f"""
+        <tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee">{i.get('product_name', '')}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center">{i.get('quantity', 0)}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">${i.get('unit_cost', 0):.2f}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:700">${i.get('subtotal', 0):.2f}</td>
+        </tr>""" for i in items)
+
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff">
+      <div style="background:#0d0d0d;padding:24px 32px;text-align:center">
+        <h1 style="margin:0;color:#c9a227;font-size:20px;letter-spacing:2px">JD PEPTIDES</h1>
+        <p style="margin:6px 0 0;color:#999;font-size:12px">Gestión de Inventario</p>
+      </div>
+      <div style="background:#10b981;padding:14px 32px;text-align:center">
+        <span style="color:#fff;font-weight:700;font-size:16px">✅ Orden de Compra Recibida</span>
+      </div>
+      <div style="padding:28px 32px">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px">
+          <tr><td style="padding:5px 0;color:#666;width:140px">OC Número</td>
+              <td style="padding:5px 0;font-weight:700;color:#111;font-family:monospace">{po['po_number']}</td></tr>
+          <tr><td style="padding:5px 0;color:#666">Proveedor</td>
+              <td style="padding:5px 0;color:#111">{po['supplier']}</td></tr>
+          <tr><td style="padding:5px 0;color:#666">Total</td>
+              <td style="padding:5px 0;font-weight:700;color:#c9a227">${po['total']:.2f}</td></tr>
+        </table>
+        <h3 style="margin:0 0 12px;color:#0d0d0d;font-size:13px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #c9a227;padding-bottom:8px">Productos Recibidos</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#f5f5f5">
+            <th style="padding:10px 12px;text-align:left">Producto</th>
+            <th style="padding:10px 12px;text-align:center">Cant.</th>
+            <th style="padding:10px 12px;text-align:right">Costo Unit.</th>
+            <th style="padding:10px 12px;text-align:right">Subtotal</th>
+          </tr></thead>
+          <tbody>{rows}</tbody>
+        </table>
+      </div>
+      <div style="background:#f9f9f9;padding:14px 32px;text-align:center;border-top:1px solid #eee">
+        <p style="margin:0;color:#999;font-size:11px">JD Peptides · Panel Admin · Notificación automática</p>
+      </div>
+    </div>"""
+
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as smtp:
+            smtp.ehlo()
+            smtp.starttls(context=ssl.create_default_context())
+            smtp.ehlo()
+            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            for recipient in EMAIL_NOTIFY:
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = f'✅ OC Recibida: {po["po_number"]} — {po["supplier"]}'
+                msg['From'] = f'JD Peptides <{EMAIL_SENDER}>'
+                msg['To'] = recipient
+                msg.attach(MIMEText(html, 'html'))
+                smtp.sendmail(EMAIL_SENDER, recipient, msg.as_string())
+        print(f"[Email] Notificación OC recibida enviada: {po['po_number']}")
+    except Exception as e:
+        print(f"[Email] Notificación OC recibida falló: {e}")
 
 
 def send_order_email(order, items):
@@ -725,6 +908,40 @@ app.jinja_env.globals['cart_count'] = cart_count
 
 
 # ---------------------------------------------------------------------------
+# Server-Sent Events endpoint
+# ---------------------------------------------------------------------------
+
+@app.route('/events')
+def sse_stream():
+    """Real-time event stream for the store and admin panel."""
+    def generate():
+        q = sse_bus.subscribe()
+        try:
+            last_ping = time.time()
+            while True:
+                if q:
+                    yield q.pop(0)
+                else:
+                    if time.time() - last_ping > 25:
+                        yield ': keep-alive\n\n'
+                        last_ping = time.time()
+                    time.sleep(0.1)
+        except GeneratorExit:
+            pass
+        finally:
+            sse_bus.unsubscribe(q)
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
 # Media serving — uploaded images (persistent volume or static/img fallback)
 # ---------------------------------------------------------------------------
 
@@ -777,6 +994,69 @@ def catalogo():
                            current_category=category, search=search)
 
 
+@app.route('/api/productos')
+def api_productos():
+    """AJAX endpoint — returns filtered products as JSON for catalog search."""
+    category = request.args.get('categoria', '')
+    search = request.args.get('q', '')
+    if category and search:
+        products = query_db(
+            "SELECT * FROM products WHERE active=1 AND category=? AND (name LIKE ? OR description LIKE ?) ORDER BY name",
+            (category, f'%{search}%', f'%{search}%')
+        )
+    elif category:
+        products = query_db(
+            "SELECT * FROM products WHERE active=1 AND category=? ORDER BY name",
+            (category,)
+        )
+    elif search:
+        products = query_db(
+            "SELECT * FROM products WHERE active=1 AND (name LIKE ? OR description LIKE ?) ORDER BY name",
+            (f'%{search}%', f'%{search}%')
+        )
+    else:
+        products = query_db("SELECT * FROM products WHERE active=1 ORDER BY name")
+
+    SKU_IMAGE_MAP = {
+        'JDP-IGF1': 'igf1_lr3.jpeg', 'JDP-KPV': 'kpv.jpeg',
+        'JDP-MOTSC': 'mots_c.jpeg', 'JDP-BPC157': 'bpc157.jpeg',
+        'JDP-TB500': 'tb500.jpeg', 'JDP-GHKCU': 'ghk_cu.jpeg',
+        'JDP-RETA': 'retatrutide.jpeg', 'JDP-DSIP': 'dsip.png',
+        'JDP-TA1': 'thymosin_alpha1.png', 'JDP-IPA': 'ipamorelin.png',
+        'JDP-TESA': 'tesamorelin.png',
+    }
+    result = []
+    for p in products:
+        d = dict(p)
+        img = d.get('image_path') or SKU_IMAGE_MAP.get(d.get('sku', ''), '')
+        d['image_url'] = f'/media/{img}' if img else ''
+        result.append(d)
+    return jsonify({'products': result, 'count': len(result)})
+
+
+@app.route('/api/carrito/actualizar', methods=['POST'])
+def api_actualizar_carrito():
+    """AJAX cart update — update single item quantity without page reload."""
+    data = request.get_json() or {}
+    pid = str(data.get('product_id', ''))
+    qty = safe_int(data.get('quantity', 1), 1)
+    cart = get_cart()
+    if qty <= 0:
+        cart.pop(pid, None)
+    elif pid in cart:
+        cart[pid]['quantity'] = qty
+    save_cart(cart)
+    subtotal = cart_total()
+    shipping = 0 if subtotal >= 200 else 15
+    return jsonify({
+        'success': True,
+        'cart_count': cart_count(),
+        'subtotal': subtotal,
+        'shipping': shipping,
+        'total': subtotal + shipping,
+    })
+
+
 @app.route('/producto/<int:pid>')
 def producto(pid):
     product = query_db("SELECT * FROM products WHERE id=? AND active=1", (pid,), one=True)
@@ -805,6 +1085,8 @@ def agregar_carrito():
     product = query_db("SELECT * FROM products WHERE id=? AND active=1", (pid,), one=True)
     if not product:
         return jsonify({'success': False, 'message': 'Producto no encontrado'}), 404
+    if product['stock'] <= 0:
+        return jsonify({'success': False, 'message': 'Producto sin stock disponible'}), 400
 
     cart = get_cart()
     if pid in cart:
@@ -899,23 +1181,16 @@ def procesar_checkout():
     shipping = 0 if subtotal >= 200 else 15
     total = subtotal + shipping
 
-    # Generar número consecutivo: JD-DD/MM/YY-NNNN (inicia en 420)
-    last_order = query_db("SELECT order_number FROM orders ORDER BY id DESC LIMIT 1", one=True)
-    next_seq = 420
-    if last_order:
-        try:
-            next_seq = int(last_order['order_number'].rsplit('-', 1)[-1]) + 1
-        except (ValueError, IndexError):
-            next_seq = 420
-    order_number = f'JD-{datetime.now().strftime("%d/%m/%y")}-{next_seq}'
-
+    # Generar número de orden usando el ID del INSERT para evitar race conditions
     order_id = execute_db(
         """INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
            address, city, state, zip_code, payment_method, notes, subtotal, shipping, total)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (order_number, name, email, phone, address, city, state, zip_code,
+        ('TEMP', name, email, phone, address, city, state, zip_code,
          payment_method, notes, subtotal, shipping, total)
     )
+    order_number = f'JD-{datetime.now().strftime("%d/%m/%y")}-{419 + order_id}'
+    execute_db("UPDATE orders SET order_number=? WHERE id=?", (order_number, order_id))
 
     for pid, item in cart.items():
         execute_db(
@@ -931,6 +1206,23 @@ def procesar_checkout():
             "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'salida', ?, 'Venta', ?)",
             (item['id'], item['quantity'], order_number)
         )
+        # Check for low stock alert
+        updated_prod = query_db("SELECT * FROM products WHERE id=?", (item['id'],), one=True)
+        if updated_prod:
+            sse_bus.publish('stock_updated', {'id': item['id'], 'stock': updated_prod['stock']})
+            if updated_prod['stock'] <= updated_prod['low_stock_alert']:
+                try:
+                    send_low_stock_alert(dict(updated_prod))
+                except Exception as e:
+                    print(f"[Email] Alerta stock bajo falló: {e}")
+
+    # Notify admin panel in real-time
+    sse_bus.publish('new_order', {
+        'order_number': order_number,
+        'customer_name': name,
+        'total': total,
+        'time': datetime.now().strftime('%H:%M'),
+    })
 
     session.pop('cart', None)
     order = query_db("SELECT * FROM orders WHERE id=?", (order_id,), one=True)
@@ -1183,6 +1475,37 @@ def admin_dashboard():
             'margen': venta - costo,
         })
 
+    # ── Ventas últimos 7 días ──────────────────────────────────────────────
+    sales_7d_raw = query_db("""
+        SELECT date(created_at) as day,
+               COUNT(*) as order_count,
+               COALESCE(SUM(total), 0) as day_total
+        FROM orders
+        WHERE date(created_at) >= date('now', '-6 days')
+          AND status != 'cancelado'
+        GROUP BY date(created_at)
+        ORDER BY day ASC
+    """)
+    # Ensure all 7 days are present (fill gaps with 0)
+    from datetime import timedelta
+    sales_7d = []
+    for i in range(6, -1, -1):
+        d = (date.today() - timedelta(days=i)).isoformat()
+        found = next((r for r in sales_7d_raw if r['day'] == d), None)
+        sales_7d.append({
+            'day': d,
+            'order_count': found['order_count'] if found else 0,
+            'day_total': round(found['day_total'], 2) if found else 0,
+        })
+
+    # ── Pipeline de estados ───────────────────────────────────────────────
+    status_rows = query_db("""
+        SELECT status, COUNT(*) as count FROM orders
+        WHERE status != 'cancelado'
+        GROUP BY status
+    """)
+    status_counts = {r['status']: r['count'] for r in status_rows}
+
     return render_template('admin/dashboard.html',
                            total_sales=total_sales,
                            orders_today=orders_today,
@@ -1191,7 +1514,9 @@ def admin_dashboard():
                            recent_orders=recent_orders,
                            low_stock_products=low_stock_products,
                            comparativo=comparativo,
-                           mes_actual=mes_actual)
+                           mes_actual=mes_actual,
+                           sales_7d=sales_7d,
+                           status_counts=status_counts)
 
 
 @app.route('/admin/productos')
@@ -1209,9 +1534,9 @@ def admin_nuevo_producto():
         name = request.form.get('name', '').strip()
         category = request.form.get('category', '').strip()
         dose = request.form.get('dose', '').strip()
-        price = float(request.form.get('price', 0))
-        stock = int(request.form.get('stock', 0))
-        low_stock_alert = int(request.form.get('low_stock_alert', 5))
+        price = safe_float(request.form.get('price', 0))
+        stock = safe_int(request.form.get('stock', 0))
+        low_stock_alert = safe_int(request.form.get('low_stock_alert', 5), 5)
         description = request.form.get('description', '').strip()
         benefits_raw = request.form.get('benefits', '').strip()
         benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
@@ -1256,9 +1581,9 @@ def admin_editar_producto(pid):
         name = request.form.get('name', '').strip()
         category = request.form.get('category', '').strip()
         dose = request.form.get('dose', '').strip()
-        price = float(request.form.get('price', 0))
-        stock = int(request.form.get('stock', 0))
-        low_stock_alert = int(request.form.get('low_stock_alert', 5))
+        price = safe_float(request.form.get('price', 0))
+        stock = safe_int(request.form.get('stock', 0))
+        low_stock_alert = safe_int(request.form.get('low_stock_alert', 5), 5)
         description = request.form.get('description', '').strip()
         benefits_raw = request.form.get('benefits', '').strip()
         benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
@@ -1283,6 +1608,11 @@ def admin_editar_producto(pid):
             # Siempre actualizar image_path con la primera imagen subida
             if first_uploaded:
                 execute_db("UPDATE products SET image_path=? WHERE id=?", (first_uploaded, pid))
+            # Notificar en tiempo real a la tienda
+            sse_bus.publish('product_updated', {
+                'id': pid, 'name': name, 'price': price,
+                'stock': stock, 'active': active
+            })
             flash('Producto actualizado.', 'success')
             return redirect(url_for('admin_productos'))
         except Exception as e:
@@ -1329,6 +1659,7 @@ def admin_toggle_producto(pid):
         execute_db("UPDATE products SET active=? WHERE id=?", (new_active, pid))
         status = 'activado' if new_active else 'desactivado'
         flash(f'Producto {status}.', 'success')
+        sse_bus.publish('product_updated', {'id': pid, 'active': new_active})
     return redirect(url_for('admin_productos'))
 
 
@@ -1413,7 +1744,79 @@ def admin_ajuste_stock(pid):
         "INSERT INTO stock_movements (product_id, type, quantity, reason) VALUES (?, ?, ?, ?)",
         (pid, mov_type, quantity, reason)
     )
+    # Notificar stock actualizado
+    updated = query_db("SELECT stock FROM products WHERE id=?", (pid,), one=True)
+    if updated:
+        sse_bus.publish('stock_updated', {'id': pid, 'stock': updated['stock']})
+        # Enviar alerta si stock bajo
+        if mov_type in ('salida', 'ajuste'):
+            prod_info = query_db("SELECT * FROM products WHERE id=?", (pid,), one=True)
+            if prod_info and prod_info['stock'] <= prod_info['low_stock_alert']:
+                try:
+                    send_low_stock_alert(dict(prod_info))
+                except Exception as e:
+                    print(f"[Email] Alerta stock bajo falló: {e}")
     flash('Ajuste de inventario realizado.', 'success')
+    return redirect(url_for('admin_inventario'))
+
+
+@app.route('/admin/inventario/exportar-csv')
+@admin_required
+def admin_exportar_inventario_csv():
+    """Export full inventory as CSV download."""
+    products = query_db("SELECT * FROM products ORDER BY name")
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['SKU', 'Nombre', 'Categoría', 'Dosis', 'Precio', 'Stock',
+                     'Alerta Bajo Stock', 'Activo', 'Creado'])
+    for p in products:
+        writer.writerow([
+            p['sku'], p['name'], p['category'], p['dose'],
+            f"{p['price']:.2f}", p['stock'], p['low_stock_alert'],
+            'Sí' if p['active'] else 'No',
+            (p['created_at'] or '')[:10]
+        ])
+    output.seek(0)
+    resp = make_response(output.getvalue())
+    resp.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    resp.headers['Content-Disposition'] = (
+        f'attachment; filename=inventario_{date.today().isoformat()}.csv'
+    )
+    return resp
+
+
+@app.route('/admin/inventario/ajuste-bulk', methods=['POST'])
+@admin_required
+def admin_ajuste_bulk():
+    """Apply the same stock adjustment to multiple products at once."""
+    product_ids = request.form.getlist('product_ids')
+    mov_type = request.form.get('type', 'ajuste')
+    quantity = safe_int(request.form.get('quantity', 0))
+    reason = request.form.get('reason', '').strip() or 'Ajuste bulk'
+
+    if not product_ids or quantity <= 0:
+        flash('Selecciona al menos un producto y una cantidad válida.', 'error')
+        return redirect(url_for('admin_inventario'))
+
+    for pid in product_ids:
+        pid_int = safe_int(pid)
+        if not pid_int:
+            continue
+        if mov_type == 'entrada':
+            execute_db("UPDATE products SET stock = stock + ? WHERE id=?", (quantity, pid_int))
+        elif mov_type == 'salida':
+            execute_db("UPDATE products SET stock = MAX(0, stock - ?) WHERE id=?", (quantity, pid_int))
+        else:
+            execute_db("UPDATE products SET stock = ? WHERE id=?", (quantity, pid_int))
+        execute_db(
+            "INSERT INTO stock_movements (product_id, type, quantity, reason) VALUES (?, ?, ?, ?)",
+            (pid_int, mov_type, quantity, reason)
+        )
+        updated = query_db("SELECT stock FROM products WHERE id=?", (pid_int,), one=True)
+        if updated:
+            sse_bus.publish('stock_updated', {'id': pid_int, 'stock': updated['stock']})
+
+    flash(f'Ajuste bulk aplicado a {len(product_ids)} producto(s).', 'success')
     return redirect(url_for('admin_inventario'))
 
 
@@ -1507,6 +1910,11 @@ def admin_actualizar_estado(oid):
         # Re-fetch para tener los datos actualizados
         updated_order = query_db("SELECT * FROM orders WHERE id=?", (oid,), one=True)
         send_status_email(updated_order, notify_status, notify_payment)
+        sse_bus.publish('order_updated', {
+            'id': oid,
+            'status': eff_status,
+            'payment_status': eff_payment,
+        })
 
     flash('Estado actualizado.', 'success')
     return redirect(url_for('admin_orden_detalle', oid=oid))
@@ -1613,6 +2021,18 @@ def admin_recibir_oc(po_id):
         return redirect(url_for('admin_ordenes_compra'))
     # Stock ya fue sumado al crear la OC — solo actualizar status
     execute_db("UPDATE purchase_orders SET status='recibido' WHERE id=?", (po_id,))
+    # Enviar notificación de OC recibida
+    try:
+        po_items = query_db(
+            """SELECT poi.*, p.name as product_name, p.sku
+               FROM purchase_order_items poi
+               JOIN products p ON poi.product_id = p.id
+               WHERE poi.po_id=?""",
+            (po_id,)
+        )
+        send_po_received_email(dict(po), [dict(i) for i in po_items])
+    except Exception as e:
+        print(f"[Email] Notificación OC falló: {e}")
     flash(f'Orden {po["po_number"]} marcada como recibida.', 'success')
     return redirect(url_for('admin_ordenes_compra'))
 

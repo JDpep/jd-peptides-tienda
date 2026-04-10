@@ -55,45 +55,71 @@
     <nav class="admin-nav">
       <a href="{{ url_for('admin_dashboard') }}"
          class="admin-nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
-        <span class="nav-icon">📊</span> Dashboard
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </span>
+        Dashboard
       </a>
       <a href="{{ url_for('admin_productos') }}"
          class="admin-nav-link {% if request.endpoint in ['admin_productos','admin_nuevo_producto','admin_editar_producto'] %}active{% endif %}">
-        <span class="nav-icon">🧪</span> Productos
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 3h6m-5 0v5.5L6 16a2 2 0 001.8 2.9h8.4A2 2 0 0018 16l-4-7.5V3"/><path d="M6.5 12h11"/></svg>
+        </span>
+        Productos
       </a>
       <a href="{{ url_for('admin_inventario') }}"
          class="admin-nav-link {% if request.endpoint == 'admin_inventario' %}active{% endif %}">
-        <span class="nav-icon">📦</span> Inventario
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </span>
+        Inventario
       </a>
       <a href="{{ url_for('admin_ordenes') }}"
          class="admin-nav-link {% if request.endpoint in ['admin_ordenes','admin_orden_detalle'] %}active{% endif %}">
-        <span class="nav-icon">🛒</span> Órdenes
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.95 1.61h9.72a2 2 0 001.95-1.61L23 6H6"/></svg>
+        </span>
+        Órdenes
       </a>
       <a href="{{ url_for('admin_ordenes_compra') }}"
          class="admin-nav-link {% if request.endpoint in ['admin_ordenes_compra','admin_oc_detalle'] %}active{% endif %}">
-        <span class="nav-icon">📋</span> Órdenes de Compra
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
+        </span>
+        Órdenes de Compra
       </a>
       {% if session.get('admin_user') == 'Alb.peptide10' %}
       <a href="{{ url_for('admin_usuarios') }}"
          class="admin-nav-link {% if request.endpoint == 'admin_usuarios' %}active{% endif %}">
-        <span class="nav-icon">👥</span> Usuarios
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>
+        </span>
+        Usuarios
       </a>
       {% endif %}
     </nav>
 
     <div class="admin-sidebar-footer">
       {% if session.get('admin_user') %}
-      <div style="padding:0.5rem 0.75rem;font-size:0.75rem;color:var(--text3);border-bottom:1px solid var(--border);margin-bottom:0.5rem">
-        <span style="color:var(--gold)">●</span>
-        {{ session['admin_user'] }}
-        <span style="opacity:0.5;font-size:0.7rem">({{ session.get('admin_role','admin') }})</span>
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-avatar">{{ session['admin_user'][:2]|upper }}</div>
+        <div class="admin-sidebar-user-info">
+          <div class="admin-sidebar-user-name">{{ session['admin_user'] }}</div>
+          <div class="admin-sidebar-user-role">{{ session.get('admin_role','admin') }}</div>
+        </div>
       </div>
       {% endif %}
       <a href="{{ url_for('index') }}" target="_blank">
-        <span>🌐</span> Ver Tienda
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        </span>
+        Ver Tienda
       </a>
-      <a href="{{ url_for('admin_logout') }}">
-        <span>🚪</span> Cerrar Sesión
+      <a href="{{ url_for('admin_logout') }}" class="logout">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </span>
+        Cerrar Sesión
       </a>
     </div>
   </aside>
@@ -108,8 +134,16 @@
         <h1>{% block page_title %}Dashboard{% endblock %}</h1>
       </div>
       <div class="admin-topbar-actions">
-        <a href="{{ url_for('index') }}" class="btn btn-ghost btn-sm" target="_blank">🌐 Tienda</a>
-        <a href="{{ url_for('admin_logout') }}" class="btn btn-ghost btn-sm">Salir</a>
+        <a href="{{ url_for('admin_nuevo_producto') }}" class="btn btn-gold btn-sm">+ Producto</a>
+        <a href="{{ url_for('admin_ordenes_compra') }}" class="btn btn-ghost btn-sm">+ OC</a>
+        <a href="{{ url_for('index') }}" class="btn btn-ghost btn-sm" target="_blank">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Tienda
+        </a>
+        <a href="{{ url_for('admin_logout') }}" class="btn btn-ghost btn-sm">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Salir
+        </a>
       </div>
     </header>
 
@@ -134,6 +168,61 @@ function handleMQ(e) {
 }
 mq.addEventListener('change', handleMQ);
 handleMQ(mq);
+
+// Admin toast function (used by SSE)
+function showAdminToast(message, type, persistent) {
+  var container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = 'position:fixed;top:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:.6rem;pointer-events:none';
+    document.body.appendChild(container);
+  }
+  var colors = {success:'#1a2e1a;border:1px solid #2ecc71;color:#2ecc71', error:'#2e1a1a;border:1px solid #e74c3c;color:#e74c3c', info:'#1a1f2e;border:1px solid #c9a227;color:#c9a227'};
+  var icon = {success:'✓', error:'✕', info:'ℹ'}[type] || 'ℹ';
+  var toast = document.createElement('div');
+  toast.style.cssText = 'pointer-events:all;display:flex;align-items:center;gap:.75rem;padding:.85rem 1.1rem;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.35);min-width:280px;max-width:420px;font-size:.88rem;font-weight:500;animation:toastIn .25s ease;background:' + (colors[type] || colors.info);
+  toast.innerHTML = '<span style="font-size:1.1rem;flex-shrink:0">' + icon + '</span><span style="flex:1;color:#fff">' + message + '</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;font-size:1rem;opacity:.6;padding:0;line-height:1">✕</button>';
+  container.appendChild(toast);
+  if (!persistent) {
+    setTimeout(function() {
+      toast.style.transition = 'opacity .4s';
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 400);
+    }, 4500);
+  }
+}
+
+// Real-time admin panel via SSE
+(function() {
+  if (!window.EventSource) return;
+  var es = new EventSource('/events');
+
+  es.addEventListener('new_order', function(e) {
+    var d = JSON.parse(e.data);
+    showAdminToast('<span class="sse-new-order-dot"></span> Nueva orden <strong>' + d.order_number + '</strong> — ' + d.customer_name + ' — $' + parseFloat(d.total).toFixed(2), 'success', false);
+    // Update orders today counter
+    var el = document.getElementById('metric-orders-today');
+    if (el) {
+      var n = parseInt(el.textContent) || 0;
+      el.textContent = n + 1;
+      el.classList.add('metric-bump');
+      setTimeout(function() { el.classList.remove('metric-bump'); }, 600);
+    }
+  });
+
+  es.addEventListener('stock_updated', function(e) {
+    var d = JSON.parse(e.data);
+    var cell = document.querySelector('tr[data-pid="' + d.id + '"] .stock-value');
+    if (cell) {
+      cell.textContent = d.stock;
+      cell.classList.add('stock-flash');
+      setTimeout(function() { cell.classList.remove('stock-flash'); }, 1000);
+    }
+  });
+
+  es.onerror = function() { /* Auto-reconnects */ };
+})();
 </script>
 {% block extra_js %}{% endblock %}
 </body>

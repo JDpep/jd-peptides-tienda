@@ -4,12 +4,10 @@ import io
 import sqlite3
 import json
 import uuid
-import smtplib
-import ssl
 import threading
 import time
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import urllib.request
+import urllib.error
 from datetime import datetime, date
 from functools import wraps
 from flask import (Flask, render_template, request, redirect, url_for,
@@ -95,12 +93,11 @@ if UPLOAD_FOLDER != _static_img and os.path.isdir(_static_img):
             _shutil.copy2(_src, _dst)
 
 # ---------------------------------------------------------------------------
-# Email configuration
+# Email configuration — Resend API (works on Railway, no SMTP needed)
+# Docs: https://resend.com/docs  |  Free tier: 3,000 emails/month
 # ---------------------------------------------------------------------------
-# Para activar: pon tu cuenta Gmail remitente y una "Contraseña de aplicación"
-# (Google → Seguridad → Verificación en 2 pasos → Contraseñas de aplicación)
-EMAIL_SENDER   = 'jdpeptides@gmail.com'
-EMAIL_PASSWORD = 'wbfyeueeelkypplo'
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+EMAIL_FROM     = os.environ.get('EMAIL_FROM', 'JD Peptides <noreply@jdpeptides.com>')
 EMAIL_NOTIFY   = ['aamiga2006@gmail.com', 'jdpeptides@gmail.com']
 
 def _build_items_rows(items):
@@ -315,7 +312,6 @@ def send_status_email(order, new_status, new_payment):
     html = _status_update_html(order, new_status, new_payment)
     if not html:
         return
-
     subject_map = {
         'procesando': f'⚙️ Tu pedido está siendo procesado — {order["order_number"]}',
         'enviado':    f'🚚 ¡Tu pedido está en camino! — {order["order_number"]}',
@@ -326,38 +322,47 @@ def send_status_email(order, new_status, new_payment):
         subject = f'💸 Reembolso procesado — {order["order_number"]}'
     else:
         subject = subject_map.get(new_status, f'Actualización de tu pedido — {order["order_number"]}')
+    _send_email(order['customer_email'], subject, html)
+    print(f"[Email] Estado enviado a {order['customer_email']} ({new_status or new_payment})")
 
-    context = ssl.create_default_context()
+
+def _send_email(to, subject, html):
+    """Envía un email via Resend API (HTTP — funciona en Railway)."""
+    if not RESEND_API_KEY:
+        print("[Email] RESEND_API_KEY no configurada — email omitido")
+        return False
+    import urllib.request, urllib.error
+    payload = json.dumps({
+        "from": EMAIL_FROM,
+        "to": [to] if isinstance(to, str) else to,
+        "subject": subject,
+        "html": html,
+    }).encode()
+    req = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+    )
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
-            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From']    = f'JD Peptides <{EMAIL_SENDER}>'
-            msg['To']      = order['customer_email']
-            msg.attach(MIMEText(html, 'html'))
-            smtp.sendmail(EMAIL_SENDER, order['customer_email'], msg.as_string())
-        print(f"[Email] Notificación de estado enviada a {order['customer_email']} ({new_status or new_payment})")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            print(f"[Email] Enviado a {to} — {resp.status}")
+            return True
+    except urllib.error.HTTPError as e:
+        print(f"[Email] Resend HTTP {e.code}: {e.read().decode()}")
     except Exception as e:
-        print(f"[Email] Error enviando notificación de estado: {e}")
+        print(f"[Email] Error: {e}")
+    return False
 
 
-def _do_send_emails(smtp, order, items):
+def _do_send_emails(order, items):
     admin_html = _admin_html(order, items)
+    subject_admin = f'⚡ Nueva Orden JD Peptides — {order["order_number"]}'
     for recipient in EMAIL_NOTIFY:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = f'⚡ Nueva Orden JD Peptides — {order["order_number"]}'
-        msg['From']    = f'JD Peptides <{EMAIL_SENDER}>'
-        msg['To']      = recipient
-        msg.attach(MIMEText(admin_html, 'html'))
-        smtp.sendmail(EMAIL_SENDER, recipient, msg.as_string())
+        _send_email(recipient, subject_admin, admin_html)
     customer_html = _customer_html(order, items)
-    msg2 = MIMEMultipart('alternative')
-    msg2['Subject'] = f'✅ Confirmación de tu pedido — {order["order_number"]}'
-    msg2['From']    = f'JD Peptides <{EMAIL_SENDER}>'
-    msg2['To']      = order['customer_email']
-    msg2.attach(MIMEText(customer_html, 'html'))
-    smtp.sendmail(EMAIL_SENDER, order['customer_email'], msg2.as_string())
+    _send_email(order['customer_email'],
+                f'✅ Confirmación de tu pedido — {order["order_number"]}',
+                customer_html)
     print(f"[Email] OK — admins {EMAIL_NOTIFY} + cliente {order['customer_email']}")
 
 
@@ -399,34 +404,10 @@ def send_low_stock_alert(product):
       </div>
     </div>"""
 
-    try:
-        with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as smtp:
-            smtp.ehlo()
-            smtp.starttls(context=ssl.create_default_context())
-            smtp.ehlo()
-            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = f'⚠️ Stock bajo: {product["name"]} ({product["stock"]} uds) — JD Peptides'
-            msg['From'] = f'JD Peptides <{EMAIL_SENDER}>'
-            for recipient in EMAIL_NOTIFY:
-                msg['To'] = recipient
-                msg.attach(MIMEText(html, 'html'))
-                smtp.sendmail(EMAIL_SENDER, recipient, msg.as_string())
-        print(f"[Email] Alerta stock bajo enviada: {product['name']}")
-    except Exception as e:
-        print(f"[Email] Alerta stock bajo falló (587): {e}")
-        try:
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=ssl.create_default_context(), timeout=15) as smtp:
-                smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
-                msg = MIMEMultipart('alternative')
-                msg['Subject'] = f'⚠️ Stock bajo: {product["name"]} ({product["stock"]} uds) — JD Peptides'
-                msg['From'] = f'JD Peptides <{EMAIL_SENDER}>'
-                for recipient in EMAIL_NOTIFY:
-                    msg['To'] = recipient
-                    msg.attach(MIMEText(html, 'html'))
-                    smtp.sendmail(EMAIL_SENDER, recipient, msg.as_string())
-        except Exception as e2:
-            print(f"[Email] Alerta stock bajo error definitivo: {e2}")
+    subject = f'⚠️ Stock bajo: {product["name"]} ({product["stock"]} uds) — JD Peptides'
+    for recipient in EMAIL_NOTIFY:
+        _send_email(recipient, subject, html)
+    print(f"[Email] Alerta stock bajo enviada: {product['name']}")
 
 
 def send_po_received_email(po, items):
@@ -473,44 +454,15 @@ def send_po_received_email(po, items):
       </div>
     </div>"""
 
-    try:
-        with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as smtp:
-            smtp.ehlo()
-            smtp.starttls(context=ssl.create_default_context())
-            smtp.ehlo()
-            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            for recipient in EMAIL_NOTIFY:
-                msg = MIMEMultipart('alternative')
-                msg['Subject'] = f'✅ OC Recibida: {po["po_number"]} — {po["supplier"]}'
-                msg['From'] = f'JD Peptides <{EMAIL_SENDER}>'
-                msg['To'] = recipient
-                msg.attach(MIMEText(html, 'html'))
-                smtp.sendmail(EMAIL_SENDER, recipient, msg.as_string())
-        print(f"[Email] Notificación OC recibida enviada: {po['po_number']}")
-    except Exception as e:
-        print(f"[Email] Notificación OC recibida falló: {e}")
+    subject = f'✅ OC Recibida: {po["po_number"]} — {po["supplier"]}'
+    for recipient in EMAIL_NOTIFY:
+        _send_email(recipient, subject, html)
+    print(f"[Email] Notificación OC enviada: {po['po_number']}")
 
 
 def send_order_email(order, items):
-    """Envía notificación a admins y confirmación al cliente. Intenta 587 luego 465."""
-    # Intento 1: puerto 587 STARTTLS (más compatible con cloud providers)
-    try:
-        with smtplib.SMTP('smtp.gmail.com', 587, timeout=20) as smtp:
-            smtp.ehlo()
-            smtp.starttls(context=ssl.create_default_context())
-            smtp.ehlo()
-            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            _do_send_emails(smtp, order, items)
-        return
-    except Exception as e1:
-        print(f"[Email] Puerto 587 falló: {e1} — intentando 465")
-    # Intento 2: puerto 465 SSL
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=ssl.create_default_context(), timeout=20) as smtp:
-            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            _do_send_emails(smtp, order, items)
-    except Exception as e2:
-        print(f"[Email] Error definitivo: {e2}")
+    """Envía notificación a admins y confirmación al cliente via Resend API."""
+    _do_send_emails(order, items)
 
 # ---------------------------------------------------------------------------
 # Database helpers
@@ -1270,68 +1222,20 @@ def admin_login():
     return render_template('admin/login.html')
 
 
-@app.route('/debug-email-jdp')
-def debug_email_public():
-    """Endpoint temporal de diagnóstico SMTP — sin autenticación."""
-    import json as _json
-    result = {}
-    for port, use_ssl in [(587, False), (465, True)]:
-        try:
-            if use_ssl:
-                ctx = ssl.create_default_context()
-                with smtplib.SMTP_SSL('smtp.gmail.com', port, context=ctx, timeout=10) as s:
-                    s.login(EMAIL_SENDER, EMAIL_PASSWORD)
-                    result[f'port_{port}'] = 'LOGIN OK'
-            else:
-                with smtplib.SMTP('smtp.gmail.com', port, timeout=10) as s:
-                    s.ehlo()
-                    s.starttls(context=ssl.create_default_context())
-                    s.ehlo()
-                    s.login(EMAIL_SENDER, EMAIL_PASSWORD)
-                    result[f'port_{port}'] = 'LOGIN OK'
-        except Exception as e:
-            result[f'port_{port}'] = str(e)
-    return _json.dumps(result), 200, {'Content-Type': 'application/json'}
-
 
 @app.route('/admin/test-email')
 @admin_required
 def admin_test_email():
     """Prueba SMTP sincrónico y muestra el error exacto."""
-    error587 = error465 = None
-    success = False
-    try:
-        with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as smtp:
-            smtp.ehlo()
-            smtp.starttls(context=ssl.create_default_context())
-            smtp.ehlo()
-            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = 'Test email JD Peptides'
-            msg['From'] = EMAIL_SENDER
-            msg['To'] = EMAIL_NOTIFY[0]
-            msg.attach(MIMEText('<p>Email de prueba funcionando ✅</p>', 'html'))
-            smtp.sendmail(EMAIL_SENDER, EMAIL_NOTIFY[0], msg.as_string())
-            success = True
-    except Exception as e:
-        error587 = str(e)
-    if not success:
-        try:
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=ssl.create_default_context(), timeout=15) as smtp:
-                smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
-                msg = MIMEMultipart('alternative')
-                msg['Subject'] = 'Test email JD Peptides'
-                msg['From'] = EMAIL_SENDER
-                msg['To'] = EMAIL_NOTIFY[0]
-                msg.attach(MIMEText('<p>Email de prueba funcionando ✅</p>', 'html'))
-                smtp.sendmail(EMAIL_SENDER, EMAIL_NOTIFY[0], msg.as_string())
-                success = True
-        except Exception as e:
-            error465 = str(e)
-    if success:
+    if not RESEND_API_KEY:
+        flash('❌ RESEND_API_KEY no configurada en las variables de entorno de Railway.', 'error')
+        return redirect(url_for('admin_dashboard'))
+    ok = _send_email(EMAIL_NOTIFY[0], '✅ Test email JD Peptides',
+                     '<p style="font-family:Arial">Email de prueba desde JD Peptides funcionando ✅</p>')
+    if ok:
         flash(f'✅ Email enviado a {EMAIL_NOTIFY[0]} — revisa tu bandeja (y spam).', 'success')
     else:
-        flash(f'❌ Puerto 587: {error587} | Puerto 465: {error465}', 'error')
+        flash('❌ Error enviando — revisa que RESEND_API_KEY y EMAIL_FROM sean correctos en Railway.', 'error')
     return redirect(url_for('admin_dashboard'))
 
 

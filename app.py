@@ -1270,6 +1270,30 @@ def admin_login():
     return render_template('admin/login.html')
 
 
+@app.route('/debug-email-jdp')
+def debug_email_public():
+    """Endpoint temporal de diagnóstico SMTP — sin autenticación."""
+    import json as _json
+    result = {}
+    for port, use_ssl in [(587, False), (465, True)]:
+        try:
+            if use_ssl:
+                ctx = ssl.create_default_context()
+                with smtplib.SMTP_SSL('smtp.gmail.com', port, context=ctx, timeout=10) as s:
+                    s.login(EMAIL_SENDER, EMAIL_PASSWORD)
+                    result[f'port_{port}'] = 'LOGIN OK'
+            else:
+                with smtplib.SMTP('smtp.gmail.com', port, timeout=10) as s:
+                    s.ehlo()
+                    s.starttls(context=ssl.create_default_context())
+                    s.ehlo()
+                    s.login(EMAIL_SENDER, EMAIL_PASSWORD)
+                    result[f'port_{port}'] = 'LOGIN OK'
+        except Exception as e:
+            result[f'port_{port}'] = str(e)
+    return _json.dumps(result), 200, {'Content-Type': 'application/json'}
+
+
 @app.route('/admin/test-email')
 @admin_required
 def admin_test_email():

@@ -100,7 +100,7 @@ if UPLOAD_FOLDER != _static_img and os.path.isdir(_static_img):
 # Para activar: pon tu cuenta Gmail remitente y una "Contraseña de aplicación"
 # (Google → Seguridad → Verificación en 2 pasos → Contraseñas de aplicación)
 EMAIL_SENDER   = 'jdpeptides@gmail.com'
-EMAIL_PASSWORD = 'vpbgsbvilqrptanz'
+EMAIL_PASSWORD = 'wbfyeueeelkypplo'
 EMAIL_NOTIFY   = ['aamiga2006@gmail.com', 'jdpeptides@gmail.com']
 
 def _build_items_rows(items):

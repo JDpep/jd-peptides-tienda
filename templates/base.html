@@ -55,8 +55,8 @@
       <ul class="navbar-nav">
         <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Inicio</a></li>
         <li><a href="{{ url_for('catalogo') }}" class="{% if request.endpoint == 'catalogo' %}active{% endif %}">Catálogo</a></li>
-        <li><a href="#nosotros">Nosotros</a></li>
-        <li><a href="#contacto">Contacto</a></li>
+        <li><a href="{{ url_for('index') }}#nosotros">Nosotros</a></li>
+        <li><a href="{{ url_for('index') }}#contacto">Contacto</a></li>
       </ul>
 
       <div class="navbar-actions">
@@ -75,8 +75,8 @@
   <div class="mobile-nav" id="mobileNav">
     <a href="{{ url_for('index') }}">Inicio</a>
     <a href="{{ url_for('catalogo') }}">Catálogo</a>
-    <a href="#nosotros">Nosotros</a>
-    <a href="#contacto">Contacto</a>
+    <a href="{{ url_for('index') }}#nosotros">Nosotros</a>
+    <a href="{{ url_for('index') }}#contacto">Contacto</a>
     <a href="{{ url_for('carrito') }}">🛒 Carrito ({{ cart_count() }})</a>
   </div>
 
@@ -121,9 +121,9 @@
           <ul>
             <li><a href="https://wa.me/1234567890" target="_blank">WhatsApp</a></li>
             <li><a href="mailto:info@jdpeptides.com">Email</a></li>
-            <li><a href="#">Política de Privacidad</a></li>
-            <li><a href="#">Términos y Condiciones</a></li>
-            <li><a href="#">Preguntas Frecuentes</a></li>
+            <li><a href="{{ url_for('privacidad') }}">Política de Privacidad</a></li>
+            <li><a href="{{ url_for('terminos') }}">Términos y Condiciones</a></li>
+            <li><a href="{{ url_for('faq') }}">Preguntas Frecuentes</a></li>
           </ul>
         </div>
       </div>
@@ -131,7 +131,7 @@
         <strong style="color:var(--gold)">FOR RESEARCH USE ONLY</strong> — Los productos de JD Peptides son exclusivamente para uso en investigación científica. No están destinados al uso humano o veterinario, diagnóstico, tratamiento o prevención de enfermedades.
       </div>
       <div class="footer-bottom">
-        <p>&copy; {{ 2025 }} JD Peptides. Todos los derechos reservados.</p>
+        <p>&copy; {{ now.year }} JD Peptides. Todos los derechos reservados.</p>
         <p style="color:var(--text3); font-size:0.75rem">For Research Use Only</p>
       </div>
     </div>

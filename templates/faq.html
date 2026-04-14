@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Preguntas Frecuentes — JD Peptides{% endblock %}
+
+{% block content %}
+<div style="background:#fff;min-height:70vh;padding:5rem 0">
+  <div class="container" style="max-width:780px">
+    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c9a227;margin-bottom:0.75rem">Soporte</p>
+    <h1 style="font-size:clamp(2rem,4vw,3rem);font-weight:800;color:#111;line-height:1.15;margin-bottom:2rem">
+      Preguntas <span style="color:#c9a227">Frecuentes</span>
+    </h1>
+
+    <div style="display:flex;flex-direction:column;gap:0.5rem">
+
+      {% set faqs = [
+        ("¿Para qué son estos productos?",
+         "Todos los productos de JD Peptides son exclusivamente para uso en investigación científica in vitro. No están destinados al consumo humano ni veterinario."),
+        ("¿Cómo realizo un pedido?",
+         "Navega al catálogo, agrega los productos que necesitas al carrito y procede al checkout. Recibirás un correo de confirmación con los datos de pago."),
+        ("¿Cuáles son los métodos de pago?",
+         "Aceptamos transferencia bancaria SPEI. Los datos de cuenta se muestran en la pantalla de confirmación del pedido."),
+        ("¿Cuánto tarda el envío?",
+         "Los envíos dentro de México toman entre 2 y 5 días hábiles una vez confirmado el pago. Te notificamos con número de guía cuando tu pedido sale."),
+        ("¿Cómo sé si mi pedido fue confirmado?",
+         "Recibirás un correo electrónico con el resumen de tu pedido. También puedes contactarnos por WhatsApp con tu número de orden."),
+        ("¿Puedo cancelar o modificar mi pedido?",
+         "Contáctanos por WhatsApp lo antes posible. Podemos hacer ajustes mientras el pedido no haya sido preparado para envío."),
+        ("¿Los productos tienen certificado de análisis (CoA)?",
+         "Sí. Cada lote cuenta con documentación de pureza y trazabilidad. Contáctanos para solicitar el CoA de cualquier producto."),
+        ("¿Cómo debo almacenar los péptidos?",
+         "La mayoría de los péptidos deben almacenarse a -20°C en su presentación liofilizada, protegidos de la luz y humedad. Consulta la ficha específica de cada producto."),
+        ("¿Hacen envíos fuera de México?",
+         "Por el momento solo realizamos envíos dentro de la República Mexicana."),
+        ("¿Cómo los contacto?",
+         "Por WhatsApp es la forma más rápida. También puedes escribirnos por correo y te respondemos en menos de 24 horas.")
+      ] %}
+
+      {% for question, answer in faqs %}
+      <details style="border:1px solid #e8e0d0;border-radius:10px;overflow:hidden">
+        <summary style="padding:1.1rem 1.3rem;font-weight:600;color:#111;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;user-select:none">
+          {{ question }}
+          <span style="color:#c9a227;font-size:1.3rem;transition:transform 0.2s">+</span>
+        </summary>
+        <p style="padding:0 1.3rem 1.1rem;color:#555;line-height:1.75;margin:0">{{ answer }}</p>
+      </details>
+      {% endfor %}
+
+    </div>
+
+    <div style="margin-top:3rem;padding:1.5rem;background:#fdf8ee;border-radius:12px;border:1px solid #e8d89a;text-align:center">
+      <p style="font-weight:600;color:#111;margin-bottom:0.5rem">¿No encontraste tu respuesta?</p>
+      <p style="color:#555;margin-bottom:1rem">Escríbenos directamente, respondemos rápido.</p>
+      <a href="https://wa.me/1234567890" target="_blank" class="btn btn-primary">Contactar por WhatsApp</a>
+    </div>
+  </div>
+</div>
+
+<style>
+details[open] summary span { transform: rotate(45deg); }
+details summary::-webkit-details-marker { display: none; }
+</style>
+{% endblock %}

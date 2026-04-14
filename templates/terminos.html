@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Términos y Condiciones — JD Peptides{% endblock %}
+
+{% block content %}
+<div style="background:#fff;min-height:70vh;padding:5rem 0">
+  <div class="container" style="max-width:780px">
+    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c9a227;margin-bottom:0.75rem">Legal</p>
+    <h1 style="font-size:clamp(2rem,4vw,3rem);font-weight:800;color:#111;line-height:1.15;margin-bottom:2rem">
+      Términos y <span style="color:#c9a227">Condiciones</span>
+    </h1>
+
+    <div style="display:flex;flex-direction:column;gap:1.4rem;font-size:1rem;color:#444;line-height:1.85">
+
+      <p>Al acceder y realizar compras en JD Peptides aceptas los siguientes términos. Por favor léelos detenidamente.</p>
+
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">1. Uso de los productos</h2>
+      <p>Todos los productos de JD Peptides son exclusivamente para uso en investigación científica <em>in vitro</em>. No están destinados al consumo humano, uso veterinario, diagnóstico, tratamiento ni prevención de enfermedades. Al comprar confirmas que los adquieres para fines de investigación.</p>
+
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">2. Pedidos y pagos</h2>
+      <p>Los pedidos se confirman una vez verificado el pago. Aceptamos transferencia bancaria (SPEI) y otros métodos indicados en el checkout. JD Peptides se reserva el derecho de cancelar pedidos en caso de stock insuficiente o información incorrecta.</p>
+
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">3. Envíos</h2>
+      <p>Los tiempos de envío son estimados y pueden variar según la ubicación y disponibilidad del servicio de paquetería. JD Peptides no se responsabiliza por retrasos causados por la empresa de mensajería.</p>
+
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">4. Devoluciones</h2>
+      <p>Debido a la naturaleza de los productos (reactivos de investigación), no se aceptan devoluciones una vez enviado el pedido, salvo en caso de error en el envío o producto dañado documentado al momento de la recepción.</p>
+
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">5. Limitación de responsabilidad</h2>
+      <p>JD Peptides no asume responsabilidad por el uso incorrecto de los productos fuera del ámbito de investigación científica. El comprador es responsable del cumplimiento de las regulaciones locales aplicables.</p>
+
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">6. Modificaciones</h2>
+      <p>Nos reservamos el derecho de actualizar estos términos en cualquier momento. Los cambios entrarán en vigor al publicarse en este sitio.</p>
+
+      <p style="font-size:0.85rem;color:#888;margin-top:1rem">Última actualización: {{ now.strftime('%B %Y') }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -2075,6 +2075,26 @@ def info():
     return render_template('info.html')
 
 
+@app.route('/privacidad')
+def privacidad():
+    return render_template('privacidad.html')
+
+
+@app.route('/terminos')
+def terminos():
+    return render_template('terminos.html')
+
+
+@app.route('/faq')
+def faq():
+    return render_template('faq.html')
+
+
+@app.context_processor
+def inject_now():
+    return {'now': datetime.now()}
+
+
 # ---------------------------------------------------------------------------
 # Inicializar BD al arrancar (funciona con gunicorn y python app.py)
 # ---------------------------------------------------------------------------

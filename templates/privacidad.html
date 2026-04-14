@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Política de Privacidad — JD Peptides{% endblock %}
+
+{% block content %}
+<div style="background:#fff;min-height:70vh;padding:5rem 0">
+  <div class="container" style="max-width:780px">
+    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c9a227;margin-bottom:0.75rem">Legal</p>
+    <h1 style="font-size:clamp(2rem,4vw,3rem);font-weight:800;color:#111;line-height:1.15;margin-bottom:2rem">
+      Política de <span style="color:#c9a227">Privacidad</span>
+    </h1>
+
+    <div style="display:flex;flex-direction:column;gap:1.4rem;font-size:1rem;color:#444;line-height:1.85">
+
+      <p>En JD Peptides nos comprometemos a proteger tu información personal. Esta política describe cómo recopilamos, usamos y resguardamos los datos que compartes con nosotros al usar nuestro sitio web.</p>
+
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">1. Información que recopilamos</h2>
+      <p>Al realizar un pedido, recopilamos nombre completo, dirección de correo electrónico, teléfono, dirección de envío y datos del método de pago elegido. No almacenamos datos de tarjetas de crédito; los pagos se procesan a través de plataformas seguras.</p>
+
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">2. Uso de la información</h2>
+      <p>Utilizamos tu información exclusivamente para procesar y dar seguimiento a tus pedidos, enviarte confirmaciones y actualizaciones de estado, y mejorar la experiencia de nuestro sitio. No vendemos ni cedemos tus datos a terceros.</p>
+
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">3. Cookies</h2>
+      <p>Utilizamos cookies de sesión para mantener tu carrito activo. No usamos cookies de rastreo de terceros.</p>
+
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">4. Seguridad</h2>
+      <p>Tu información se transmite mediante conexiones cifradas (HTTPS). Tomamos medidas razonables para proteger tus datos contra acceso no autorizado.</p>
+
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">5. Contacto</h2>
+      <p>Si tienes preguntas sobre esta política, contáctanos vía WhatsApp o por correo.</p>
+
+      <p style="font-size:0.85rem;color:#888;margin-top:1rem">Última actualización: {{ now.strftime('%B %Y') }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

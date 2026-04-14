@@ -804,22 +804,22 @@ def init_db():
     if user_count == 0:
         # Primera instalación: crear ambos usuarios
         db.execute("INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)",
-                   ('Alb.peptide10', generate_password_hash('Aa52902763'), 'superadmin'))
+                   ('Alb.peptide10', generate_password_hash('Aa52902763', method='pbkdf2:sha256'), 'superadmin'))
         db.execute("INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)",
-                   ('JacoM.JDP', generate_password_hash('Peptideed398'), 'admin'))
+                   ('JacoM.JDP', generate_password_hash('Peptideed398', method='pbkdf2:sha256'), 'admin'))
         db.commit()
     else:
         # Migración: renombrar 'alberto' → 'Alb.peptide10' si existe
         old = db.execute("SELECT id FROM admin_users WHERE username='alberto'").fetchone()
         if old:
             db.execute("UPDATE admin_users SET username=?, password_hash=? WHERE username='alberto'",
-                       ('Alb.peptide10', generate_password_hash('Aa52902763')))
+                       ('Alb.peptide10', generate_password_hash('Aa52902763', method='pbkdf2:sha256')))
             db.commit()
         # Agregar JacoM.JDP si no existe
         jaco = db.execute("SELECT id FROM admin_users WHERE username='JacoM.JDP'").fetchone()
         if not jaco:
             db.execute("INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)",
-                       ('JacoM.JDP', generate_password_hash('Peptideed398'), 'admin'))
+                       ('JacoM.JDP', generate_password_hash('Peptideed398', method='pbkdf2:sha256'), 'admin'))
             db.commit()
     # Seed products if empty
     count = db.execute("SELECT COUNT(*) FROM products").fetchone()[0]
@@ -1346,7 +1346,7 @@ def admin_nuevo_usuario():
         return redirect(url_for('admin_usuarios'))
     execute_db(
         "INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)",
-        (username, generate_password_hash(password), role)
+        (username, generate_password_hash(password, method='pbkdf2:sha256'), role)
     )
     flash(f'Usuario "{username}" creado correctamente.', 'success')
     return redirect(url_for('admin_usuarios'))
@@ -1360,7 +1360,7 @@ def admin_cambiar_password(uid):
         flash('La nueva contraseña no puede estar vacía.', 'error')
         return redirect(url_for('admin_usuarios'))
     execute_db("UPDATE admin_users SET password_hash=? WHERE id=?",
-               (generate_password_hash(new_password), uid))
+               (generate_password_hash(new_password, method='pbkdf2:sha256'), uid))
     flash('Contraseña actualizada.', 'success')
     return redirect(url_for('admin_usuarios'))
 

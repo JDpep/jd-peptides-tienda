@@ -20,6 +20,8 @@ from flask_compress import Compress
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'jdp_secret_key_2024_ultra_secure')
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = 60 * 60 * 24 * 30  # 30 days
 Compress(app)
 
 # ---------------------------------------------------------------------------
@@ -1125,9 +1127,8 @@ def media_file(filename):
 
 @app.route('/')
 def index():
-    with app.app_context():
-        products = query_db("SELECT * FROM products WHERE active=1 LIMIT 6")
-        categories = query_db("SELECT DISTINCT category FROM products WHERE active=1")
+    products = query_db("SELECT * FROM products WHERE active=1 LIMIT 6")
+    categories = query_db("SELECT DISTINCT category FROM products WHERE active=1")
     return render_template('index.html', products=products, categories=categories)
 
 
@@ -1300,11 +1301,17 @@ def actualizar_carrito():
     for key, val in request.form.items():
         if key.startswith('qty_'):
             pid = key[4:]
-            qty = int(val)
+            qty = safe_int(val, 0)
             if qty <= 0:
                 cart.pop(pid, None)
             elif pid in cart:
-                cart[pid]['quantity'] = qty
+                # Cap at real available stock
+                prod = query_db("SELECT stock FROM products WHERE id=? AND active=1",
+                                (cart[pid]['id'],), one=True)
+                if not prod or prod['stock'] == 0:
+                    cart.pop(pid, None)
+                else:
+                    cart[pid]['quantity'] = min(qty, prod['stock'])
     save_cart(cart)
     flash('Carrito actualizado.', 'success')
     return redirect(url_for('carrito'))
@@ -1359,59 +1366,90 @@ def procesar_checkout():
         flash('Método de pago no válido.', 'error')
         return redirect(url_for('checkout'))
 
-    # Validar stock disponible para cada ítem ANTES de crear la orden
-    for pid, item in cart.items():
-        prod = query_db("SELECT * FROM products WHERE id=? AND active=1", (item['id'],), one=True)
-        if not prod:
-            flash(f'El producto "{item["name"]}" ya no está disponible.', 'error')
-            return redirect(url_for('checkout'))
-        if prod['stock'] < item['quantity']:
-            if prod['stock'] == 0:
-                flash(f'"{item["name"]}" está agotado. Por favor actualiza tu carrito.', 'error')
-            else:
-                flash(f'Solo hay {prod["stock"]} unidades disponibles de "{item["name"]}". Por favor actualiza tu carrito.', 'error')
-            return redirect(url_for('checkout'))
-
     subtotal = cart_total()
     shipping = 0 if subtotal >= 200 else 15
     total = subtotal + shipping
 
-    # Generar número de orden usando el ID del INSERT para evitar race conditions
-    order_id = execute_db(
-        """INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
-           address, city, state, zip_code, payment_method, notes, subtotal, shipping, total)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        ('TEMP', name, email, phone, address, city, state, zip_code,
-         payment_method, notes, subtotal, shipping, total)
-    )
-    order_number = f'JD-{datetime.now().strftime("%d/%m/%y")}-{419 + order_id}'
-    execute_db("UPDATE orders SET order_number=? WHERE id=?", (order_number, order_id))
+    db = get_db()
+    order_id = None
+    order_number = None
+    alert_product_ids = []
 
-    for pid, item in cart.items():
-        execute_db(
-            """INSERT INTO order_items (order_id, product_id, product_name, product_sku, dose, quantity, unit_price, subtotal)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (order_id, item['id'], item['name'], item['sku'], item['dose'],
-             item['quantity'], item['price'], item['quantity'] * item['price'])
+    try:
+        # BEGIN EXCLUSIVE: una sola escritura activa a la vez — evita oversell concurrente
+        db.execute("BEGIN EXCLUSIVE")
+
+        # Re-validar stock DENTRO del lock (el SELECT previo ya no es confiable)
+        for pid, item in cart.items():
+            row = db.execute(
+                "SELECT stock, name FROM products WHERE id=? AND active=1", (item['id'],)
+            ).fetchone()
+            if not row:
+                db.execute("ROLLBACK")
+                flash(f'"{item["name"]}" ya no está disponible.', 'error')
+                return redirect(url_for('checkout'))
+            if row['stock'] < item['quantity']:
+                db.execute("ROLLBACK")
+                flash(
+                    f'"{row["name"]}" está agotado. Actualiza tu carrito.' if row['stock'] == 0
+                    else f'Solo quedan {row["stock"]} unidad(es) de "{row["name"]}". Actualiza tu carrito.',
+                    'error'
+                )
+                return redirect(url_for('checkout'))
+
+        # Insertar orden
+        cur = db.execute(
+            """INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
+               address, city, state, zip_code, payment_method, notes, subtotal, shipping, total)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ('TEMP', name, email, phone, address, city, state, zip_code,
+             payment_method, notes, subtotal, shipping, total)
         )
-        # Decrease stock
-        execute_db("UPDATE products SET stock = MAX(0, stock - ?) WHERE id=?",
-                   (item['quantity'], item['id']))
-        execute_db(
-            "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'salida', ?, 'Venta', ?)",
-            (item['id'], item['quantity'], order_number)
-        )
-        # Check for low stock alert
-        updated_prod = query_db("SELECT * FROM products WHERE id=?", (item['id'],), one=True)
+        order_id = cur.lastrowid
+        order_number = f'JD-{datetime.now().strftime("%d/%m/%y")}-{419 + order_id}'
+        db.execute("UPDATE orders SET order_number=? WHERE id=?", (order_number, order_id))
+
+        # Insertar ítems y descontar stock — todo dentro de la misma transacción
+        for pid, item in cart.items():
+            db.execute(
+                """INSERT INTO order_items
+                   (order_id, product_id, product_name, product_sku, dose, quantity, unit_price, subtotal)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (order_id, item['id'], item['name'], item['sku'], item['dose'],
+                 item['quantity'], item['price'], item['quantity'] * item['price'])
+            )
+            db.execute(
+                "UPDATE products SET stock = stock - ? WHERE id=?",
+                (item['quantity'], item['id'])
+            )
+            db.execute(
+                "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'salida', ?, 'Venta', ?)",
+                (item['id'], item['quantity'], order_number)
+            )
+            alert_product_ids.append(item['id'])
+
+        db.commit()  # Un solo commit — atómico
+
+    except Exception as e:
+        try:
+            db.execute("ROLLBACK")
+        except Exception:
+            pass
+        print(f"[Checkout] Error en transacción: {e}")
+        flash('Error al procesar el pedido. Por favor intenta de nuevo.', 'error')
+        return redirect(url_for('checkout'))
+
+    # Post-commit: SSE y alertas de stock bajo (fuera de la transacción, no crítico)
+    for product_id in alert_product_ids:
+        updated_prod = query_db("SELECT * FROM products WHERE id=?", (product_id,), one=True)
         if updated_prod:
-            sse_bus.publish('stock_updated', {'id': item['id'], 'stock': updated_prod['stock']})
+            sse_bus.publish('stock_updated', {'id': product_id, 'stock': updated_prod['stock']})
             if updated_prod['stock'] <= updated_prod['low_stock_alert']:
                 try:
                     send_low_stock_alert(dict(updated_prod))
                 except Exception as e:
                     print(f"[Email] Alerta stock bajo falló: {e}")
 
-    # Notify admin panel in real-time
     sse_bus.publish('new_order', {
         'order_number': order_number,
         'customer_name': name,
@@ -1423,7 +1461,6 @@ def procesar_checkout():
     order = query_db("SELECT * FROM orders WHERE id=?", (order_id,), one=True)
     items = query_db("SELECT * FROM order_items WHERE order_id=?", (order_id,))
 
-    # Enviar email de confirmación (sincrónico para garantizar envío en Railway)
     try:
         send_order_email(dict(order), [dict(i) for i in items])
     except Exception as e:
@@ -1897,7 +1934,7 @@ def admin_ajuste_stock(pid):
         return redirect(url_for('admin_inventario'))
 
     mov_type = request.form.get('type', 'ajuste')
-    quantity = int(request.form.get('quantity', 0))
+    quantity = safe_int(request.form.get('quantity', 0))
     reason = request.form.get('reason', '').strip()
 
     if quantity <= 0:

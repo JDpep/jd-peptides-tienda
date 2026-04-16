@@ -1,0 +1,20 @@
+# Database — never commit the live DB, Railway needs a volume
+database/*.db
+database/*.db-shm
+database/*.db-wal
+
+# Uploaded docs and user media (persistent volume on Railway)
+database/docs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db

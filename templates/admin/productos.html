@@ -53,7 +53,8 @@
       </thead>
       <tbody id="prod-tbody">
         {% for p in products %}
-          <tr data-name="{{ p['name']|lower }}"
+          <tr data-pid="{{ p['id'] }}"
+              data-name="{{ p['name']|lower }}"
               data-sku="{{ p['sku']|lower }}"
               data-cat="{{ p['category']|lower }}"
               data-dose="{{ p['dose']|lower }}"

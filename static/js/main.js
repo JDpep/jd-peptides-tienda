@@ -523,3 +523,62 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
+
+// Real-time store updates via SSE
+(function () {
+  if (!window.EventSource) return;
+  var es = new EventSource('/events');
+
+  function applyStockUpdate(id, stock) {
+    // Product detail badge
+    var badge = document.getElementById('product-stock-badge-' + id);
+    if (badge) {
+      var dot = badge.parentElement.querySelector('span:first-child');
+      if (stock > 0) {
+        badge.textContent = 'En stock (' + stock + ' unidades disponibles)';
+        badge.parentElement.style.color = 'var(--green)';
+      } else {
+        badge.textContent = 'Sin stock';
+        badge.parentElement.style.color = 'var(--red)';
+      }
+    }
+    // Add-to-cart buttons on any page
+    document.querySelectorAll('.add-to-cart-btn[data-product-id="' + id + '"]').forEach(function (btn) {
+      if (stock === 0) {
+        btn.disabled = true;
+        btn.textContent = 'Sin Stock';
+        btn.classList.remove('btn-gold');
+        btn.classList.add('btn-ghost');
+      } else if (btn.disabled) {
+        btn.disabled = false;
+        btn.innerHTML = '&#x1F6D2; Agregar al Carrito';
+        btn.classList.add('btn-gold');
+        btn.classList.remove('btn-ghost');
+      }
+    });
+  }
+
+  es.addEventListener('stock_updated', function (e) {
+    var d = JSON.parse(e.data);
+    if (!d.reload) applyStockUpdate(d.id, d.stock);
+  });
+
+  es.addEventListener('product_updated', function (e) {
+    var d = JSON.parse(e.data);
+    if (d.stock !== undefined) applyStockUpdate(d.id, d.stock);
+    // Dim product cards when deactivated by admin
+    document.querySelectorAll('[data-product-id="' + d.id + '"]').forEach(function (el) {
+      if (d.active === 0) { el.style.opacity = '0.4'; el.style.pointerEvents = 'none'; }
+      else if (d.active === 1) { el.style.opacity = ''; el.style.pointerEvents = ''; }
+    });
+    // Update price display if shown on detail page
+    if (d.price) {
+      var priceEl = document.querySelector('.product-detail-price');
+      if (priceEl && document.querySelector('.add-to-cart-btn[data-product-id="' + d.id + '"]')) {
+        priceEl.textContent = '$' + parseFloat(d.price).toFixed(2);
+      }
+    }
+  });
+
+  es.onerror = function () {};
+})();

@@ -221,12 +221,52 @@ function showAdminToast(message, type, persistent) {
 
   es.addEventListener('stock_updated', function(e) {
     var d = JSON.parse(e.data);
-    var cell = document.querySelector('tr[data-pid="' + d.id + '"] .stock-value');
-    if (cell) {
+    if (d.reload) return;
+    document.querySelectorAll('tr[data-pid="' + d.id + '"] .stock-value').forEach(function(cell) {
       cell.textContent = d.stock;
+      cell.className = 'stock-value ' + (d.stock === 0 ? 'stock-critical' : d.stock <= 5 ? 'stock-low' : 'stock-ok');
       cell.classList.add('stock-flash');
       setTimeout(function() { cell.classList.remove('stock-flash'); }, 1000);
+    });
+  });
+
+  es.addEventListener('product_updated', function(e) {
+    var d = JSON.parse(e.data);
+    var row = document.querySelector('tr[data-pid="' + d.id + '"]');
+    if (row) {
+      if (d.stock !== undefined) {
+        var sc = row.querySelector('.stock-value');
+        if (sc) {
+          sc.textContent = d.stock;
+          sc.className = 'stock-value ' + (d.stock === 0 ? 'stock-critical' : d.stock <= 5 ? 'stock-low' : 'stock-ok');
+          sc.classList.add('stock-flash');
+          setTimeout(function() { sc.classList.remove('stock-flash'); }, 1000);
+        }
+      }
+      if (d.active !== undefined) {
+        var pill = row.querySelector('.toggle-pill');
+        if (pill) {
+          pill.className = 'toggle-pill ' + (d.active ? 'on' : 'off');
+          pill.textContent = d.active ? '✓ Activo' : '✕ Inactivo';
+        }
+      }
     }
+    if (d.name) showAdminToast('Producto actualizado: <strong>' + d.name + '</strong>', 'info', true);
+  });
+
+  es.addEventListener('order_updated', function(e) {
+    var d = JSON.parse(e.data);
+    var row = document.querySelector('tr[data-order-id="' + d.id + '"]');
+    if (row) {
+      var badge = row.querySelector('.order-status-badge');
+      if (badge && d.status) {
+        badge.className = 'badge status-' + d.status + ' order-status-badge';
+        badge.textContent = d.status;
+        badge.classList.add('stock-flash');
+        setTimeout(function() { badge.classList.remove('stock-flash'); }, 1000);
+      }
+    }
+    showAdminToast('Orden actualizada — estado: <strong>' + (d.status || '') + '</strong>', 'info', true);
   });
 
   es.onerror = function() { /* Auto-reconnects */ };

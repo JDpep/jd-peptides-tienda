@@ -56,10 +56,10 @@
     <!-- Grid (AJAX target) -->
     <div id="catalog-grid">
     {% if products %}
-      <div class="products-grid">
+      <div class="products-grid animate-stagger">
         {% for p in products %}
           {% set benefits = p['benefits'].split('|') if p['benefits'] else [] %}
-          <div class="product-card" data-product-id="{{ p['id'] }}">
+          <div class="product-card" data-product-id="{{ p['id'] }}" style="--delay:{{ loop.index0 * 0.06 }}s">
             <a href="{{ url_for('producto', pid=p['id']) }}" style="text-decoration:none;display:contents">
               <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
                 <div class="product-visual-cat">
@@ -67,7 +67,7 @@
                 </div>
                 {% if img_map.get(p['sku'], p['image_path'] or '') %}
                   <img src="{{ url_for('static', filename='img/' + img_map.get(p['sku'], p['image_path'] or '')) }}"
-                       alt="{{ p['name'] }}" class="product-card-img">
+                       alt="{{ p['name'] }}" class="product-card-img" loading="lazy">
                 {% else %}
                   <div class="product-visual-pattern">
                     <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">

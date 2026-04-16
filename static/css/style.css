@@ -1747,4 +1747,141 @@ dl.info-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; 
 
 /* Catalog no-results transition */
 #catalog-grid { min-height: 200px; }
-.catalog-loading { opacity: 0.5; pointer-events: none; }
+.catalog-loading { opacity: 0.5; pointer-events: none; transition: opacity 0.2s; }
+
+/* =========================================================
+   ANIMATIONS — scroll reveal, entrance, shimmer, stagger
+   ========================================================= */
+
+/* --- Keyframes --- */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Scroll reveal --- */
+.product-card,
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  transition-delay: var(--delay, 0s);
+}
+.product-card.visible,
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- Staggered grid entrance (AJAX + page load) --- */
+.animate-stagger > .product-card:nth-child(1)  { --delay: 0.04s; }
+.animate-stagger > .product-card:nth-child(2)  { --delay: 0.08s; }
+.animate-stagger > .product-card:nth-child(3)  { --delay: 0.12s; }
+.animate-stagger > .product-card:nth-child(4)  { --delay: 0.16s; }
+.animate-stagger > .product-card:nth-child(5)  { --delay: 0.20s; }
+.animate-stagger > .product-card:nth-child(6)  { --delay: 0.24s; }
+.animate-stagger > .product-card:nth-child(7)  { --delay: 0.28s; }
+.animate-stagger > .product-card:nth-child(8)  { --delay: 0.32s; }
+.animate-stagger > .product-card:nth-child(n+9) { --delay: 0.36s; }
+
+/* When JS adds animate-in after AJAX, play fadeInUp immediately (already visible) */
+.animate-in {
+  animation: fadeInUp 0.42s ease both;
+  animation-delay: var(--delay, 0s);
+}
+
+/* --- Skeleton shimmer cards (catalog search loading) --- */
+.skeleton-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.sk-visual {
+  aspect-ratio: 1;
+  background: linear-gradient(90deg,
+    var(--bg3) 0%,
+    var(--bg4) 40%,
+    var(--bg3) 80%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+.sk-line {
+  height: 12px;
+  margin: 0.9rem 1rem 0.4rem;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--bg3) 0%, var(--bg4) 40%, var(--bg3) 80%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+.sk-line.short { width: 55%; margin-bottom: 1rem; }
+
+/* --- Navbar scroll shadow --- */
+.navbar.scrolled {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  border-bottom-color: rgba(201,162,39,0.15);
+}
+
+/* --- Button press --- */
+.btn-pressing {
+  transform: scale(0.97) !important;
+}
+
+/* --- Page header strip animation --- */
+.page-strip {
+  animation: fadeIn 0.4s ease both;
+}
+
+/* --- Flash messages entrance --- */
+.flash { animation: slideUp 0.28s ease both; }
+
+/* --- Category pill hover (extra spring) --- */
+.pill { transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+
+/* --- Admin SSE metric bump --- */
+@keyframes metricBump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); color: var(--gold); }
+  100% { transform: scale(1); }
+}
+.metric-bump { animation: metricBump 0.5s ease; }
+
+/* --- Stock flash --- */
+@keyframes stockFlash {
+  0%   { background: rgba(201,162,39,0.3); }
+  100% { background: transparent; }
+}
+.stock-flash { animation: stockFlash 0.9s ease; border-radius: 4px; }
+
+/* --- Price updated flash --- */
+@keyframes priceFlash {
+  0%   { color: var(--gold-light); text-shadow: 0 0 12px rgba(201,162,39,0.6); }
+  100% { color: var(--gold); text-shadow: none; }
+}
+.price-updated { animation: priceFlash 1.2s ease; }
+
+/* --- Cart badge bounce --- */
+@keyframes badgeBump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.4); }
+  70%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+.cart-badge.bump { animation: badgeBump 0.4s ease; }

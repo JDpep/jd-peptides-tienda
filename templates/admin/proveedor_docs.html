@@ -1,0 +1,447 @@
+{% extends "admin/base.html" %}
+{% block title %}Documentos de Proveedor — JD Peptides Admin{% endblock %}
+{% block page_title %}Documentos de Proveedor <span style="font-size:0.7rem;background:rgba(201,162,39,0.2);color:var(--gold);padding:3px 8px;border-radius:4px;font-weight:700;vertical-align:middle">IA</span>{% endblock %}
+
+{% block extra_css %}
+<style>
+.doc-upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  text-align: center;
+  background: var(--bg3);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+}
+.doc-upload-zone:hover, .doc-upload-zone.dragover {
+  border-color: var(--gold);
+  background: rgba(201,162,39,0.05);
+}
+.doc-upload-zone input[type=file] {
+  position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+}
+.doc-upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.doc-status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.doc-status-pendiente  { background: rgba(100,100,100,0.15); color: var(--text2); }
+.doc-status-analizado  { background: rgba(59,130,246,0.15);  color: #60a5fa; }
+.doc-status-importado  { background: rgba(34,197,94,0.15);   color: var(--green); }
+.doc-status-error      { background: rgba(239,68,68,0.15);   color: var(--red); }
+.preview-section { animation: fadeInUp 0.35s ease both; }
+.preview-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.preview-table th {
+  padding: 0.6rem 0.8rem; background: var(--bg4); color: var(--text2);
+  font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+  text-align: left; border-bottom: 1px solid var(--border);
+}
+.preview-table td {
+  padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: middle;
+}
+.preview-table tr:last-child td { border-bottom: none; }
+.preview-table input, .preview-table select {
+  background: var(--bg4); border: 1px solid var(--border); color: var(--text);
+  border-radius: var(--radius); padding: 0.3rem 0.5rem; font-size: 0.82rem;
+  width: 100%; min-width: 60px;
+}
+.preview-table input:focus, .preview-table select:focus {
+  outline: none; border-color: var(--gold);
+}
+.match-indicator {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.75rem; font-weight: 600;
+}
+.match-found   { color: var(--green); }
+.match-new     { color: var(--gold); }
+.match-none    { color: var(--text3); }
+.ai-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: rgba(201,162,39,0.12); color: var(--gold);
+  border: 1px solid rgba(201,162,39,0.3); border-radius: 99px;
+  padding: 0.2rem 0.7rem; font-size: 0.72rem; font-weight: 600;
+}
+.doc-list-row { cursor: pointer; transition: background 0.15s; }
+.doc-list-row:hover td { background: rgba(255,255,255,0.02); }
+.uploading-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 1rem;
+}
+.uploading-overlay.active { display: flex; }
+.spinner-ring {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 3px solid rgba(201,162,39,0.2); border-top-color: var(--gold);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeInUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform:translateY(0); } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Upload overlay -->
+<div class="uploading-overlay" id="uploadingOverlay">
+  <div class="spinner-ring"></div>
+  <div style="color:var(--text);font-weight:600">Analizando documento con IA…</div>
+  <div style="color:var(--text2);font-size:0.85rem">Esto puede tomar unos segundos</div>
+</div>
+
+<div style="display:grid;grid-template-columns:340px 1fr;gap:1.5rem;align-items:start">
+
+  <!-- Left column: upload + doc list -->
+  <div>
+    <!-- Upload card -->
+    <div class="admin-card" style="margin-bottom:1.25rem">
+      <div class="admin-card-header">
+        <span class="admin-card-title">
+          <span class="ai-chip">✨ IA</span> Subir Documento
+        </span>
+      </div>
+      <div class="admin-card-body">
+        <form method="POST" action="{{ url_for('admin_subir_doc') }}" enctype="multipart/form-data" id="uploadForm">
+          <div class="doc-upload-zone" id="uploadZone">
+            <input type="file" name="document" accept=".xlsx,.xls,.csv,.pdf" required id="docFileInput">
+            <div class="doc-upload-icon">📄</div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:0.4rem" id="uploadFileName">
+              Arrastra o haz clic para seleccionar
+            </div>
+            <div style="font-size:0.78rem;color:var(--text2)">Excel, CSV o PDF — cotizaciones, listas de precios, facturas</div>
+          </div>
+          <div style="margin-top:1rem">
+            <button type="submit" class="btn btn-gold btn-block" id="uploadBtn">
+              ✨ Analizar con IA
+            </button>
+          </div>
+        </form>
+        <div style="margin-top:1rem;padding:0.75rem;background:var(--bg4);border-radius:var(--radius);font-size:0.78rem;color:var(--text2)">
+          💡 La IA detectará automáticamente productos, precios y proveedor. Podrás revisar y editar antes de importar.
+        </div>
+      </div>
+    </div>
+
+    <!-- Document list -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <span class="admin-card-title">Documentos Subidos</span>
+        <span style="font-size:0.78rem;color:var(--text3)">{{ docs|length }}</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th>Archivo</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in docs %}
+            <tr class="doc-list-row" onclick="window.location='{{ url_for('admin_doc_preview', doc_id=d['id']) }}'">
+              <td>
+                <div style="font-weight:600;color:var(--text);font-size:0.82rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                  {{ d['original_name'] }}
+                </div>
+                <div style="font-size:0.72rem;color:var(--text3)">{{ d['supplier'] or '—' }} · {{ d['created_at'][:10] }}</div>
+              </td>
+              <td>
+                <span class="doc-status-badge doc-status-{{ d['status'] }}">{{ d['status'] }}</span>
+              </td>
+              <td style="text-align:right">
+                <form method="POST" action="{{ url_for('admin_eliminar_doc', doc_id=d['id']) }}" style="display:inline" onclick="event.stopPropagation()">
+                  <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar documento?')" style="padding:0.2rem 0.5rem">✕</button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" style="text-align:center;color:var(--text3);padding:2rem">No hay documentos subidos</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column: preview / import -->
+  <div>
+    {% if doc and parsed %}
+    <div class="preview-section">
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <div>
+            <span class="admin-card-title">Análisis: {{ doc['original_name'] }}</span>
+            <div style="margin-top:0.3rem;display:flex;gap:0.5rem;align-items:center">
+              <span class="ai-chip">✨ IA Detectó</span>
+              <span style="font-size:0.8rem;color:var(--text2)">
+                <strong style="color:var(--text)">{{ parsed.get('supplier','—') }}</strong>
+                {% if parsed.get('document_date') %} · {{ parsed['document_date'] }}{% endif %}
+                {% if parsed.get('currency') %} · {{ parsed['currency'] }}{% endif %}
+              </span>
+              <span class="doc-status-badge doc-status-{{ doc['status'] }}">{{ doc['status'] }}</span>
+            </div>
+          </div>
+        </div>
+
+        {% if doc['status'] == 'importado' %}
+        <div class="admin-card-body">
+          <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius);padding:1rem;display:flex;align-items:center;gap:0.75rem">
+            <span style="font-size:1.5rem">✅</span>
+            <div>
+              <div style="font-weight:600;color:var(--green)">Documento importado exitosamente</div>
+              {% if doc['po_id'] %}
+              <div style="font-size:0.82rem;color:var(--text2)">
+                Orden de compra creada →
+                <a href="{{ url_for('admin_oc_detalle', po_id=doc['po_id']) }}" style="color:var(--gold)">Ver OC</a>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        {% elif doc['status'] == 'error' %}
+        <div class="admin-card-body">
+          <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius);padding:1rem">
+            <div style="font-weight:600;color:var(--red);margin-bottom:0.5rem">Error en el análisis</div>
+            <div style="font-size:0.82rem;color:var(--text2)">{{ parsed.get('error','Error desconocido') }}</div>
+          </div>
+        </div>
+
+        {% else %}
+        <!-- Import form -->
+        <form method="POST" action="{{ url_for('admin_importar_doc', doc_id=doc['id']) }}" id="importForm">
+          <div class="admin-card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;padding-bottom:0">
+            <div class="admin-form-group">
+              <label class="admin-label">Proveedor</label>
+              <input type="text" name="supplier" class="admin-input" value="{{ parsed.get('supplier','') }}" required>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-label">Fecha esperada entrega</label>
+              <input type="date" name="expected_date" class="admin-input" value="{{ parsed.get('document_date','') }}">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-label">Notas</label>
+              <input type="text" name="notes" class="admin-input" value="{{ parsed.get('notes','') }}">
+            </div>
+          </div>
+
+          <!-- Products preview table -->
+          <div style="padding:0 1.25rem;margin-top:0.75rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+              <div style="font-size:0.8rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em">
+                {{ parsed.get('products',[])|length }} producto(s) detectado(s)
+              </div>
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem;color:var(--text2);cursor:pointer">
+                <input type="checkbox" name="create_products" value="1" checked>
+                Crear productos nuevos automáticamente
+              </label>
+            </div>
+
+            <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem">
+              <table class="preview-table">
+                <thead>
+                  <tr>
+                    <th style="width:200px">Producto del sistema</th>
+                    <th>Nombre doc.</th>
+                    <th>SKU</th>
+                    <th>Dosis</th>
+                    <th style="width:80px">Cantidad</th>
+                    <th style="width:90px">Costo Unit.</th>
+                    <th style="width:90px">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody id="previewBody">
+                  {% for item in parsed.get('products', []) %}
+                  <tr class="preview-row" data-idx="{{ loop.index0 }}">
+                    <td>
+                      <select name="product_id[]" class="product-select" data-idx="{{ loop.index0 }}">
+                        <option value="0">➕ Crear nuevo producto</option>
+                        {% for p in all_products %}
+                        <option value="{{ p['id'] }}"
+                          {% if item.get('matched_product_id') == p['id'] %}selected{% endif %}>
+                          {{ p['name'] }} ({{ p['sku'] }})
+                        </option>
+                        {% endfor %}
+                      </select>
+                      {% if item.get('matched_product_id') %}
+                        <div class="match-indicator match-found">✓ Match automático</div>
+                      {% else %}
+                        <div class="match-indicator match-new">✦ Producto nuevo</div>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <input type="text" name="product_name[]" value="{{ item.get('name','') }}" placeholder="Nombre">
+                    </td>
+                    <td>
+                      <input type="text" name="product_sku[]" value="{{ item.get('sku','') }}" placeholder="SKU" style="width:90px">
+                    </td>
+                    <td>
+                      <input type="text" name="product_dose[]" value="{{ item.get('dose','') }}" placeholder="Dosis" style="width:80px">
+                    </td>
+                    <td>
+                      <input type="number" name="quantity[]" value="{{ item.get('quantity') or 1 }}" min="1" class="qty-input" data-idx="{{ loop.index0 }}" style="width:70px">
+                    </td>
+                    <td>
+                      <input type="number" name="unit_cost[]" value="{{ '%.2f'|format(item.get('unit_cost') or 0) }}" min="0" step="0.01" class="cost-input" data-idx="{{ loop.index0 }}" style="width:80px">
+                    </td>
+                    <td>
+                      <span class="row-subtotal" data-idx="{{ loop.index0 }}" style="font-weight:700;color:var(--gold)">
+                        ${{ '%.2f'|format((item.get('quantity') or 1) * (item.get('unit_cost') or 0)) }}
+                      </span>
+                    </td>
+                  </tr>
+                  {% else %}
+                  <tr>
+                    <td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">
+                      No se detectaron productos. El archivo puede estar vacío o en un formato no reconocido.
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:var(--bg4);border-radius:var(--radius);margin-bottom:1rem">
+              <div style="font-size:0.82rem;color:var(--text2)">Total estimado</div>
+              <div style="font-size:1.2rem;font-weight:800;color:var(--gold)" id="grandTotal">
+                ${{ '%.2f'|format(parsed.get('products',[]) | sum(attribute='unit_cost') if parsed.get('products') else 0) }}
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-card-body" style="padding-top:0;display:flex;gap:0.75rem">
+            <button type="submit" class="btn btn-gold" style="flex:1" onclick="return confirm('¿Crear orden de compra e importar inventario?')">
+              📦 Importar a Inventario / OC
+            </button>
+            <a href="{{ url_for('admin_proveedor_docs') }}" class="btn btn-ghost">Cancelar</a>
+          </div>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if parsed.get('notes') %}
+    <div class="admin-card" style="margin-top:1rem">
+      <div class="admin-card-header">
+        <span class="admin-card-title">Notas del documento</span>
+      </div>
+      <div class="admin-card-body">
+        <p style="font-size:0.85rem;color:var(--text2);white-space:pre-wrap">{{ parsed.get('notes','') }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="admin-card" style="min-height:400px;display:flex;align-items:center;justify-content:center">
+      <div style="text-align:center;color:var(--text3)">
+        <div style="font-size:3rem;margin-bottom:1rem">🤖</div>
+        <div style="font-size:1rem;font-weight:600;color:var(--text2);margin-bottom:0.5rem">Análisis IA de documentos</div>
+        <div style="font-size:0.85rem;max-width:320px;margin:0 auto">
+          Sube un Excel, CSV o PDF de tu proveedor y la IA lo leerá, detectará los productos, precios y datos relevantes automáticamente.
+        </div>
+        <div style="margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center">
+          <span class="badge badge-gray">📊 Excel / CSV</span>
+          <span class="badge badge-gray">📄 PDF</span>
+          <span class="badge badge-gray">🧾 Cotizaciones</span>
+          <span class="badge badge-gray">📦 Listas de precios</span>
+          <span class="badge badge-gray">🧾 Facturas</span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Drag & drop upload zone
+const zone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('docFileInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const uploadForm = document.getElementById('uploadForm');
+const fileNameEl = document.getElementById('uploadFileName');
+const overlay = document.getElementById('uploadingOverlay');
+
+if (zone && fileInput) {
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+      const name = fileInput.files[0].name;
+      fileNameEl.textContent = name;
+      const ext = name.split('.').pop().toLowerCase();
+      const icons = {xlsx:'📊', xls:'📊', csv:'📋', pdf:'📄'};
+      zone.querySelector('.doc-upload-icon').textContent = icons[ext] || '📄';
+    }
+  });
+  ['dragover','dragenter'].forEach(ev => {
+    zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('dragover'); });
+  });
+  ['dragleave','drop'].forEach(ev => {
+    zone.addEventListener(ev, e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      if (ev === 'drop' && e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+}
+
+if (uploadForm && overlay) {
+  uploadForm.addEventListener('submit', () => {
+    overlay.classList.add('active');
+  });
+}
+
+// Live subtotal calculation
+function recalcRow(idx) {
+  const qty  = parseFloat(document.querySelector(`.qty-input[data-idx="${idx}"]`)?.value || 0);
+  const cost = parseFloat(document.querySelector(`.cost-input[data-idx="${idx}"]`)?.value || 0);
+  const sub  = document.querySelector(`.row-subtotal[data-idx="${idx}"]`);
+  if (sub) sub.textContent = '$' + (qty * cost).toFixed(2);
+  recalcTotal();
+}
+
+function recalcTotal() {
+  let total = 0;
+  document.querySelectorAll('.row-subtotal').forEach(el => {
+    total += parseFloat(el.textContent.replace('$','')) || 0;
+  });
+  const gt = document.getElementById('grandTotal');
+  if (gt) gt.textContent = '$' + total.toFixed(2);
+}
+
+document.querySelectorAll('.qty-input, .cost-input').forEach(input => {
+  input.addEventListener('input', () => recalcRow(input.dataset.idx));
+});
+
+// Initial total calculation
+recalcTotal();
+
+// When product_id changes to "0" (new product), show new product indicator
+document.querySelectorAll('.product-select').forEach(sel => {
+  sel.addEventListener('change', function() {
+    const row = this.closest('tr');
+    if (!row) return;
+    const indicator = row.querySelector('.match-indicator');
+    if (!indicator) return;
+    if (this.value === '0') {
+      indicator.className = 'match-indicator match-new';
+      indicator.textContent = '✦ Producto nuevo';
+    } else {
+      indicator.className = 'match-indicator match-found';
+      indicator.textContent = '✓ Producto existente';
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,4 +1,5 @@
 import os
+import re
 import csv
 import io
 import sqlite3
@@ -75,7 +76,13 @@ _static_img = os.path.join(os.path.dirname(__file__), 'static', 'img')
 _data_dir = os.path.dirname(DATABASE) if os.environ.get('DATABASE_PATH') else None
 UPLOAD_FOLDER = os.path.join(_data_dir, 'img') if _data_dir else _static_img
 
+DOCS_FOLDER = os.path.join(_data_dir or os.path.dirname(DATABASE), 'docs')
+os.makedirs(DOCS_FOLDER, exist_ok=True)
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
+ALLOWED_DOC_EXTENSIONS = {'xlsx', 'xls', 'csv', 'pdf'}
+
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -308,7 +315,7 @@ def _status_update_html(order, new_status, new_payment):
 
 
 def send_status_email(order, new_status, new_payment):
-    """Envía notificación al cliente cuando cambia el estado de su orden."""
+    """Envía notificación al cliente cuando cambia el estado de su orden (background)."""
     html = _status_update_html(order, new_status, new_payment)
     if not html:
         return
@@ -322,8 +329,8 @@ def send_status_email(order, new_status, new_payment):
         subject = f'💸 Reembolso procesado — {order["order_number"]}'
     else:
         subject = subject_map.get(new_status, f'Actualización de tu pedido — {order["order_number"]}')
-    _send_email(order['customer_email'], subject, html)
-    print(f"[Email] Estado enviado a {order['customer_email']} ({new_status or new_payment})")
+    _send_email_bg(order['customer_email'], subject, html)
+    print(f"[Email] Estado encolado (bg) a {order['customer_email']} ({new_status or new_payment})")
 
 
 def _send_email(to, subject, html):
@@ -331,7 +338,6 @@ def _send_email(to, subject, html):
     if not RESEND_API_KEY:
         print("[Email] RESEND_API_KEY no configurada — email omitido")
         return False
-    import urllib.request, urllib.error
     payload = json.dumps({
         "from": EMAIL_FROM,
         "to": [to] if isinstance(to, str) else to,
@@ -354,20 +360,48 @@ def _send_email(to, subject, html):
     return False
 
 
+def _send_email_bg(to, subject, html):
+    """Envía email en background — no bloquea la respuesta HTTP."""
+    t = threading.Thread(target=_send_email, args=(to, subject, html), daemon=True)
+    t.start()
+
+
 def _do_send_emails(order, items):
     admin_html = _admin_html(order, items)
     subject_admin = f'⚡ Nueva Orden JD Peptides — {order["order_number"]}'
     for recipient in EMAIL_NOTIFY:
-        _send_email(recipient, subject_admin, admin_html)
+        _send_email_bg(recipient, subject_admin, admin_html)
     customer_html = _customer_html(order, items)
-    _send_email(order['customer_email'],
-                f'✅ Confirmación de tu pedido — {order["order_number"]}',
-                customer_html)
-    print(f"[Email] OK — admins {EMAIL_NOTIFY} + cliente {order['customer_email']}")
+    _send_email_bg(order['customer_email'],
+                   f'✅ Confirmación de tu pedido — {order["order_number"]}',
+                   customer_html)
+    print(f"[Email] Encolado (bg) — admins {EMAIL_NOTIFY} + cliente {order['customer_email']}")
+
+
+_EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+
+def valid_email(email):
+    return bool(_EMAIL_RE.match(email))
+
+
+VALID_PAYMENT_METHODS = {'transferencia', 'efectivo', 'criptomonedas', 'zelle', 'paypal'}
 
 
 def send_low_stock_alert(product):
-    """Envía alerta de stock bajo a los admins."""
+    """Envía alerta de stock bajo a los admins (máximo 1 por producto cada 24 horas)."""
+    alerted_at = product.get('low_stock_alerted_at')
+    if alerted_at:
+        try:
+            last = datetime.fromisoformat(alerted_at)
+            if (datetime.now() - last).total_seconds() < 86400:
+                return  # Ya se envió alerta en las últimas 24 horas
+        except Exception:
+            pass
+    # Registrar timestamp de la alerta antes de enviar
+    execute_db(
+        "UPDATE products SET low_stock_alerted_at=? WHERE id=?",
+        (datetime.now().isoformat(), product['id'])
+    )
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff">
       <div style="background:#0d0d0d;padding:24px 32px;text-align:center">
@@ -406,8 +440,8 @@ def send_low_stock_alert(product):
 
     subject = f'⚠️ Stock bajo: {product["name"]} ({product["stock"]} uds) — JD Peptides'
     for recipient in EMAIL_NOTIFY:
-        _send_email(recipient, subject, html)
-    print(f"[Email] Alerta stock bajo enviada: {product['name']}")
+        _send_email_bg(recipient, subject, html)
+    print(f"[Email] Alerta stock bajo encolada (bg): {product['name']}")
 
 
 def send_po_received_email(po, items):
@@ -456,13 +490,142 @@ def send_po_received_email(po, items):
 
     subject = f'✅ OC Recibida: {po["po_number"]} — {po["supplier"]}'
     for recipient in EMAIL_NOTIFY:
-        _send_email(recipient, subject, html)
-    print(f"[Email] Notificación OC enviada: {po['po_number']}")
+        _send_email_bg(recipient, subject, html)
+    print(f"[Email] Notificación OC encolada (bg): {po['po_number']}")
 
 
 def send_order_email(order, items):
     """Envía notificación a admins y confirmación al cliente via Resend API."""
     _do_send_emails(order, items)
+
+
+# ---------------------------------------------------------------------------
+# Supplier document parsing helpers
+# ---------------------------------------------------------------------------
+
+def extract_text_from_file(filepath, filename):
+    """Extrae texto de Excel, CSV o PDF. Retorna (text, error)."""
+    ext = filename.rsplit('.', 1)[-1].lower()
+
+    if ext in ('xlsx', 'xls'):
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(filepath, read_only=True, data_only=True)
+            lines = []
+            for sheet in wb.worksheets:
+                lines.append(f'=== Hoja: {sheet.title} ===')
+                for row in sheet.iter_rows(values_only=True):
+                    if any(c is not None for c in row):
+                        lines.append('\t'.join(str(c) if c is not None else '' for c in row))
+            return '\n'.join(lines), None
+        except ImportError:
+            return None, 'openpyxl no instalado'
+        except Exception as e:
+            return None, f'Error leyendo Excel: {e}'
+
+    elif ext == 'csv':
+        try:
+            with open(filepath, 'r', encoding='utf-8-sig', errors='replace') as f:
+                return f.read(), None
+        except Exception as e:
+            return None, f'Error leyendo CSV: {e}'
+
+    elif ext == 'pdf':
+        try:
+            import pdfplumber
+            lines = []
+            with pdfplumber.open(filepath) as pdf:
+                for page in pdf.pages:
+                    text = page.extract_text()
+                    if text:
+                        lines.append(text)
+                    for table in (page.extract_tables() or []):
+                        for row in table:
+                            if any(c for c in row if c):
+                                lines.append('\t'.join(str(c or '') for c in row))
+            return '\n'.join(lines) or 'PDF sin texto extraíble', None
+        except ImportError:
+            return None, 'pdfplumber no instalado. Agrega pdfplumber a requirements.txt'
+        except Exception as e:
+            return None, f'Error leyendo PDF: {e}'
+
+    return None, f'Formato no soportado: .{ext}'
+
+
+def parse_doc_with_claude(doc_text, existing_products):
+    """Usa Claude claude-haiku-4-5 para extraer datos estructurados del documento."""
+    if not ANTHROPIC_API_KEY:
+        return None, 'ANTHROPIC_API_KEY no configurada en las variables de entorno.'
+
+    products_hint = '\n'.join(
+        f'- {p["name"]} (SKU: {p["sku"]}, ID: {p["id"]})'
+        for p in (existing_products or [])[:30]
+    )
+
+    prompt = f"""Eres un asistente experto en analizar documentos de proveedores de péptidos y productos de investigación científica.
+
+Analiza el siguiente texto extraído de un documento de proveedor (puede ser una factura, lista de precios, cotización u orden de compra) y devuelve ÚNICAMENTE un JSON válido con esta estructura exacta:
+
+{{
+  "supplier": "nombre del proveedor o Desconocido",
+  "document_date": "YYYY-MM-DD o null",
+  "currency": "USD",
+  "products": [
+    {{
+      "name": "nombre del producto",
+      "matched_product_id": null,
+      "sku": "código SKU o null",
+      "dose": "dosis/concentración/presentación o null",
+      "quantity": 0,
+      "unit_cost": 0.0,
+      "description": "descripción adicional o null"
+    }}
+  ],
+  "notes": "notas generales del documento"
+}}
+
+Productos existentes en el sistema para matching:
+{products_hint}
+
+Para cada producto del documento, intenta hacer matching con los productos existentes. Si encuentras una coincidencia, pon el ID correspondiente en "matched_product_id". Si no hay match, deja null.
+
+Texto del documento:
+{doc_text[:8000]}
+
+Devuelve ÚNICAMENTE el JSON válido, sin markdown, sin explicaciones adicionales."""
+
+    payload = json.dumps({
+        'model': 'claude-haiku-4-5-20251001',
+        'max_tokens': 2048,
+        'messages': [{'role': 'user', 'content': prompt}]
+    }).encode()
+
+    req = urllib.request.Request(
+        'https://api.anthropic.com/v1/messages',
+        data=payload,
+        headers={
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+        }
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=40) as resp:
+            result = json.loads(resp.read().decode())
+            content = result['content'][0]['text'].strip()
+            # Remove possible markdown fences
+            if content.startswith('```'):
+                content = content.split('```')[1]
+                if content.startswith('json'):
+                    content = content[4:]
+            return json.loads(content.strip()), None
+    except urllib.error.HTTPError as e:
+        err = e.read().decode()[:300]
+        return None, f'Claude API {e.code}: {err}'
+    except json.JSONDecodeError as e:
+        return None, f'Respuesta de Claude no es JSON válido: {e}'
+    except Exception as e:
+        return None, f'Error: {e}'
 
 # ---------------------------------------------------------------------------
 # Database helpers
@@ -472,9 +635,13 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         os.makedirs(os.path.dirname(DATABASE), exist_ok=True)
-        db = g._database = sqlite3.connect(DATABASE)
+        db = g._database = sqlite3.connect(DATABASE, check_same_thread=False)
         db.row_factory = sqlite3.Row
         db.execute("PRAGMA foreign_keys = ON")
+        db.execute("PRAGMA journal_mode = WAL")   # lecturas concurrentes sin lock
+        db.execute("PRAGMA synchronous = NORMAL")  # más rápido, sigue siendo seguro
+        db.execute("PRAGMA cache_size = -8000")    # 8 MB cache en memoria
+        db.execute("PRAGMA temp_store = MEMORY")
     return db
 
 
@@ -526,6 +693,7 @@ CREATE TABLE IF NOT EXISTS products (
     low_stock_alert INTEGER DEFAULT 5,
     active INTEGER DEFAULT 1,
     image_path TEXT DEFAULT '',
+    low_stock_alerted_at TEXT DEFAULT NULL,
     created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -603,6 +771,19 @@ CREATE TABLE IF NOT EXISTS product_images (
     sort_order INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+CREATE TABLE IF NOT EXISTS supplier_documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    file_type TEXT NOT NULL,
+    supplier TEXT,
+    status TEXT DEFAULT 'pendiente',
+    extracted_json TEXT,
+    po_id INTEGER,
+    created_at TEXT DEFAULT (datetime('now')),
+    processed_at TEXT
 );
 """
 
@@ -742,14 +923,43 @@ PRODUCTS_SEED = [
 ]
 
 
+INDICES = """
+CREATE INDEX IF NOT EXISTS idx_products_active    ON products(active);
+CREATE INDEX IF NOT EXISTS idx_products_category  ON products(category);
+CREATE INDEX IF NOT EXISTS idx_orders_status      ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created     ON orders(created_at);
+CREATE INDEX IF NOT EXISTS idx_order_items_order  ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_prod   ON order_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_mov_product  ON stock_movements(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_mov_created  ON stock_movements(created_at);
+CREATE INDEX IF NOT EXISTS idx_po_status          ON purchase_orders(status);
+CREATE INDEX IF NOT EXISTS idx_po_items_po        ON purchase_order_items(po_id);
+"""
+
 def init_db():
     db = get_db()
     db.executescript(SCHEMA)
+    db.executescript(INDICES)
     db.commit()
     # Agregar columna image_path si no existe (migration para DBs antiguas)
     cols = [row[1] for row in db.execute("PRAGMA table_info(products)").fetchall()]
     if 'image_path' not in cols:
         db.execute("ALTER TABLE products ADD COLUMN image_path TEXT DEFAULT ''")
+        db.commit()
+    if 'low_stock_alerted_at' not in cols:
+        db.execute("ALTER TABLE products ADD COLUMN low_stock_alerted_at TEXT DEFAULT NULL")
+        db.commit()
+    # Migrate supplier_documents table
+    try:
+        db.execute("SELECT id FROM supplier_documents LIMIT 1")
+    except Exception:
+        db.execute("""CREATE TABLE IF NOT EXISTS supplier_documents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT NOT NULL, original_name TEXT NOT NULL,
+            file_type TEXT NOT NULL, supplier TEXT, status TEXT DEFAULT 'pendiente',
+            extracted_json TEXT, po_id INTEGER,
+            created_at TEXT DEFAULT (datetime('now')), processed_at TEXT
+        )""")
         db.commit()
     # Seed / migrate admin users
     user_count = db.execute("SELECT COUNT(*) FROM admin_users").fetchone()[0]
@@ -877,7 +1087,7 @@ def sse_stream():
                     if time.time() - last_ping > 25:
                         yield ': keep-alive\n\n'
                         last_ping = time.time()
-                    time.sleep(0.1)
+                    time.sleep(0.5)
         except GeneratorExit:
             pass
         finally:
@@ -1031,8 +1241,10 @@ def producto(pid):
 @app.route('/carrito/agregar', methods=['POST'])
 def agregar_carrito():
     data = request.get_json() or request.form
-    pid = str(data.get('product_id'))
-    qty = int(data.get('quantity', 1))
+    pid = str(data.get('product_id', ''))
+    qty = safe_int(data.get('quantity', 1), 1)
+    if qty < 1:
+        qty = 1
 
     product = query_db("SELECT * FROM products WHERE id=? AND active=1", (pid,), one=True)
     if not product:
@@ -1041,6 +1253,14 @@ def agregar_carrito():
         return jsonify({'success': False, 'message': 'Producto sin stock disponible'}), 400
 
     cart = get_cart()
+    current_in_cart = cart[pid]['quantity'] if pid in cart else 0
+    total_requested = current_in_cart + qty
+    if total_requested > product['stock']:
+        available = product['stock'] - current_in_cart
+        if available <= 0:
+            return jsonify({'success': False, 'message': f'Ya tienes el máximo disponible de "{product["name"]}" en tu carrito ({product["stock"]} uds)'}), 400
+        qty = available  # Ajustar al máximo disponible
+
     if pid in cart:
         cart[pid]['quantity'] += qty
     else:
@@ -1128,6 +1348,27 @@ def procesar_checkout():
     if not all([name, email, address, city, payment_method]):
         flash('Por favor completa todos los campos requeridos.', 'error')
         return redirect(url_for('checkout'))
+
+    if not valid_email(email):
+        flash('El email ingresado no es válido.', 'error')
+        return redirect(url_for('checkout'))
+
+    if payment_method not in VALID_PAYMENT_METHODS:
+        flash('Método de pago no válido.', 'error')
+        return redirect(url_for('checkout'))
+
+    # Validar stock disponible para cada ítem ANTES de crear la orden
+    for pid, item in cart.items():
+        prod = query_db("SELECT * FROM products WHERE id=? AND active=1", (item['id'],), one=True)
+        if not prod:
+            flash(f'El producto "{item["name"]}" ya no está disponible.', 'error')
+            return redirect(url_for('checkout'))
+        if prod['stock'] < item['quantity']:
+            if prod['stock'] == 0:
+                flash(f'"{item["name"]}" está agotado. Por favor actualiza tu carrito.', 'error')
+            else:
+                flash(f'Solo hay {prod["stock"]} unidades disponibles de "{item["name"]}". Por favor actualiza tu carrito.', 'error')
+            return redirect(url_for('checkout'))
 
     subtotal = cart_total()
     shipping = 0 if subtotal >= 200 else 15
@@ -1877,28 +2118,44 @@ def admin_nueva_oc():
         flash('Proveedor y al menos un producto son requeridos.', 'error')
         return redirect(url_for('admin_ordenes_compra'))
 
+    # Construir ítems válidos antes de tocar la BD
+    line_items = []
+    for pid, qty, cost in zip(product_ids, quantities, unit_costs):
+        if not pid or not qty or not cost:
+            continue
+        qty_int = safe_int(qty, 0)
+        cost_float = safe_float(cost, 0.0)
+        pid_int = safe_int(pid, 0)
+        if qty_int <= 0 or cost_float <= 0 or pid_int <= 0:
+            continue
+        prod = query_db("SELECT id FROM products WHERE id=?", (pid_int,), one=True)
+        if not prod:
+            flash(f'Producto ID {pid_int} no encontrado.', 'error')
+            return redirect(url_for('admin_ordenes_compra'))
+        line_items.append((pid_int, qty_int, cost_float))
+
+    if not line_items:
+        flash('Debes agregar al menos un producto con cantidad y costo válidos.', 'error')
+        return redirect(url_for('admin_ordenes_compra'))
+
     po_number = f'OC-{datetime.now().strftime("%Y%m%d")}-{str(uuid.uuid4())[:6].upper()}'
-    total = sum(int(q) * float(c) for q, c in zip(quantities, unit_costs) if q and c)
+    total = sum(qty * cost for _, qty, cost in line_items)
 
     po_id = execute_db(
         "INSERT INTO purchase_orders (po_number, supplier, expected_date, notes, total) VALUES (?, ?, ?, ?, ?)",
         (po_number, supplier, expected_date, notes, total)
     )
 
-    for pid, qty, cost in zip(product_ids, quantities, unit_costs):
-        if pid and qty and cost:
-            qty_int = int(qty)
-            cost_float = float(cost)
-            execute_db(
-                "INSERT INTO purchase_order_items (po_id, product_id, quantity, unit_cost, subtotal) VALUES (?, ?, ?, ?, ?)",
-                (po_id, int(pid), qty_int, cost_float, qty_int * cost_float)
-            )
-            # Sumar stock inmediatamente (fecha futura incluida)
-            execute_db("UPDATE products SET stock = stock + ? WHERE id=?", (qty_int, int(pid)))
-            execute_db(
-                "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'entrada', ?, 'Orden de Compra', ?)",
-                (int(pid), qty_int, po_number)
-            )
+    for pid_int, qty_int, cost_float in line_items:
+        execute_db(
+            "INSERT INTO purchase_order_items (po_id, product_id, quantity, unit_cost, subtotal) VALUES (?, ?, ?, ?, ?)",
+            (po_id, pid_int, qty_int, cost_float, qty_int * cost_float)
+        )
+        execute_db("UPDATE products SET stock = stock + ? WHERE id=?", (qty_int, pid_int))
+        execute_db(
+            "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'entrada', ?, 'Orden de Compra', ?)",
+            (pid_int, qty_int, po_number)
+        )
 
     flash(f'Orden de compra {po_number} creada. Inventario actualizado.', 'success')
     return redirect(url_for('admin_ordenes_compra'))
@@ -1987,6 +2244,180 @@ def admin_cancelar_oc(po_id):
     execute_db("UPDATE purchase_orders SET status='cancelado' WHERE id=?", (po_id,))
     flash(f'Orden {po["po_number"]} cancelada. Inventario revertido.', 'success')
     return redirect(url_for('admin_ordenes_compra'))
+
+
+# ---------------------------------------------------------------------------
+# Supplier documents — upload, parse with AI, import to inventory
+# ---------------------------------------------------------------------------
+
+@app.route('/admin/proveedor-docs')
+@admin_required
+def admin_proveedor_docs():
+    docs = query_db("SELECT * FROM supplier_documents ORDER BY created_at DESC LIMIT 30")
+    return render_template('admin/proveedor_docs.html', docs=docs)
+
+
+@app.route('/admin/proveedor-docs/subir', methods=['POST'])
+@admin_required
+def admin_subir_doc():
+    file = request.files.get('document')
+    if not file or not file.filename:
+        flash('Debes seleccionar un archivo.', 'error')
+        return redirect(url_for('admin_proveedor_docs'))
+
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ALLOWED_DOC_EXTENSIONS:
+        flash(f'Formato no soportado. Usa: {", ".join(ALLOWED_DOC_EXTENSIONS)}', 'error')
+        return redirect(url_for('admin_proveedor_docs'))
+
+    safe_name = f'{uuid.uuid4().hex[:12]}_{secure_filename(file.filename)}'
+    filepath = os.path.join(DOCS_FOLDER, safe_name)
+    file.save(filepath)
+
+    # Extract text
+    doc_text, err = extract_text_from_file(filepath, file.filename)
+    if err:
+        flash(f'Error al leer el archivo: {err}', 'error')
+        return redirect(url_for('admin_proveedor_docs'))
+
+    # Parse with Claude
+    existing_products = query_db("SELECT id, name, sku, dose, price FROM products WHERE active=1 ORDER BY name")
+    parsed, err = parse_doc_with_claude(doc_text, [dict(p) for p in existing_products])
+    if err:
+        # Save doc with error status so admin can retry
+        execute_db(
+            "INSERT INTO supplier_documents (filename, original_name, file_type, status, extracted_json) VALUES (?,?,?,?,?)",
+            (safe_name, file.filename, ext, 'error', json.dumps({'error': err, 'raw_text': doc_text[:2000]}))
+        )
+        flash(f'El archivo se subió pero el análisis IA falló: {err}', 'error')
+        return redirect(url_for('admin_proveedor_docs'))
+
+    doc_id = execute_db(
+        "INSERT INTO supplier_documents (filename, original_name, file_type, supplier, status, extracted_json) VALUES (?,?,?,?,?,?)",
+        (safe_name, file.filename, ext, parsed.get('supplier', ''), 'analizado', json.dumps(parsed))
+    )
+    flash(f'Documento analizado: {parsed.get("supplier","")}, {len(parsed.get("products",[]))} producto(s) detectado(s).', 'success')
+    return redirect(url_for('admin_doc_preview', doc_id=doc_id))
+
+
+@app.route('/admin/proveedor-docs/<int:doc_id>')
+@admin_required
+def admin_doc_preview(doc_id):
+    doc = query_db("SELECT * FROM supplier_documents WHERE id=?", (doc_id,), one=True)
+    if not doc:
+        flash('Documento no encontrado.', 'error')
+        return redirect(url_for('admin_proveedor_docs'))
+    parsed = json.loads(doc['extracted_json']) if doc['extracted_json'] else {}
+    products = query_db("SELECT id, name, sku, dose, price, stock FROM products ORDER BY name")
+    docs = query_db("SELECT * FROM supplier_documents ORDER BY created_at DESC LIMIT 30")
+    return render_template('admin/proveedor_docs.html',
+                           doc=doc, parsed=parsed,
+                           all_products=products,
+                           docs=docs)
+
+
+@app.route('/admin/proveedor-docs/<int:doc_id>/importar', methods=['POST'])
+@admin_required
+def admin_importar_doc(doc_id):
+    doc = query_db("SELECT * FROM supplier_documents WHERE id=?", (doc_id,), one=True)
+    if not doc:
+        flash('Documento no encontrado.', 'error')
+        return redirect(url_for('admin_proveedor_docs'))
+    if doc['status'] == 'importado':
+        flash('Este documento ya fue importado.', 'error')
+        return redirect(url_for('admin_doc_preview', doc_id=doc_id))
+
+    supplier = request.form.get('supplier', '').strip() or doc['supplier'] or 'Proveedor'
+    expected_date = request.form.get('expected_date', '').strip()
+    notes = request.form.get('notes', '').strip()
+    create_products = request.form.get('create_products') == '1'
+
+    # Collect line items from form
+    product_ids_form = request.form.getlist('product_id[]')
+    quantities_form  = request.form.getlist('quantity[]')
+    unit_costs_form  = request.form.getlist('unit_cost[]')
+    names_form       = request.form.getlist('product_name[]')
+    doses_form       = request.form.getlist('product_dose[]')
+    skus_form        = request.form.getlist('product_sku[]')
+
+    line_items = []
+    new_product_ids = []
+
+    for i, pid_str in enumerate(product_ids_form):
+        qty = safe_int(quantities_form[i] if i < len(quantities_form) else '0', 0)
+        cost = safe_float(unit_costs_form[i] if i < len(unit_costs_form) else '0', 0.0)
+        if qty <= 0 or cost < 0:
+            continue
+
+        pid = safe_int(pid_str, 0)
+
+        if pid == 0 and create_products:
+            # Create new product
+            pname = (names_form[i] if i < len(names_form) else '').strip() or f'Producto {i+1}'
+            pdose = (doses_form[i] if i < len(doses_form) else '').strip() or '—'
+            psku  = (skus_form[i]  if i < len(skus_form)  else '').strip()
+            if not psku:
+                psku = f'JDP-{uuid.uuid4().hex[:6].upper()}'
+            existing = query_db("SELECT id FROM products WHERE sku=?", (psku,), one=True)
+            if existing:
+                pid = existing['id']
+            else:
+                pid = execute_db(
+                    "INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, active) VALUES (?,?,?,?,?,0,5,1)",
+                    (psku, pname, 'General', pdose, cost)
+                )
+                new_product_ids.append(pid)
+
+        if pid > 0:
+            line_items.append((pid, qty, cost))
+
+    if not line_items:
+        flash('No hay ítems válidos para importar.', 'error')
+        return redirect(url_for('admin_doc_preview', doc_id=doc_id))
+
+    # Create purchase order
+    po_number = f'OC-{datetime.now().strftime("%Y%m%d")}-{str(uuid.uuid4())[:6].upper()}'
+    total = sum(qty * cost for _, qty, cost in line_items)
+    po_id = execute_db(
+        "INSERT INTO purchase_orders (po_number, supplier, expected_date, notes, total, status) VALUES (?,?,?,?,?,'recibido')",
+        (po_number, supplier, expected_date, f'Importado desde doc #{doc_id}. {notes}', total)
+    )
+
+    for pid, qty, cost in line_items:
+        execute_db(
+            "INSERT INTO purchase_order_items (po_id, product_id, quantity, unit_cost, subtotal) VALUES (?,?,?,?,?)",
+            (po_id, pid, qty, cost, qty * cost)
+        )
+        execute_db("UPDATE products SET stock = stock + ? WHERE id=?", (qty, pid))
+        execute_db(
+            "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?,'entrada',?,?,?)",
+            (pid, qty, f'Importación doc proveedor #{doc_id}', po_number)
+        )
+
+    execute_db(
+        "UPDATE supplier_documents SET status='importado', po_id=?, processed_at=? WHERE id=?",
+        (po_id, datetime.now().isoformat(), doc_id)
+    )
+
+    sse_bus.publish('stock_updated', {'reload': True})
+    msg = f'OC {po_number} creada con {len(line_items)} ítem(s).'
+    if new_product_ids:
+        msg += f' {len(new_product_ids)} producto(s) nuevo(s) creado(s).'
+    flash(msg, 'success')
+    return redirect(url_for('admin_oc_detalle', po_id=po_id))
+
+
+@app.route('/admin/proveedor-docs/<int:doc_id>/eliminar', methods=['POST'])
+@admin_required
+def admin_eliminar_doc(doc_id):
+    doc = query_db("SELECT * FROM supplier_documents WHERE id=?", (doc_id,), one=True)
+    if doc:
+        filepath = os.path.join(DOCS_FOLDER, doc['filename'])
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        execute_db("DELETE FROM supplier_documents WHERE id=?", (doc_id,))
+        flash('Documento eliminado.', 'success')
+    return redirect(url_for('admin_proveedor_docs'))
 
 
 # ---------------------------------------------------------------------------

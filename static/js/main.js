@@ -387,8 +387,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 <p>No se encontraron productos para tu búsqueda.</p>
               </div>`;
           } else {
-            catalogGrid.innerHTML = data.products.map(p => renderProductCard(p)).join('');
+            catalogGrid.innerHTML = `<div class="products-grid animate-stagger">${data.products.map(p => renderProductCard(p)).join('')}</div>`;
             catalogGrid.querySelectorAll('.add-to-cart-btn').forEach(bindAddToCart);
+            // Trigger entrance animations
+            requestAnimationFrame(() => {
+              catalogGrid.querySelectorAll('.product-card').forEach((card, i) => {
+                card.style.setProperty('--delay', i * 0.05 + 's');
+                card.classList.add('animate-in');
+              });
+            });
           }
           catalogGrid.classList.remove('catalog-loading');
         })
@@ -463,4 +470,56 @@ document.addEventListener('DOMContentLoaded', function () {
   const style = document.createElement('style');
   style.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
   document.head.appendChild(style);
+
+  // ---------------------------------------------------------
+  // Scroll reveal — fade-in cards and sections as they enter viewport
+  // ---------------------------------------------------------
+  if ('IntersectionObserver' in window) {
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+    // Observe product cards and reveal-on-scroll sections
+    document.querySelectorAll('.product-card, .reveal').forEach(el => {
+      revealObserver.observe(el);
+    });
+  } else {
+    // Fallback: show all immediately
+    document.querySelectorAll('.product-card, .reveal').forEach(el => el.classList.add('visible'));
+  }
+
+  // ---------------------------------------------------------
+  // Navbar: add scrolled shadow class on scroll
+  // ---------------------------------------------------------
+  const navbar = document.querySelector('.navbar');
+  if (navbar) {
+    const onScroll = () => navbar.classList.toggle('scrolled', window.scrollY > 20);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+
+  // ---------------------------------------------------------
+  // Button press feedback (subtle scale)
+  // ---------------------------------------------------------
+  document.addEventListener('pointerdown', (e) => {
+    const btn = e.target.closest('.btn');
+    if (btn && !btn.disabled) {
+      btn.classList.add('btn-pressing');
+      const up = () => { btn.classList.remove('btn-pressing'); document.removeEventListener('pointerup', up); };
+      document.addEventListener('pointerup', up);
+    }
+  });
+
+  // Stagger index product cards on page load
+  const indexGrid = document.querySelector('.products-grid:not(#catalog-grid .products-grid)');
+  if (indexGrid) {
+    indexGrid.querySelectorAll('.product-card').forEach((card, i) => {
+      card.style.setProperty('--delay', i * 0.06 + 's');
+    });
+  }
 });

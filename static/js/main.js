@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const inStock = p.stock > 0;
       const lowStock = p.stock > 0 && p.stock <= p.low_stock_alert;
       const imgTag = p.image_url
-        ? `<img src="${p.image_url}" alt="${p.name}" class="product-card-img" loading="lazy" style="width:100%;height:100%;object-fit:cover">`
+        ? `<img src="${p.image_url}" alt="${p.name}" class="product-card-img" loading="lazy">`
         : `<div class="product-visual-name">${p.name}</div><div class="product-visual-dose">${p.dose}</div>`;
 
       const badge = !inStock

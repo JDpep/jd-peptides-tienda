@@ -802,7 +802,7 @@ PRODUCTS_SEED = [
         'benefits': 'Potente efecto anabólico|Favorece el crecimiento muscular|Estimula la pérdida de grasa|Apoya la recuperación de lesiones',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'igf1_lr3.jpeg',
+        'image_path': 'vial_igf1_lr3.jpeg',
     },
     {
         'sku': 'JDP-KPV',
@@ -814,7 +814,7 @@ PRODUCTS_SEED = [
         'benefits': 'Reduce la inflamación|Protege y repara tejidos|Alivia el dolor y molestias|Favorece la barrera intestinal',
         'stock': 30,
         'low_stock_alert': 5,
-        'image_path': 'kpv.jpeg',
+        'image_path': 'vial_kpv.jpeg',
     },
     {
         'sku': 'JDP-MOTSC',
@@ -826,7 +826,7 @@ PRODUCTS_SEED = [
         'benefits': 'Incrementa la sensibilidad a la insulina|Mejora el metabolismo celular|Favorece energía y vitalidad|Apoyo en pérdida de grasa',
         'stock': 20,
         'low_stock_alert': 5,
-        'image_path': 'mots_c.jpeg',
+        'image_path': 'vial_mots_c.jpeg',
     },
     {
         'sku': 'JDP-BPC157',
@@ -838,7 +838,7 @@ PRODUCTS_SEED = [
         'benefits': 'Regenera tejidos intestinales y úlceras|Favorece tendones y ligamentos|Potente efecto reparador sistémico|Ayuda en condiciones inflamatorias',
         'stock': 35,
         'low_stock_alert': 5,
-        'image_path': 'bpc157.jpeg',
+        'image_path': 'vial_bpc157.jpeg',
     },
     {
         'sku': 'JDP-TB500',
@@ -850,7 +850,7 @@ PRODUCTS_SEED = [
         'benefits': 'Acelera la recuperación de lesiones|Reparación muscular y tendinosa|Favorece la cicatrización|Mejora la flexibilidad y movilidad|Útil en rehabilitación deportiva',
         'stock': 28,
         'low_stock_alert': 5,
-        'image_path': 'tb500.jpeg',
+        'image_path': 'vial_tb500.jpeg',
     },
     {
         'sku': 'JDP-GHKCU',
@@ -862,7 +862,7 @@ PRODUCTS_SEED = [
         'benefits': 'Efecto anti-envejecimiento notable|Estimula el crecimiento capilar|Mejora la cicatrización de la piel|Reduce la inflamación en tejidos|Potencia la regeneración celular',
         'stock': 40,
         'low_stock_alert': 8,
-        'image_path': 'ghk_cu.jpeg',
+        'image_path': 'vial_ghk_cu.jpeg',
     },
     {
         'sku': 'JDP-RETA',
@@ -874,7 +874,7 @@ PRODUCTS_SEED = [
         'benefits': 'Ayuda en la Pérdida de Peso|Mejora el Control del Apetito|Reduce los Niveles de Azúcar en Sangre|Promueve Buena Salud Metabólica',
         'stock': 15,
         'low_stock_alert': 3,
-        'image_path': 'retatrutide.jpeg',
+        'image_path': 'vial_retatrutide.jpeg',
     },
     {
         'sku': 'JDP-DSIP',
@@ -886,7 +886,7 @@ PRODUCTS_SEED = [
         'benefits': 'Mejora la calidad del sueño|Reduce el estrés oxidativo|Regulación del ritmo circadiano|Efectos neuroprotectores',
         'stock': 22,
         'low_stock_alert': 5,
-        'image_path': 'dsip.png',
+        'image_path': 'vial_dsip.png',
     },
     {
         'sku': 'JDP-TA1',
@@ -898,7 +898,7 @@ PRODUCTS_SEED = [
         'benefits': 'Fortalece el sistema inmune|Acción antiviral y antibacteriana|Apoyo en enfermedades autoinmunes|Estimula células T y NK',
         'stock': 18,
         'low_stock_alert': 4,
-        'image_path': 'thymosin_alpha1.png',
+        'image_path': 'vial_thymosin_alpha1.png',
     },
     {
         'sku': 'JDP-IPA',
@@ -910,7 +910,7 @@ PRODUCTS_SEED = [
         'benefits': 'Estimula la hormona de crecimiento|Mejora la composición corporal|Favorece la recuperación muscular|Mejora el sueño profundo',
         'stock': 32,
         'low_stock_alert': 6,
-        'image_path': 'ipamorelin.png',
+        'image_path': 'vial_ipamorelin.png',
     },
     {
         'sku': 'JDP-TESA',
@@ -922,7 +922,7 @@ PRODUCTS_SEED = [
         'benefits': 'Estimula la hormona de crecimiento|Reduce grasa visceral|Mejora la composición corporal|Efectos neuroprotectores',
         'stock': 3,
         'low_stock_alert': 5,
-        'image_path': 'tesamorelin.png',
+        'image_path': 'vial_tesamorelin.png',
     },
 ]
 
@@ -1018,6 +1018,16 @@ def init_db():
                     (p['benefits'], p['sku'])
                 )
         db.commit()
+    # Migration: remove old non-vial product_images for standard SKUs so detail pages use static vials
+    STANDARD_SKUS = ['JDP-IGF1','JDP-KPV','JDP-MOTSC','JDP-BPC157','JDP-TB500',
+                     'JDP-GHKCU','JDP-RETA','JDP-DSIP','JDP-TA1','JDP-IPA','JDP-TESA']
+    for sku in STANDARD_SKUS:
+        db.execute("""
+            DELETE FROM product_images WHERE product_id IN (
+                SELECT id FROM products WHERE sku=?
+            ) AND filename NOT LIKE 'vial_%'
+        """, (sku,))
+    db.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -1193,7 +1203,7 @@ def api_productos():
     result = []
     for p in products:
         d = dict(p)
-        img = d.get('image_path') or SKU_IMAGE_MAP.get(d.get('sku', ''), '')
+        img = SKU_IMAGE_MAP.get(d.get('sku', ''), '') or d.get('image_path') or ''
         d['image_url'] = f'/media/{img}' if img else ''
         result.append(d)
     return jsonify({'products': result, 'count': len(result)})
@@ -1868,6 +1878,27 @@ def admin_toggle_producto(pid):
         status = 'activado' if new_active else 'desactivado'
         flash(f'Producto {status}.', 'success')
         sse_bus.publish('product_updated', {'id': pid, 'active': new_active})
+    return redirect(url_for('admin_productos'))
+
+
+@app.route('/admin/productos/<int:pid>/eliminar', methods=['POST'])
+@admin_required
+def admin_eliminar_producto(pid):
+    product = query_db("SELECT * FROM products WHERE id=?", (pid,), one=True)
+    if not product:
+        flash('Producto no encontrado.', 'error')
+        return redirect(url_for('admin_productos'))
+    # Check if product has any orders
+    order_count = query_db("SELECT COUNT(*) as c FROM order_items WHERE product_id=?", (pid,), one=True)['c']
+    if order_count > 0:
+        # Soft delete — preserve order history
+        execute_db("UPDATE products SET active=0 WHERE id=?", (pid,))
+        flash(f'"{product["name"]}" tiene {order_count} pedido(s) vinculados. Se desactivó en lugar de eliminar.', 'warning')
+    else:
+        execute_db("DELETE FROM product_images WHERE product_id=?", (pid,))
+        execute_db("DELETE FROM stock_movements WHERE product_id=?", (pid,))
+        execute_db("DELETE FROM products WHERE id=?", (pid,))
+        flash(f'"{product["name"]}" eliminado permanentemente.', 'success')
     return redirect(url_for('admin_productos'))
 
 

@@ -599,7 +599,7 @@ p { color: var(--text2); }
 
 /* --- Real product images --- */
 .product-visual-has-img {
-  background: #f8f8f8;
+  background: linear-gradient(145deg, var(--bg4), #0d0d0d);
   padding: 0;
 }
 .product-visual-has-img::before { display: none; }
@@ -607,17 +607,18 @@ p { color: var(--text2); }
 .product-card-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   display: block;
   transition: transform 0.35s ease;
+  padding: 0.5rem;
 }
 .product-card:hover .product-card-img {
   transform: scale(1.04);
 }
 
 .product-detail-has-img {
-  background: #f0f0f0;
+  background: linear-gradient(145deg, var(--bg3), var(--bg4));
   padding: 0;
   min-height: 380px;
   border-radius: var(--radius-lg);
@@ -628,10 +629,11 @@ p { color: var(--text2); }
   width: 100%;
   height: 100%;
   min-height: 380px;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   border-radius: var(--radius-lg);
   display: block;
+  padding: 1rem;
 }
 
 /* Hero section product photo */

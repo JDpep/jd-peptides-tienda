@@ -2452,8 +2452,15 @@ def faq():
 
 
 @app.context_processor
-def inject_now():
-    return {'now': datetime.now()}
+def inject_globals():
+    cats = []
+    try:
+        cats = [r['category'] for r in query_db(
+            "SELECT DISTINCT category FROM products WHERE active=1 AND category IS NOT NULL ORDER BY category"
+        )]
+    except Exception:
+        pass
+    return {'now': datetime.now(), 'nav_categories': cats}
 
 
 # ---------------------------------------------------------------------------

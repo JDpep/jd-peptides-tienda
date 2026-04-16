@@ -16,9 +16,11 @@ from flask import (Flask, render_template, request, redirect, url_for,
                    Response, stream_with_context, make_response)
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_compress import Compress
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'jdp_secret_key_2024_ultra_secure')
+Compress(app)
 
 # ---------------------------------------------------------------------------
 # Server-Sent Events bus — broadcasts real-time updates to connected clients

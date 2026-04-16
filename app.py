@@ -1183,12 +1183,12 @@ def api_productos():
         products = query_db("SELECT * FROM products WHERE active=1 ORDER BY name")
 
     SKU_IMAGE_MAP = {
-        'JDP-IGF1': 'igf1_lr3.jpeg', 'JDP-KPV': 'kpv.jpeg',
-        'JDP-MOTSC': 'mots_c.jpeg', 'JDP-BPC157': 'bpc157.jpeg',
-        'JDP-TB500': 'tb500.jpeg', 'JDP-GHKCU': 'ghk_cu.jpeg',
-        'JDP-RETA': 'retatrutide.jpeg', 'JDP-DSIP': 'dsip.png',
-        'JDP-TA1': 'thymosin_alpha1.png', 'JDP-IPA': 'ipamorelin.png',
-        'JDP-TESA': 'tesamorelin.png',
+        'JDP-IGF1': 'vial_igf1_lr3.jpeg', 'JDP-KPV': 'vial_kpv.jpeg',
+        'JDP-MOTSC': 'vial_mots_c.jpeg', 'JDP-BPC157': 'vial_bpc157.jpeg',
+        'JDP-TB500': 'vial_tb500.jpeg', 'JDP-GHKCU': 'vial_ghk_cu.jpeg',
+        'JDP-RETA': 'vial_retatrutide.jpeg', 'JDP-DSIP': 'vial_dsip.png',
+        'JDP-TA1': 'vial_thymosin_alpha1.png', 'JDP-IPA': 'vial_ipamorelin.png',
+        'JDP-TESA': 'vial_tesamorelin.png',
     }
     result = []
     for p in products:

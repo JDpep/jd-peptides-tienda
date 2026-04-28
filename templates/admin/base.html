@@ -201,75 +201,30 @@ function showAdminToast(message, type, persistent) {
   }
 }
 
-// Real-time admin panel via SSE
+// Polling cada 30s para nuevas órdenes (reemplaza SSE — sin conexiones persistentes)
 (function() {
-  if (!window.EventSource) return;
-  var es = new EventSource('/events');
+  var lastCheck = new Date().toISOString();
 
-  es.addEventListener('new_order', function(e) {
-    var d = JSON.parse(e.data);
-    showAdminToast('<span class="sse-new-order-dot"></span> Nueva orden <strong>' + d.order_number + '</strong> — ' + d.customer_name + ' — $' + parseFloat(d.total).toFixed(2), 'success', false);
-    // Update orders today counter
-    var el = document.getElementById('metric-orders-today');
-    if (el) {
-      var n = parseInt(el.textContent) || 0;
-      el.textContent = n + 1;
-      el.classList.add('metric-bump');
-      setTimeout(function() { el.classList.remove('metric-bump'); }, 600);
-    }
-  });
+  function poll() {
+    fetch('/admin/api/poll?since=' + encodeURIComponent(lastCheck))
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (!data) return;
+        lastCheck = data.server_time;
+        data.new_orders.forEach(function(o) {
+          showAdminToast('Nueva orden <strong>' + o.order_number + '</strong> — ' + o.customer_name + ' — $' + parseFloat(o.total).toFixed(2), 'success', false);
+          var el = document.getElementById('metric-orders-today');
+          if (el) {
+            el.textContent = (parseInt(el.textContent) || 0) + 1;
+            el.classList.add('metric-bump');
+            setTimeout(function() { el.classList.remove('metric-bump'); }, 600);
+          }
+        });
+      })
+      .catch(function() {});
+  }
 
-  es.addEventListener('stock_updated', function(e) {
-    var d = JSON.parse(e.data);
-    if (d.reload) return;
-    document.querySelectorAll('tr[data-pid="' + d.id + '"] .stock-value').forEach(function(cell) {
-      cell.textContent = d.stock;
-      cell.className = 'stock-value ' + (d.stock === 0 ? 'stock-critical' : d.stock <= 5 ? 'stock-low' : 'stock-ok');
-      cell.classList.add('stock-flash');
-      setTimeout(function() { cell.classList.remove('stock-flash'); }, 1000);
-    });
-  });
-
-  es.addEventListener('product_updated', function(e) {
-    var d = JSON.parse(e.data);
-    var row = document.querySelector('tr[data-pid="' + d.id + '"]');
-    if (row) {
-      if (d.stock !== undefined) {
-        var sc = row.querySelector('.stock-value');
-        if (sc) {
-          sc.textContent = d.stock;
-          sc.className = 'stock-value ' + (d.stock === 0 ? 'stock-critical' : d.stock <= 5 ? 'stock-low' : 'stock-ok');
-          sc.classList.add('stock-flash');
-          setTimeout(function() { sc.classList.remove('stock-flash'); }, 1000);
-        }
-      }
-      if (d.active !== undefined) {
-        var pill = row.querySelector('.toggle-pill');
-        if (pill) {
-          pill.className = 'toggle-pill ' + (d.active ? 'on' : 'off');
-          pill.textContent = d.active ? '✓ Activo' : '✕ Inactivo';
-        }
-      }
-    }
-    if (d.name) showAdminToast('Producto actualizado: <strong>' + d.name + '</strong>', 'info', true);
-  });
-
-  es.addEventListener('order_updated', function(e) {
-    var d = JSON.parse(e.data);
-    var row = document.querySelector('tr[data-order-id="' + d.id + '"]');
-    if (row) {
-      var badge = row.querySelector('.order-status-badge');
-      if (badge && d.status) {
-        badge.className = 'badge status-' + d.status + ' order-status-badge';
-        badge.textContent = d.status;
-        badge.classList.add('stock-flash');
-        setTimeout(function() { badge.classList.remove('stock-flash'); }, 1000);
-      }
-    }
-    showAdminToast('Orden actualizada — estado: <strong>' + (d.status || '') + '</strong>', 'info', true);
-  });
-
-  es.onerror = function() { /* Auto-reconnects */ };
+  setTimeout(function() { poll(); setInterval(poll, 30000); }, 30000);
 })();
 </script>
 {% block extra_js %}{% endblock %}

@@ -1098,37 +1098,24 @@ app.jinja_env.globals['cart_count'] = cart_count
 
 
 # ---------------------------------------------------------------------------
-# Server-Sent Events endpoint
+# Admin polling endpoint — lightweight replacement for SSE
 # ---------------------------------------------------------------------------
 
-@app.route('/events')
-def sse_stream():
-    """Real-time event stream for the store and admin panel."""
-    def generate():
-        q = sse_bus.subscribe()
-        try:
-            last_ping = time.time()
-            while True:
-                if q:
-                    yield q.pop(0)
-                else:
-                    if time.time() - last_ping > 25:
-                        yield ': keep-alive\n\n'
-                        last_ping = time.time()
-                    time.sleep(0.5)
-        except GeneratorExit:
-            pass
-        finally:
-            sse_bus.unsubscribe(q)
-
-    return Response(
-        stream_with_context(generate()),
-        mimetype='text/event-stream',
-        headers={
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-        }
-    )
+@app.route('/admin/api/poll')
+@admin_required
+def admin_poll():
+    since = request.args.get('since', '')
+    new_orders = []
+    if since:
+        rows = query_db(
+            "SELECT order_number, customer_name, total FROM orders WHERE created_at > ? ORDER BY created_at DESC LIMIT 10",
+            (since,)
+        )
+        new_orders = [dict(r) for r in rows]
+    return jsonify({
+        'new_orders': new_orders,
+        'server_time': datetime.now().isoformat(),
+    })
 
 
 # ---------------------------------------------------------------------------

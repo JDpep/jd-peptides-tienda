@@ -814,19 +814,19 @@ PRODUCTS_SEED = [
         'benefits': 'Reduce la inflamación|Protege y repara tejidos|Alivia el dolor y molestias|Favorece la barrera intestinal',
         'stock': 30,
         'low_stock_alert': 5,
-        'image_path': 'vial_kpv.jpeg',
+        'image_path': 'vial_kpv.png',
     },
     {
         'sku': 'JDP-MOTSC',
         'name': 'MOTS-C',
-        'category': 'Metabolismo',
+        'category': 'Performance',
         'dose': '10 mg',
         'price': 79.99,
         'description': 'MOTS-C es un péptido mitocondrial que regula el metabolismo energético y la homeostasis de la glucosa.',
         'benefits': 'Incrementa la sensibilidad a la insulina|Mejora el metabolismo celular|Favorece energía y vitalidad|Apoyo en pérdida de grasa',
         'stock': 20,
         'low_stock_alert': 5,
-        'image_path': 'vial_mots_c.jpeg',
+        'image_path': 'vial_mots_c.png',
     },
     {
         'sku': 'JDP-BPC157',
@@ -838,7 +838,7 @@ PRODUCTS_SEED = [
         'benefits': 'Regenera tejidos intestinales y úlceras|Favorece tendones y ligamentos|Potente efecto reparador sistémico|Ayuda en condiciones inflamatorias',
         'stock': 35,
         'low_stock_alert': 5,
-        'image_path': 'vial_bpc157.jpeg',
+        'image_path': 'vial_bpc157.png',
     },
     {
         'sku': 'JDP-TB500',
@@ -850,7 +850,7 @@ PRODUCTS_SEED = [
         'benefits': 'Acelera la recuperación de lesiones|Reparación muscular y tendinosa|Favorece la cicatrización|Mejora la flexibilidad y movilidad|Útil en rehabilitación deportiva',
         'stock': 28,
         'low_stock_alert': 5,
-        'image_path': 'vial_tb500.jpeg',
+        'image_path': 'vial_tb500.png',
     },
     {
         'sku': 'JDP-GHKCU',
@@ -862,7 +862,7 @@ PRODUCTS_SEED = [
         'benefits': 'Efecto anti-envejecimiento notable|Estimula el crecimiento capilar|Mejora la cicatrización de la piel|Reduce la inflamación en tejidos|Potencia la regeneración celular',
         'stock': 40,
         'low_stock_alert': 8,
-        'image_path': 'vial_ghk_cu.jpeg',
+        'image_path': 'vial_ghk_cu.png',
     },
     {
         'sku': 'JDP-RETA',
@@ -891,7 +891,7 @@ PRODUCTS_SEED = [
     {
         'sku': 'JDP-TA1',
         'name': 'Thymosin Alpha 1',
-        'category': 'Inmune',
+        'category': 'Anti-aging',
         'dose': '10 mg',
         'price': 84.99,
         'description': 'Thymosin Alpha 1 es un péptido inmunomodulador natural derivado del timo, estudiado por sus efectos en el sistema inmunológico.',
@@ -915,7 +915,7 @@ PRODUCTS_SEED = [
     {
         'sku': 'JDP-TESA',
         'name': 'Tesamorelin',
-        'category': 'Performance',
+        'category': 'Pérdida de Peso',
         'dose': '5 mg',
         'price': 89.99,
         'description': 'Tesamorelin es un análogo de la hormona liberadora de hormona de crecimiento (GHRH), estudiado por sus efectos en la reducción de grasa visceral.',
@@ -1007,6 +1007,11 @@ def init_db():
                     "UPDATE products SET image_path=? WHERE sku=?",
                     (p['image_path'], p['sku'])
                 )
+            if p.get('category'):
+                db.execute(
+                    "UPDATE products SET category=? WHERE sku=?",
+                    (p['category'], p['sku'])
+                )
             if p.get('description'):
                 db.execute(
                     "UPDATE products SET description=? WHERE sku=? AND (description IS NULL OR description='')",
@@ -1017,6 +1022,15 @@ def init_db():
                     "UPDATE products SET benefits=? WHERE sku=? AND (benefits IS NULL OR benefits='')",
                     (p['benefits'], p['sku'])
                 )
+        # Category migrations for products not in seed (added via admin)
+        _cat_fixes = [
+            ('JDP-NAD',  'Anti-aging'),
+            ('JDP-RT20', 'Pérdida de Peso'),
+            ('JDP-RT10', 'Pérdida de Peso'),
+            ('JDP-RETA', 'Pérdida de Peso'),
+        ]
+        for _sku, _cat in _cat_fixes:
+            db.execute("UPDATE products SET category=? WHERE sku=?", (_cat, _sku))
         db.commit()
     # Migration: remove old non-vial product_images for standard SKUs so detail pages use static vials
     STANDARD_SKUS = ['JDP-IGF1','JDP-KPV','JDP-MOTSC','JDP-BPC157','JDP-TB500',

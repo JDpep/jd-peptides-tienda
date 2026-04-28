@@ -95,7 +95,21 @@
     <div class="admin-form-group" style="margin-top:1.25rem">
       <label class="admin-label">Imágenes del Producto</label>
 
-      <!-- Galería de imágenes existentes -->
+      <!-- Imagen actual (image_path en BD) -->
+      {% if product and product['image_path'] %}
+      <div style="margin-bottom:1rem">
+        <p style="font-size:0.72rem;color:var(--text2);margin-bottom:0.5rem;letter-spacing:0.04em;text-transform:uppercase">Imagen actual</p>
+        <div style="display:flex;align-items:flex-end;gap:1rem">
+          <img src="{{ url_for('static', filename='img/' + product['image_path']) }}"
+               style="width:120px;height:120px;object-fit:contain;border-radius:8px;border:2px solid rgba(240,180,41,0.35);background:var(--bg3);padding:6px"
+               onerror="this.style.display='none'">
+          <span style="font-size:0.72rem;color:var(--text3)">{{ product['image_path'] }}<br>
+            <em style="font-size:0.67rem">Sube una nueva imagen abajo para reemplazar</em></span>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Galería de imágenes adicionales (uploads del admin) -->
       {% if product_images %}
       <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem">
         {% for img in product_images %}

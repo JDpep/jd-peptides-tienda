@@ -1,5 +1,6 @@
 flask
 gunicorn
+gevent
 flask-compress
 openpyxl
 pdfplumber

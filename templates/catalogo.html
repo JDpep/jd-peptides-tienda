@@ -2,7 +2,22 @@
 {% block title %}Catálogo — JD Peptides{% endblock %}
 
 {% block content %}
-{% set img_map = {'JDP-IGF1':'vial_igf1_lr3.jpeg','JDP-KPV':'vial_kpv.jpeg','JDP-MOTSC':'vial_mots_c.jpeg','JDP-BPC157':'vial_bpc157.jpeg','JDP-TB500':'vial_tb500.jpeg','JDP-GHKCU':'vial_ghk_cu.jpeg','JDP-RETA':'vial_retatrutide.jpeg','JDP-DSIP':'vial_dsip.png','JDP-TA1':'vial_thymosin_alpha1.png','JDP-IPA':'vial_ipamorelin.png','JDP-TESA':'vial_tesamorelin.png'} %}
+{% set img_map = {
+  'JDP-RT20':  'vial_rt20.png',
+  'JDP-RT10':  'vial_rt10.png',
+  'JDP-KLOW80':'vial_klow80.png',
+  'JDP-MOTSC': 'vial_mots_c.png',
+  'JDP-DSIP':  'vial_dsip.png',
+  'JDP-SEMAX': 'vial_semax.png',
+  'JDP-NAD':   'vial_nad.png',
+  'JDP-BPC157':'vial_bpc157.png',
+  'JDP-KPV':   'vial_kpv.png',
+  'JDP-TB500': 'vial_tb500.png',
+  'JDP-CP':    'vial_cp.png',
+  'JDP-TESA':  'vial_tesamorelin.png',
+  'JDP-GHKCU': 'vial_ghk_cu.png',
+  'JDP-BAC':   'vial_bac.png'
+} %}
 
 <!-- Page header -->
 <div class="page-strip">
@@ -65,9 +80,12 @@
                 <div class="product-visual-cat">
                   <span class="badge badge-gold">{{ p['category'] }}</span>
                 </div>
-                {% if img_map.get(p['sku'], p['image_path'] or '') %}
-                  <img src="{{ url_for('static', filename='img/' + img_map.get(p['sku'], p['image_path'] or '')) }}"
-                       alt="{{ p['name'] }}" class="product-card-img" loading="lazy">
+                {% set _pimg = p['image_path'] or img_map.get(p['sku'], '') %}
+                {% if _pimg %}
+                  <img src="{{ url_for('static', filename='img/' + _pimg) }}"
+                       alt="{{ p['name'] }}"
+                       class="product-card-img{% if _pimg.endswith('.jpeg') or _pimg.endswith('.jpg') %} img-vial-right{% endif %}"
+                       loading="lazy">
                 {% else %}
                   <div class="product-visual-pattern">
                     <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">

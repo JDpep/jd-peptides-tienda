@@ -2519,13 +2519,20 @@ def faq():
     return render_template('faq.html')
 
 
+_nav_cats_cache = {'data': [], 'ts': 0}
+_NAV_CATS_TTL = 60  # segundos
+
 @app.context_processor
 def inject_globals():
     cats = []
     try:
-        cats = [r['category'] for r in query_db(
-            "SELECT DISTINCT category FROM products WHERE active=1 AND category IS NOT NULL ORDER BY category"
-        )]
+        now_ts = time.time()
+        if now_ts - _nav_cats_cache['ts'] > _NAV_CATS_TTL:
+            _nav_cats_cache['data'] = [r['category'] for r in query_db(
+                "SELECT DISTINCT category FROM products WHERE active=1 AND category IS NOT NULL ORDER BY category"
+            )]
+            _nav_cats_cache['ts'] = now_ts
+        cats = _nav_cats_cache['data']
     except Exception:
         pass
     return {'now': datetime.now(), 'nav_categories': cats}

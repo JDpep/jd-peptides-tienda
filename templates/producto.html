@@ -2,8 +2,23 @@
 {% block title %}{{ product['name'] }} — JD Peptides{% endblock %}
 
 {% block content %}
-{% set img_map = {'JDP-IGF1':'vial_igf1_lr3.jpeg','JDP-KPV':'vial_kpv.jpeg','JDP-MOTSC':'vial_mots_c.jpeg','JDP-BPC157':'vial_bpc157.jpeg','JDP-TB500':'vial_tb500.jpeg','JDP-GHKCU':'vial_ghk_cu.jpeg','JDP-RETA':'vial_retatrutide.jpeg','JDP-DSIP':'vial_dsip.png','JDP-TA1':'vial_thymosin_alpha1.png','JDP-IPA':'vial_ipamorelin.png','JDP-TESA':'vial_tesamorelin.png'} %}
-{% set prod_img = img_map.get(product['sku'], product['image_path'] or '') %}
+{% set img_map = {
+  'JDP-RT20':  'vial_rt20.png',
+  'JDP-RT10':  'vial_rt10.png',
+  'JDP-KLOW80':'vial_klow80.png',
+  'JDP-MOTSC': 'vial_mots_c.png',
+  'JDP-DSIP':  'vial_dsip.png',
+  'JDP-SEMAX': 'vial_semax.png',
+  'JDP-NAD':   'vial_nad.png',
+  'JDP-BPC157':'vial_bpc157.png',
+  'JDP-KPV':   'vial_kpv.png',
+  'JDP-TB500': 'vial_tb500.png',
+  'JDP-CP':    'vial_cp.png',
+  'JDP-TESA':  'vial_tesamorelin.png',
+  'JDP-GHKCU': 'vial_ghk_cu.png',
+  'JDP-BAC':   'vial_bac.png'
+} %}
+{% set prod_img = product['image_path'] or img_map.get(product['sku'], '') %}
 
 <section class="product-detail">
   <div class="container">
@@ -48,7 +63,8 @@
         <div class="product-detail-visual {% if prod_img %}product-detail-has-img{% endif %}">
           {% if prod_img %}
             <img src="{{ url_for('static', filename='img/' + prod_img) }}"
-                 alt="{{ product['name'] }}" class="product-detail-img">
+                 alt="{{ product['name'] }}"
+                 class="product-detail-img{% if prod_img.endswith('.jpeg') or prod_img.endswith('.jpg') %} img-vial-right{% endif %}">
             <span class="badge badge-gold" style="position:absolute;top:1rem;left:1rem;z-index:2">{{ product['category'] }}</span>
           {% else %}
             <div style="position:absolute;inset:0;opacity:0.08">
@@ -170,10 +186,11 @@
             {% set rbenefits = p['benefits'].split('|') if p['benefits'] else [] %}
             <div class="product-card">
               <a href="{{ url_for('producto', pid=p['id']) }}" style="text-decoration:none;display:contents">
-                <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
+                {% set _rimg = p['image_path'] or img_map.get(p['sku'], '') %}
+                <div class="product-visual {% if _rimg %}product-visual-has-img{% endif %}">
                   <div class="product-visual-cat"><span class="badge badge-gold">{{ p['category'] }}</span></div>
-                  {% if img_map.get(p['sku'], p['image_path'] or '') %}
-                    <img src="{{ url_for('static', filename='img/' + img_map.get(p['sku'], p['image_path'] or '')) }}"
+                  {% if _rimg %}
+                    <img src="{{ url_for('static', filename='img/' + _rimg) }}"
                          alt="{{ p['name'] }}" class="product-card-img">
                   {% else %}
                     <div class="product-visual-pattern">

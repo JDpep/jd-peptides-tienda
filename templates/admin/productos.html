@@ -84,8 +84,11 @@
                 <a href="{{ url_for('admin_editar_producto', pid=p['id']) }}" class="btn btn-ghost btn-sm">Editar</a>
                 <a href="{{ url_for('producto', pid=p['id']) }}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>
                 <form method="POST" action="{{ url_for('admin_eliminar_producto', pid=p['id']) }}"
-                      onsubmit="return confirm('¿Eliminar «{{ p['name'] }}»?\nEsta acción no se puede deshacer.')">
-                  <button type="submit" class="btn btn-sm" style="background:rgba(220,38,38,0.15);color:#f87171;border:1px solid rgba(220,38,38,0.3)">Eliminar</button>
+                      onsubmit="return confirm('¿Eliminar «{{ p['name'] }}»?\nEsta acción no se puede deshacer.\n\nSi tiene pedidos vinculados, se desactivará en lugar de borrarse.')">
+                  <button type="submit" class="btn btn-sm btn-danger-outline" title="Eliminar producto">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    Eliminar
+                  </button>
                 </form>
               </div>
             </td>

@@ -408,8 +408,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderProductCard(p) {
       const inStock = p.stock > 0;
       const lowStock = p.stock > 0 && p.stock <= p.low_stock_alert;
+      const isJpeg = p.image_url && /\.(jpeg|jpg)$/i.test(p.image_url);
       const imgTag = p.image_url
-        ? `<img src="${p.image_url}" alt="${p.name}" class="product-card-img" loading="lazy">`
+        ? `<img src="${p.image_url}" alt="${p.name}" class="product-card-img${isJpeg ? ' img-vial-right' : ''}" loading="lazy">`
         : `<div class="product-visual-name">${p.name}</div><div class="product-visual-dose">${p.dose}</div>`;
 
       const badge = !inStock

@@ -1000,7 +1000,7 @@ PRODUCTS_SEED = [
         'sku': 'JDP-DSIP',
         'name': 'DSIP',
         'category': 'Bienestar',
-        'dose': '5 mg',
+        'dose': '10 mg',
         'price': 64.99,
         'description': 'DSIP (Delta Sleep-Inducing Peptide) es un neuropéptido nonapéptido descubierto en 1974, investigado por su capacidad de inducir el sueño de ondas lentas (delta), reducir el estrés oxidativo y modular múltiples funciones neuroendocrinas. Es uno de los péptidos con mayor evidencia experimental en regulación del ciclo sueño-vigilia.',
         'benefits': 'Mejora la calidad y profundidad del sueño (ondas delta)|Facilita la conciliación del sueño y reduce el insomnio|Regula los ritmos circadianos y la temperatura corporal|Reduce el estrés oxidativo a nivel cerebral|Efecto ansiolítico y adaptogénico en modelos de estrés|Modulación del eje neuroendocrino hipotalámico',
@@ -1012,7 +1012,7 @@ PRODUCTS_SEED = [
         'sku': 'JDP-TA1',
         'name': 'Thymosin Alpha 1',
         'category': 'Anti-aging',
-        'dose': '10 mg',
+        'dose': '1.6 mg',
         'price': 84.99,
         'description': 'Thymosin Alpha 1 (Ta1) es un péptido inmunomodulador de 28 aminoácidos de origen tímico, con más de cuatro décadas de investigación clínica activa. Aprobado en más de 35 países para infecciones virales crónicas e inmunodeficiencias, ha demostrado capacidad de restaurar y potenciar la inmunidad adaptativa en estados de inmunosupresión e infección.',
         'benefits': 'Potencia y restaura la actividad de linfocitos T y células NK|Efecto antiviral e inmunomodulador respaldado clínicamente|Apoya la función tímica y la inmunidad adaptativa|Investigado en hepatitis B/C, sepsis e inmunodeficiencias|Acción sinérgica con vacunas y tratamientos antivirales|Reduce la inmunosenescencia asociada al envejecimiento',
@@ -1036,7 +1036,7 @@ PRODUCTS_SEED = [
         'sku': 'JDP-TESA',
         'name': 'Tesamorelin',
         'category': 'Pérdida de Peso',
-        'dose': '5 mg',
+        'dose': '2 mg',
         'price': 89.99,
         'description': 'Tesamorelin es un análogo sintético estabilizado de la hormona liberadora de hormona de crecimiento (GHRH), aprobado por la FDA para la lipodistrofia asociada al VIH. Es el único GHRH análogo con aprobación regulatoria, investigado además por sus efectos neuroprotectores, la mejora de la función cognitiva y la reducción de grasa visceral en población general.',
         'benefits': 'Reduce selectivamente la grasa visceral abdominal|Estimula la producción endógena y pulsátil de GH|Mejora la composición corporal sin retención de líquidos|Apoya la función cognitiva y la neuroplasticidad|Efectos metabólicos favorables en resistencia a la insulina|Perfil de seguridad validado en ensayos clínicos aleatorizados',
@@ -1336,6 +1336,28 @@ def init_db():
             db.execute(
                 'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
                 (_any_id, 'ajuste', 0, _mig_v3_tag, datetime.now().isoformat())
+            )
+        db.commit()
+
+    # Migration v4 (2026-04-29): corregir dosis — sincronizar DB con etiquetas reales de viales
+    _mig_v4_tag = 'migration:v4:fix_doses_20260429'
+    already_v4 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v4_tag,)
+    ).fetchone()
+    if not already_v4:
+        _dose_fixes = {
+            'JDP-DSIP': '10 mg',   # etiqueta vial: 10 mg  (DB tenía 5 mg)
+            'JDP-TA1':  '1.6 mg',  # etiqueta vial: 1.6 mg (DB tenía 10 mg)
+            'JDP-TESA': '2 mg',    # etiqueta vial: 2 mg   (DB tenía 5 mg)
+        }
+        for _sku, _dose in _dose_fixes.items():
+            db.execute("UPDATE products SET dose=? WHERE sku=?", (_dose, _sku))
+        _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+        if _any_prod:
+            _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+            db.execute(
+                'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                (_any_id, 'ajuste', 0, _mig_v4_tag, datetime.now().isoformat())
             )
         db.commit()
 

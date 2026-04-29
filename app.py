@@ -72,15 +72,22 @@ def safe_int(val, default=0):
     except (TypeError, ValueError):
         return default
 
-DATABASE = os.environ.get('DATABASE_PATH', os.path.join(os.path.dirname(__file__), 'database', 'jdp.db'))
-
-# Si DATABASE_PATH apunta a un volumen externo (ej. /data/tienda.db),
-# guardamos las imágenes subidas en ese mismo volumen para que persistan.
+_on_vercel = bool(os.environ.get('VERCEL'))
 _static_img = os.path.join(os.path.dirname(__file__), 'static', 'img')
-_data_dir = os.path.dirname(DATABASE) if os.environ.get('DATABASE_PATH') else None
-UPLOAD_FOLDER = os.path.join(_data_dir, 'img') if _data_dir else _static_img
 
-DOCS_FOLDER = os.path.join(_data_dir or os.path.dirname(DATABASE), 'docs')
+if _on_vercel:
+    # Vercel: filesystem read-only excepto /tmp; SQLite y uploads van a /tmp
+    DATABASE = os.environ.get('DATABASE_PATH', '/tmp/jdp.db')
+    _data_dir = '/tmp'
+    UPLOAD_FOLDER = '/tmp/img'
+    DOCS_FOLDER = '/tmp/docs'
+else:
+    # Railway / local: usa volumen persistente si DATABASE_PATH está configurada
+    DATABASE = os.environ.get('DATABASE_PATH', os.path.join(os.path.dirname(__file__), 'database', 'jdp.db'))
+    _data_dir = os.path.dirname(DATABASE) if os.environ.get('DATABASE_PATH') else None
+    UPLOAD_FOLDER = os.path.join(_data_dir, 'img') if _data_dir else _static_img
+    DOCS_FOLDER = os.path.join(_data_dir or os.path.dirname(DATABASE), 'docs')
+
 os.makedirs(DOCS_FOLDER, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}

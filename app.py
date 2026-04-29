@@ -1269,70 +1269,50 @@ def init_db():
                 ('cat_reta_frasco_5mg_photo.jpeg', 1),
                 ('cat_reta_gold1.jpeg', 2),
                 ('cat_reta_gold2.jpeg', 3),
-                ('cat_reta_beneficios.jpeg', 4),
             ],
             'JDP-RT10': [
                 ('cat_reta_5mg_10mg.jpeg', 0),
                 ('cat_reta_gold1.jpeg', 1),
                 ('cat_reta_gold2.jpeg', 2),
-                ('cat_reta_beneficios.jpeg', 3),
             ],
             'JDP-RT20': [
                 ('cat_reta_gold1.jpeg', 0),
                 ('cat_reta_gold2.jpeg', 1),
                 ('cat_reta_5mg_10mg.jpeg', 2),
-                ('cat_reta_beneficios.jpeg', 3),
             ],
             'JDP-BPC157': [
                 ('cat_bpc157_vial.jpeg', 0),
                 ('cat_bpc157_vial2.jpeg', 1),
-                ('cat_bpc157_beneficios.jpeg', 2),
-                ('cat_bpc157_beneficios2.jpeg', 3),
             ],
             'JDP-GHKCU': [
                 ('cat_ghkcu_vial.jpeg', 0),
                 ('cat_ghkcu_vial2.jpeg', 1),
-                ('cat_ghkcu_beneficios.jpeg', 2),
-                ('cat_ghkcu_beneficios2.jpeg', 3),
             ],
             'JDP-IGF1': [
                 ('cat_igf1_vial.jpeg', 0),
                 ('cat_igf1_vial2.jpeg', 1),
-                ('cat_igf1_beneficios.jpeg', 2),
-                ('cat_igf1_beneficios2.jpeg', 3),
             ],
             'JDP-DSIP': [
                 ('cat_dsip_vial.png', 0),
-                ('cat_dsip_beneficios.png', 1),
-                ('cat_infographic_4peptides.png', 2),
             ],
             'JDP-IPA': [
                 ('cat_ipamorelin_vial.png', 0),
-                ('cat_ipamorelin_beneficios.png', 1),
-                ('cat_infographic_4peptides.png', 2),
             ],
             'JDP-KPV': [
                 ('cat_kpv_vial.jpeg', 0),
-                ('cat_kpv_beneficios.jpeg', 1),
             ],
             'JDP-MOTSC': [
                 ('cat_motsc_vial.jpeg', 0),
-                ('cat_motsc_beneficios.jpeg', 1),
             ],
             'JDP-TB500': [
                 ('cat_tb500_frasco_10mg.jpeg', 0),
                 ('cat_tb500_vial.jpeg', 1),
-                ('cat_tb500_beneficios.jpeg', 2),
             ],
             'JDP-TESA': [
                 ('cat_tesamorelin_vial.png', 0),
-                ('cat_tesamorelin_beneficios.png', 1),
-                ('cat_infographic_4peptides.png', 2),
             ],
             'JDP-TA1': [
                 ('cat_ta1_vial.png', 0),
-                ('cat_ta1_beneficios.png', 1),
-                ('cat_infographic_4peptides.png', 2),
             ],
         }
         for _sku, _imgs in _img_map.items():

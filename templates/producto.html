@@ -26,6 +26,7 @@
     <!-- Breadcrumb -->
     <nav style="margin-bottom:2rem;font-size:0.82rem;color:var(--text3)">
       <a href="{{ url_for('index') }}" style="color:var(--text3)">Inicio</a>
+      {% set _bc = {'Recuperación':'badge-cat-recuperacion','Performance':'badge-cat-performance','Anti-aging':'badge-cat-antiaging','Pérdida de Peso':'badge-cat-perdida','Bienestar':'badge-cat-bienestar'} %}
       <span style="margin:0 0.5rem">›</span>
       <a href="{{ url_for('catalogo') }}" style="color:var(--text3)">Catálogo</a>
       <span style="margin:0 0.5rem">›</span>
@@ -45,7 +46,7 @@
               <img id="gallery-main-img"
                    src="/media/{{ images[0]['filename'] }}"
                    alt="{{ product['name'] }}" class="product-detail-img">
-              <span class="badge badge-gold" style="position:absolute;top:1rem;left:1rem;z-index:2">{{ product['category'] }}</span>
+              <span class="badge badge-cat {{ _bc.get(product['category'], 'badge-cat-default') }}" style="position:absolute;top:1rem;left:1rem;z-index:2">{{ product['category'] }}</span>
             </div>
             {% if images|length > 1 %}
             <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap">
@@ -65,7 +66,7 @@
             <img src="{{ url_for('static', filename='img/' + prod_img) }}"
                  alt="{{ product['name'] }}"
                  class="product-detail-img{% if prod_img.endswith('.jpeg') or prod_img.endswith('.jpg') %} img-vial-right{% endif %}">
-            <span class="badge badge-gold" style="position:absolute;top:1rem;left:1rem;z-index:2">{{ product['category'] }}</span>
+            <span class="badge badge-cat {{ _bc.get(product['category'], 'badge-cat-default') }}" style="position:absolute;top:1rem;left:1rem;z-index:2">{{ product['category'] }}</span>
           {% else %}
             <div style="position:absolute;inset:0;opacity:0.08">
               <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
@@ -80,7 +81,7 @@
                 <line x1="200" y1="224" x2="320" y2="280" stroke="#c9a227" stroke-width="3" opacity="0.5"/>
               </svg>
             </div>
-            <span class="badge badge-gold" style="position:absolute;top:1rem;left:1rem">{{ product['category'] }}</span>
+            <span class="badge badge-cat {{ _bc.get(product['category'], 'badge-cat-default') }}" style="position:absolute;top:1rem;left:1rem">{{ product['category'] }}</span>
             <div class="product-visual-name" style="font-size:clamp(2rem,6vw,3.5rem);position:relative">{{ product['name'] }}</div>
             <div class="product-visual-dose" style="position:relative;font-size:0.95rem;margin-top:0.5rem">{{ product['dose'] }}</div>
             <div style="position:absolute;bottom:1rem;right:1rem;font-size:0.75rem;color:var(--text3);letter-spacing:0.06em">{{ product['sku'] }}</div>
@@ -188,7 +189,7 @@
               <a href="{{ url_for('producto', pid=p['id']) }}" style="text-decoration:none;display:contents">
                 {% set _rimg = p['image_path'] or img_map.get(p['sku'], '') %}
                 <div class="product-visual {% if _rimg %}product-visual-has-img{% endif %}">
-                  <div class="product-visual-cat"><span class="badge badge-gold">{{ p['category'] }}</span></div>
+                  <div class="product-visual-cat"><span class="badge badge-cat {{ _bc.get(p['category'], 'badge-cat-default') }}">{{ p['category'] }}</span></div>
                   {% if _rimg %}
                     <img src="{{ url_for('static', filename='img/' + _rimg) }}"
                          alt="{{ p['name'] }}" class="product-card-img">

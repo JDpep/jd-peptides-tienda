@@ -7,7 +7,7 @@
   <meta name="description" content="JD Peptides — Péptidos de investigación de calidad superior. For research use only.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600&display=optional" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block extra_css %}{% endblock %}
 </head>
@@ -31,23 +31,25 @@
   <nav class="navbar">
     <div class="container">
       <a href="{{ url_for('index') }}" class="navbar-logo">
-        <svg class="logo-svg" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Molecular structure SVG -->
-          <circle cx="20" cy="20" r="4" fill="#f0b429"/>
-          <circle cx="8"  cy="12" r="3" fill="#f0b429" opacity="0.7"/>
-          <circle cx="32" cy="12" r="3" fill="#f0b429" opacity="0.7"/>
-          <circle cx="8"  cy="28" r="3" fill="#f0b429" opacity="0.7"/>
-          <circle cx="32" cy="28" r="3" fill="#f0b429" opacity="0.7"/>
-          <circle cx="20" cy="6"  r="2.5" fill="#f0b429" opacity="0.5"/>
-          <circle cx="20" cy="34" r="2.5" fill="#f0b429" opacity="0.5"/>
-          <line x1="20" y1="16" x2="8"  y2="12" stroke="#f0b429" stroke-width="1.2" opacity="0.6"/>
-          <line x1="20" y1="16" x2="32" y2="12" stroke="#f0b429" stroke-width="1.2" opacity="0.6"/>
-          <line x1="20" y1="24" x2="8"  y2="28" stroke="#f0b429" stroke-width="1.2" opacity="0.6"/>
-          <line x1="20" y1="24" x2="32" y2="28" stroke="#f0b429" stroke-width="1.2" opacity="0.6"/>
-          <line x1="20" y1="16" x2="20" y2="6"  stroke="#f0b429" stroke-width="1.2" opacity="0.4"/>
-          <line x1="20" y1="24" x2="20" y2="34" stroke="#f0b429" stroke-width="1.2" opacity="0.4"/>
-          <line x1="8"  y1="12" x2="8"  y2="28" stroke="#f0b429" stroke-width="1" opacity="0.3"/>
-          <line x1="32" y1="12" x2="32" y2="28" stroke="#f0b429" stroke-width="1" opacity="0.3"/>
+        <svg class="logo-svg" viewBox="0 0 40 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="arc-g" cx="50%" cy="30%" r="50%">
+              <stop offset="0%" stop-color="#c79a3a" stop-opacity="1"/>
+              <stop offset="100%" stop-color="#c79a3a" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- Golden arc shadow (degraded ellipse) -->
+          <ellipse cx="20" cy="38" rx="15" ry="3.5" fill="url(#arc-g)"/>
+          <!-- Hexagon bonds (pointy-top, 6 atoms) -->
+          <polygon points="20,4 32,11 32,25 20,32 8,25 8,11"
+                   fill="none" stroke="#c79a3a" stroke-width="2.5" stroke-linejoin="round"/>
+          <!-- 6 atom nodes -->
+          <circle cx="20" cy="4"  r="3" fill="#c79a3a"/>
+          <circle cx="32" cy="11" r="3" fill="#c79a3a"/>
+          <circle cx="32" cy="25" r="3" fill="#c79a3a"/>
+          <circle cx="20" cy="32" r="3" fill="#c79a3a"/>
+          <circle cx="8"  cy="25" r="3" fill="#c79a3a"/>
+          <circle cx="8"  cy="11" r="3" fill="#c79a3a"/>
         </svg>
         <div class="logo-text">JD <span>PEPTIDES</span></div>
       </a>
@@ -108,16 +110,22 @@
       <div class="footer-grid">
         <div class="footer-brand">
           <a href="{{ url_for('index') }}" class="navbar-logo" style="margin-bottom:0.5rem">
-            <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
-              <circle cx="20" cy="20" r="4" fill="#f0b429"/>
-              <circle cx="8"  cy="12" r="3" fill="#f0b429" opacity="0.7"/>
-              <circle cx="32" cy="12" r="3" fill="#f0b429" opacity="0.7"/>
-              <circle cx="8"  cy="28" r="3" fill="#f0b429" opacity="0.7"/>
-              <circle cx="32" cy="28" r="3" fill="#f0b429" opacity="0.7"/>
-              <line x1="20" y1="16" x2="8"  y2="12" stroke="#f0b429" stroke-width="1.2" opacity="0.6"/>
-              <line x1="20" y1="16" x2="32" y2="12" stroke="#f0b429" stroke-width="1.2" opacity="0.6"/>
-              <line x1="20" y1="24" x2="8"  y2="28" stroke="#f0b429" stroke-width="1.2" opacity="0.6"/>
-              <line x1="20" y1="24" x2="32" y2="28" stroke="#f0b429" stroke-width="1.2" opacity="0.6"/>
+            <svg width="32" height="35" viewBox="0 0 40 44" fill="none">
+              <defs>
+                <radialGradient id="arc-f" cx="50%" cy="30%" r="50%">
+                  <stop offset="0%" stop-color="#c79a3a" stop-opacity="1"/>
+                  <stop offset="100%" stop-color="#c79a3a" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <ellipse cx="20" cy="38" rx="15" ry="3.5" fill="url(#arc-f)"/>
+              <polygon points="20,4 32,11 32,25 20,32 8,25 8,11"
+                       fill="none" stroke="#c79a3a" stroke-width="2.5" stroke-linejoin="round"/>
+              <circle cx="20" cy="4"  r="3" fill="#c79a3a"/>
+              <circle cx="32" cy="11" r="3" fill="#c79a3a"/>
+              <circle cx="32" cy="25" r="3" fill="#c79a3a"/>
+              <circle cx="20" cy="32" r="3" fill="#c79a3a"/>
+              <circle cx="8"  cy="25" r="3" fill="#c79a3a"/>
+              <circle cx="8"  cy="11" r="3" fill="#c79a3a"/>
             </svg>
             <span class="logo-text" style="font-size:0.9rem">JD <span>PEPTIDES</span></span>
           </a>

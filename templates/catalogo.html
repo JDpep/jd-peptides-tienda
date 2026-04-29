@@ -48,13 +48,14 @@
       </div>
 
       <!-- Category pills -->
+      {% set _cat_cls = {'Recuperación':'cat-recuperacion','Performance':'cat-performance','Anti-aging':'cat-antiaging','Pérdida de Peso':'cat-perdida','Bienestar':'cat-bienestar'} %}
       <div class="category-pills" style="margin-bottom:0;flex:1">
         <a href="{{ url_for('catalogo') }}"
            class="pill category-pill {% if not current_category %}active{% endif %}"
            data-category="">Todos</a>
         {% for cat in categories %}
           <a href="{{ url_for('catalogo', categoria=cat['category']) }}"
-             class="pill category-pill {% if current_category == cat['category'] %}active{% endif %}"
+             class="pill category-pill {{ _cat_cls.get(cat['category'], '') }} {% if current_category == cat['category'] %}active{% endif %}"
              data-category="{{ cat['category'] }}">
             {{ cat['category'] }}
           </a>
@@ -77,8 +78,9 @@
           <div class="product-card" data-product-id="{{ p['id'] }}" style="--delay:{{ loop.index0 * 0.06 }}s">
             <a href="{{ url_for('producto', pid=p['id']) }}" style="text-decoration:none;display:contents">
               <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
+                {% set _bc = {'Recuperación':'badge-cat-recuperacion','Performance':'badge-cat-performance','Anti-aging':'badge-cat-antiaging','Pérdida de Peso':'badge-cat-perdida','Bienestar':'badge-cat-bienestar'} %}
                 <div class="product-visual-cat">
-                  <span class="badge badge-gold">{{ p['category'] }}</span>
+                  <span class="badge badge-cat {{ _bc.get(p['category'], 'badge-cat-default') }}">{{ p['category'] }}</span>
                 </div>
                 {% set _pimg = p['image_path'] or img_map.get(p['sku'], '') %}
                 {% if _pimg %}

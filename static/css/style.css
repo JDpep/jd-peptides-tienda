@@ -1955,6 +1955,62 @@ dl.info-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; 
   animation-delay: var(--delay, 0s);
 }
 
+/* --- Hero entrance animations (above-fold, CSS-only) --- */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(36px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes heroFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.hero-anim-badge { animation: heroFadeIn  0.55s ease 0.05s both; }
+.hero-anim-title { animation: heroFadeUp  0.70s ease 0.20s both; }
+.hero-anim-body  { animation: heroFadeUp  0.70s ease 0.38s both; }
+.hero-anim-cta   { animation: heroFadeUp  0.70s ease 0.52s both; }
+.hero-anim-disc  { animation: heroFadeIn  0.60s ease 0.72s both; }
+
+/* --- Vial float animation --- */
+@keyframes vialFloat {
+  0%   { transform: translateY(0px)   rotate(-1.2deg); }
+  50%  { transform: translateY(-14px) rotate(1.2deg);  }
+  100% { transform: translateY(0px)   rotate(-1.2deg); }
+}
+.cq-vial-img {
+  width: 210px;
+  filter: drop-shadow(0 28px 56px rgba(199,154,58,0.30)) drop-shadow(0 8px 22px rgba(0,0,0,0.55));
+  animation: vialFloat 5.5s ease-in-out infinite;
+  will-change: transform;
+  display: block;
+}
+
+/* --- Directional scroll reveal --- */
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-36px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+  transition-delay: var(--delay, 0s);
+}
+.reveal-right {
+  opacity: 0;
+  transform: translateX(36px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+  transition-delay: var(--delay, 0s);
+}
+.reveal-left.visible,
+.reveal-right.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Count-up highlight pulse when stat enters view */
+@keyframes statPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.12); color: var(--gold-light); }
+  100% { transform: scale(1); }
+}
+.cq-stat-num.counted { animation: statPop 0.55s ease both; }
+
 /* --- Skeleton shimmer cards (catalog search loading) --- */
 .skeleton-card {
   background: var(--bg3);

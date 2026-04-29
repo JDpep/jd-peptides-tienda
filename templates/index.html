@@ -5,21 +5,18 @@
 
 <!-- Hero -->
 <section class="hero">
-
-  <!-- Amino Acid Chain Background SVG -->
   <div class="hero-pattern">
     <img src="{{ url_for('static', filename='img/hero-pattern.svg') }}" alt="" aria-hidden="true" style="width:100%;height:100%;object-fit:cover;">
   </div>
-
   <div class="container hero-content">
-    <div class="hero-badge">🔬 For Research Use Only</div>
-    <h1>Péptidos de Investigación<br><span class="highlight">de Calidad Superior</span></h1>
-    <p>Productos de alta pureza para investigación científica. Formulados con los más altos estándares de calidad y precisión.</p>
-    <div class="hero-cta">
+    <div class="hero-badge hero-anim-badge">🔬 For Research Use Only</div>
+    <h1 class="hero-anim-title">Péptidos de Investigación<br><span class="highlight">de Calidad Superior</span></h1>
+    <p class="hero-anim-body">Productos de alta pureza para investigación científica. Formulados con los más altos estándares de calidad y precisión.</p>
+    <div class="hero-cta hero-anim-cta">
       <a href="{{ url_for('catalogo') }}" class="btn btn-gold btn-lg">Ver Catálogo Completo</a>
       <a href="#categorias" class="btn btn-outline btn-lg">Explorar Categorías</a>
     </div>
-    <p class="hero-disclaimer">⚗️ Exclusivamente para uso en investigación científica</p>
+    <p class="hero-disclaimer hero-anim-disc">⚗️ Exclusivamente para uso en investigación científica</p>
   </div>
 </section>
 
@@ -32,7 +29,7 @@
   <div aria-hidden="true" style="position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);width:720px;height:720px;border-radius:50%;background:radial-gradient(circle,rgba(199,154,58,0.07) 0%,transparent 65%);pointer-events:none"></div>
 
   <!-- Title block -->
-  <div class="container" style="position:relative;z-index:1;text-align:center;margin-bottom:3.5rem">
+  <div class="container reveal" style="position:relative;z-index:1;text-align:center;margin-bottom:3.5rem">
     <p style="font-size:0.7rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:0.8rem">Control de Calidad</p>
     <h2 style="font-size:clamp(1.85rem,3.5vw,2.75rem);font-weight:800;line-height:1.15;margin-bottom:1rem">
       JD Peptides es <span class="gold">garantía de calidad</span>
@@ -48,7 +45,7 @@
     <div class="cq-stage">
 
       <!-- Columna izquierda: badge COA -->
-      <div class="cq-col-left">
+      <div class="cq-col-left reveal-left" style="--delay:0.1s">
         <div class="cq-badge">
           <div class="cq-circle">
             <span style="font-size:1.05rem;font-weight:900;letter-spacing:0.04em">COA</span>
@@ -61,40 +58,14 @@
         </div>
       </div>
 
-      <!-- Centro: vial SVG + COA card flotante -->
+      <!-- Centro: vial foto real + COA card flotante -->
       <div class="cq-col-center">
         <div class="cq-vial-wrap">
 
-          <!-- Vial SVG -->
-          <svg viewBox="0 0 200 340" fill="none" xmlns="http://www.w3.org/2000/svg"
-               style="width:180px;filter:drop-shadow(0 24px 64px rgba(199,154,58,0.22))">
-            <!-- Cap -->
-            <rect x="62" y="8" width="76" height="28" rx="8" fill="#c79a3a"/>
-            <rect x="70" y="6" width="60" height="12" rx="5" fill="#e8c873"/>
-            <rect x="76" y="10" width="48" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
-            <!-- Neck -->
-            <rect x="72" y="34" width="56" height="14" rx="4" fill="#1c1c1c" stroke="rgba(199,154,58,0.5)" stroke-width="1"/>
-            <!-- Body -->
-            <rect x="52" y="46" width="96" height="224" rx="12" fill="rgba(255,255,255,0.05)" stroke="rgba(199,154,58,0.3)" stroke-width="1.5"/>
-            <!-- Glass shine -->
-            <rect x="60" y="58" width="9" height="185" rx="4.5" fill="rgba(255,255,255,0.08)"/>
-            <!-- Liquid fill -->
-            <rect x="54" y="168" width="92" height="100" rx="0 0 11 11" fill="rgba(199,154,58,0.1)"/>
-            <rect x="54" y="164" width="92" height="8" rx="4" fill="rgba(199,154,58,0.18)"/>
-            <!-- Label white area -->
-            <rect x="58" y="72" width="84" height="116" rx="6" fill="rgba(255,255,255,0.94)"/>
-            <!-- Label content -->
-            <text x="100" y="94"  text-anchor="middle" font-family="Montserrat,sans-serif" font-size="8.5" font-weight="800" fill="#0a0a0a">JD Peptides</text>
-            <text x="100" y="116" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="15" font-weight="900" fill="#0a0a0a">BPC-157</text>
-            <text x="100" y="132" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#444">10 mg</text>
-            <!-- Purity bar -->
-            <rect x="64" y="143" width="72" height="19" rx="3.5" fill="#0a0a0a"/>
-            <text x="100" y="156" text-anchor="middle" font-family="sans-serif" font-size="7.5" font-weight="700" fill="#c79a3a">Pureza 99%+ HPLC</text>
-            <!-- Disclaimer -->
-            <text x="100" y="177" text-anchor="middle" font-family="sans-serif" font-size="6.5" fill="#888">For Research Use Only</text>
-            <!-- Bottom cap -->
-            <rect x="52" y="268" width="96" height="14" rx="4" fill="#141414" stroke="rgba(199,154,58,0.25)" stroke-width="1"/>
-          </svg>
+          <!-- Vial foto realista -->
+          <img src="{{ url_for('static', filename='img/cat_reta_frasco_5mg.png') }}"
+               alt="JD Peptides — Vial Retatrutide 5mg"
+               class="cq-vial-img">
 
           <!-- Tarjeta COA flotante (abajo-izquierda del vial) -->
           <div class="cq-coa-card">
@@ -133,7 +104,7 @@
       </div>
 
       <!-- Columna derecha: badge Fabricado en México -->
-      <div class="cq-col-right">
+      <div class="cq-col-right reveal-right" style="--delay:0.1s">
         <div class="cq-badge cq-badge-r">
           <div class="cq-circle">
             <span style="font-size:1.5rem;line-height:1">🇲🇽</span>
@@ -150,7 +121,7 @@
     </div><!-- /cq-stage -->
 
     <!-- Badge inferior centrado: Pureza 99%+ -->
-    <div class="cq-bottom">
+    <div class="cq-bottom reveal" style="--delay:0.15s">
       <div class="cq-circle cq-circle-lg">
         <span style="font-size:1.45rem;font-weight:900;line-height:1;font-family:'Montserrat',sans-serif">99%+</span>
         <span style="font-size:0.57rem;font-weight:700;letter-spacing:0.1em;margin-top:4px">PUREZA</span>
@@ -165,10 +136,10 @@
   </div><!-- /container stage -->
 
   <!-- Strip de estadísticas -->
-  <div class="container" style="position:relative;z-index:1;margin-top:4rem">
+  <div class="container reveal" style="position:relative;z-index:1;margin-top:4rem;--delay:0.1s">
     <div class="cq-stats-strip">
       <div class="cq-stat">
-        <span class="cq-stat-num">99%+</span>
+        <span class="cq-stat-num" data-target="99" data-suffix="%+">99%+</span>
         <span class="cq-stat-lbl">Pureza HPLC</span>
       </div>
       <div class="cq-stat-div"></div>
@@ -193,10 +164,10 @@
     /* ── Stage layout ── */
     .cq-stage {
       display: grid;
-      grid-template-columns: 1fr 200px 1fr;
+      grid-template-columns: 1fr 240px 1fr;
       gap: 1rem 2.5rem;
       align-items: center;
-      max-width: 880px;
+      max-width: 920px;
       margin: 0 auto;
     }
     .cq-col-left  { display:flex; flex-direction:column; align-items:flex-end; }
@@ -237,13 +208,14 @@
     .cq-vial-wrap { position:relative; display:inline-flex; flex-direction:column; align-items:center; }
     .cq-coa-card {
       position:absolute;
-      bottom:28px; left:-52px;
+      bottom:40px; left:-58px;
       background:var(--bg3);
       border:1px solid rgba(199,154,58,0.28);
       border-radius:10px;
       padding:0.65rem 0.8rem;
       text-align:center;
       box-shadow:0 8px 36px rgba(0,0,0,0.55);
+      animation: vialFloat 5.5s ease-in-out 1.5s infinite;
     }
 
     /* ── Bottom badge ── */
@@ -393,17 +365,17 @@
       <p>Nos comprometemos con los más altos estándares de la investigación científica</p>
     </div>
     <div class="pillars-grid">
-      <div class="pillar-card">
+      <div class="pillar-card reveal" style="--delay:0.05s">
         <span class="pillar-icon">🏆</span>
         <h3>Calidad Garantizada</h3>
         <p>Cada producto es verificado con análisis de pureza. Trabajamos únicamente con proveedores certificados que cumplen estándares internacionales.</p>
       </div>
-      <div class="pillar-card">
+      <div class="pillar-card reveal" style="--delay:0.15s">
         <span class="pillar-icon">📦</span>
         <h3>Envío Seguro</h3>
         <p>Empaque especializado con temperatura controlada. Garantizamos la integridad de cada péptido durante el transporte y entrega.</p>
       </div>
-      <div class="pillar-card">
+      <div class="pillar-card reveal" style="--delay:0.25s">
         <span class="pillar-icon">🔬</span>
         <h3>Soporte Especializado</h3>
         <p>Equipo de expertos en bioquímica disponible para responder consultas técnicas y apoyar tu proceso de investigación.</p>
@@ -420,7 +392,7 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:3.5rem 5rem;align-items:start" class="about-grid">
 
       <!-- Columna izquierda: título + texto -->
-      <div>
+      <div class="reveal-left">
         <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c9a227;margin-bottom:0.75rem">Sobre nosotros</p>
         <h2 style="font-size:clamp(1.8rem,3vw,2.5rem);font-weight:800;color:#111;line-height:1.2;margin-bottom:1.5rem">
           Quiénes somos y<br>qué nos <span style="color:#c9a227">mueve</span>
@@ -440,7 +412,7 @@
       </div>
 
       <!-- Columna derecha: bullets + CTAs -->
-      <div style="display:flex;flex-direction:column;gap:2rem;padding-top:0.5rem">
+      <div class="reveal-right" style="display:flex;flex-direction:column;gap:2rem;padding-top:0.5rem;--delay:0.12s">
 
         <!-- Bullets -->
         <div style="display:flex;flex-direction:column;gap:1.25rem">

@@ -485,13 +485,42 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
 
-    // Observe product cards and reveal-on-scroll sections
-    document.querySelectorAll('.product-card, .reveal').forEach(el => {
+    document.querySelectorAll('.product-card, .reveal, .reveal-left, .reveal-right').forEach(el => {
       revealObserver.observe(el);
     });
+
+    // Count-up for stat numbers when they enter view
+    const countUpObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const raw = el.dataset.target;
+        if (!raw) return;
+        countUpObserver.unobserve(el);
+        const end = parseFloat(raw);
+        const isInt = Number.isInteger(end);
+        const suffix = el.dataset.suffix || '';
+        const prefix = el.dataset.prefix || '';
+        const dur = 1200;
+        const start = performance.now();
+        function tick(now) {
+          const pct = Math.min((now - start) / dur, 1);
+          const eased = 1 - Math.pow(1 - pct, 3);
+          const val = end * eased;
+          el.textContent = prefix + (isInt ? Math.round(val) : val.toFixed(1)) + suffix;
+          if (pct < 1) requestAnimationFrame(tick);
+          else { el.textContent = prefix + (isInt ? end : end.toFixed(1)) + suffix; el.classList.add('counted'); }
+        }
+        requestAnimationFrame(tick);
+      });
+    }, { threshold: 0.3 });
+
+    document.querySelectorAll('.cq-stat-num[data-target]').forEach(el => {
+      countUpObserver.observe(el);
+    });
+
   } else {
-    // Fallback: show all immediately
-    document.querySelectorAll('.product-card, .reveal').forEach(el => el.classList.add('visible'));
+    document.querySelectorAll('.product-card, .reveal, .reveal-left, .reveal-right').forEach(el => el.classList.add('visible'));
   }
 
   // ---------------------------------------------------------

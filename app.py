@@ -922,7 +922,7 @@ PRODUCTS_SEED = [
         'benefits': 'Potente efecto anabólico en tejido muscular esquelético|Estimula la síntesis de proteínas y la proliferación celular|Favorece la reducción del tejido adiposo|Apoya la regeneración de cartílagos y tejidos blandos|Vida media prolongada para efectos sostenidos en investigación|Modulación de diferenciación celular y procesos neuroprotectores',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'cat_igf1_beneficios.jpeg',
+        'image_path': 'cat_igf1_vial.jpeg',
     },
     {
         'sku': 'JDP-KPV',
@@ -934,7 +934,7 @@ PRODUCTS_SEED = [
         'benefits': 'Potente acción antiinflamatoria sistémica y local|Protege y repara la mucosa intestinal dañada|Modula la respuesta inmune sin causar inmunosupresión|Alivia la inflamación en modelos de enfermedad intestinal|Favorece la integridad de la barrera epitelial|Investigado en dermatitis, colitis y síndrome de intestino permeable',
         'stock': 30,
         'low_stock_alert': 5,
-        'image_path': 'cat_kpv_beneficios.jpeg',
+        'image_path': 'cat_kpv_vial.jpeg',
     },
     {
         'sku': 'JDP-MOTSC',
@@ -946,7 +946,7 @@ PRODUCTS_SEED = [
         'benefits': 'Incrementa la sensibilidad a la insulina y la captación de glucosa|Optimiza el metabolismo energético mitocondrial|Favorece la oxidación de ácidos grasos (betaoxidación)|Efectos moleculares similares al ejercicio físico|Apoya la regulación del peso y la composición corporal|Investigado en longevidad, síndrome metabólico y anti-envejecimiento',
         'stock': 20,
         'low_stock_alert': 5,
-        'image_path': 'cat_motsc_beneficios.jpeg',
+        'image_path': 'cat_motsc_vial.jpeg',
     },
     {
         'sku': 'JDP-BPC157',
@@ -958,7 +958,7 @@ PRODUCTS_SEED = [
         'benefits': 'Regenera y protege la mucosa gástrica e intestinal|Acelera la curación de tendones, ligamentos y músculo|Efecto antiinflamatorio potente en tejidos lesionados|Promueve la angiogénesis y vascularización|Modulación del sistema nervioso central y periférico|Amplio perfil de seguridad documentado en estudios preclínicos',
         'stock': 35,
         'low_stock_alert': 5,
-        'image_path': 'cat_bpc157_beneficios.jpeg',
+        'image_path': 'cat_bpc157_vial.jpeg',
     },
     {
         'sku': 'JDP-TB500',
@@ -982,7 +982,7 @@ PRODUCTS_SEED = [
         'benefits': 'Estimula la síntesis de colágeno, elastina y glucosaminoglicanos|Potente efecto anti-envejecimiento en piel y tejidos|Promueve el crecimiento, densidad y engrosamiento del cabello|Acelera la cicatrización de heridas, quemaduras y úlceras|Reduce la inflamación y el daño oxidativo celular|Activa genes de reparación del ADN y procesos regenerativos',
         'stock': 40,
         'low_stock_alert': 8,
-        'image_path': 'cat_ghkcu_beneficios.jpeg',
+        'image_path': 'cat_ghkcu_vial.jpeg',
     },
     {
         'sku': 'JDP-RETA',
@@ -1006,7 +1006,7 @@ PRODUCTS_SEED = [
         'benefits': 'Mejora la calidad y profundidad del sueño (ondas delta)|Facilita la conciliación del sueño y reduce el insomnio|Regula los ritmos circadianos y la temperatura corporal|Reduce el estrés oxidativo a nivel cerebral|Efecto ansiolítico y adaptogénico en modelos de estrés|Modulación del eje neuroendocrino hipotalámico',
         'stock': 22,
         'low_stock_alert': 5,
-        'image_path': 'cat_dsip_beneficios.png',
+        'image_path': 'cat_dsip_vial.png',
     },
     {
         'sku': 'JDP-TA1',
@@ -1018,7 +1018,7 @@ PRODUCTS_SEED = [
         'benefits': 'Potencia y restaura la actividad de linfocitos T y células NK|Efecto antiviral e inmunomodulador respaldado clínicamente|Apoya la función tímica y la inmunidad adaptativa|Investigado en hepatitis B/C, sepsis e inmunodeficiencias|Acción sinérgica con vacunas y tratamientos antivirales|Reduce la inmunosenescencia asociada al envejecimiento',
         'stock': 18,
         'low_stock_alert': 4,
-        'image_path': 'cat_ta1_beneficios.png',
+        'image_path': 'cat_ta1_vial.png',
     },
     {
         'sku': 'JDP-IPA',
@@ -1030,7 +1030,7 @@ PRODUCTS_SEED = [
         'benefits': 'Estimula de forma selectiva la liberación pulsátil de GH|Mejora la composición corporal: mayor masa magra y menor grasa|Favorece la recuperación muscular y la regeneración tisular|Mejora la calidad del sueño profundo (fase III-IV NREM)|Sin impacto en cortisol, prolactina ni ACTH|Efecto sinérgico con CJC-1295 para amplificación del pulso GH',
         'stock': 32,
         'low_stock_alert': 6,
-        'image_path': 'cat_ipamorelin_beneficios.png',
+        'image_path': 'cat_ipamorelin_vial.png',
     },
     {
         'sku': 'JDP-TESA',
@@ -1042,7 +1042,7 @@ PRODUCTS_SEED = [
         'benefits': 'Reduce selectivamente la grasa visceral abdominal|Estimula la producción endógena y pulsátil de GH|Mejora la composición corporal sin retención de líquidos|Apoya la función cognitiva y la neuroplasticidad|Efectos metabólicos favorables en resistencia a la insulina|Perfil de seguridad validado en ensayos clínicos aleatorizados',
         'stock': 3,
         'low_stock_alert': 5,
-        'image_path': 'cat_tesamorelin_beneficios.png',
+        'image_path': 'cat_tesamorelin_vial.png',
     },
 ]
 
@@ -1284,42 +1284,55 @@ def init_db():
                 ('cat_reta_beneficios.jpeg', 3),
             ],
             'JDP-BPC157': [
-                ('cat_bpc157_beneficios.jpeg', 0),
-                ('cat_bpc157_beneficios2.jpeg', 1),
+                ('cat_bpc157_vial.jpeg', 0),
+                ('cat_bpc157_vial2.jpeg', 1),
+                ('cat_bpc157_beneficios.jpeg', 2),
+                ('cat_bpc157_beneficios2.jpeg', 3),
             ],
             'JDP-GHKCU': [
-                ('cat_ghkcu_beneficios.jpeg', 0),
-                ('cat_ghkcu_beneficios2.jpeg', 1),
+                ('cat_ghkcu_vial.jpeg', 0),
+                ('cat_ghkcu_vial2.jpeg', 1),
+                ('cat_ghkcu_beneficios.jpeg', 2),
+                ('cat_ghkcu_beneficios2.jpeg', 3),
             ],
             'JDP-IGF1': [
-                ('cat_igf1_beneficios.jpeg', 0),
-                ('cat_igf1_beneficios2.jpeg', 1),
+                ('cat_igf1_vial.jpeg', 0),
+                ('cat_igf1_vial2.jpeg', 1),
+                ('cat_igf1_beneficios.jpeg', 2),
+                ('cat_igf1_beneficios2.jpeg', 3),
             ],
             'JDP-DSIP': [
-                ('cat_dsip_beneficios.png', 0),
-                ('cat_infographic_4peptides.png', 1),
+                ('cat_dsip_vial.png', 0),
+                ('cat_dsip_beneficios.png', 1),
+                ('cat_infographic_4peptides.png', 2),
             ],
             'JDP-IPA': [
-                ('cat_ipamorelin_beneficios.png', 0),
-                ('cat_infographic_4peptides.png', 1),
+                ('cat_ipamorelin_vial.png', 0),
+                ('cat_ipamorelin_beneficios.png', 1),
+                ('cat_infographic_4peptides.png', 2),
             ],
             'JDP-KPV': [
-                ('cat_kpv_beneficios.jpeg', 0),
+                ('cat_kpv_vial.jpeg', 0),
+                ('cat_kpv_beneficios.jpeg', 1),
             ],
             'JDP-MOTSC': [
-                ('cat_motsc_beneficios.jpeg', 0),
+                ('cat_motsc_vial.jpeg', 0),
+                ('cat_motsc_beneficios.jpeg', 1),
             ],
             'JDP-TB500': [
                 ('cat_tb500_frasco_10mg.jpeg', 0),
-                ('cat_tb500_beneficios.jpeg', 1),
+                ('cat_tb500_vial.jpeg', 1),
+                ('cat_tb500_beneficios.jpeg', 2),
             ],
             'JDP-TESA': [
-                ('cat_tesamorelin_beneficios.png', 0),
-                ('cat_infographic_4peptides.png', 1),
+                ('cat_tesamorelin_vial.png', 0),
+                ('cat_tesamorelin_beneficios.png', 1),
+                ('cat_infographic_4peptides.png', 2),
             ],
             'JDP-TA1': [
-                ('cat_ta1_beneficios.png', 0),
-                ('cat_infographic_4peptides.png', 1),
+                ('cat_ta1_vial.png', 0),
+                ('cat_ta1_beneficios.png', 1),
+                ('cat_infographic_4peptides.png', 2),
             ],
         }
         for _sku, _imgs in _img_map.items():

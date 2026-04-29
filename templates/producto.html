@@ -94,9 +94,9 @@
           <span>●</span>
           <span id="product-stock-badge-{{ product['id'] }}">
             {% if product['stock'] > product['low_stock_alert'] %}
-              En stock ({{ product['stock'] }} unidades disponibles)
+              En stock
             {% elif product['stock'] > 0 %}
-              Stock bajo ({{ product['stock'] }} unidades)
+              Stock limitado
             {% else %}
               Sin stock
             {% endif %}

@@ -3,6 +3,11 @@ import re
 import csv
 import io
 import sqlite3
+try:
+    import psycopg2
+    import psycopg2.extras
+except ImportError:
+    psycopg2 = None
 import json
 import uuid
 import threading
@@ -89,6 +94,9 @@ else:
     DOCS_FOLDER = os.path.join(_data_dir or os.path.dirname(DATABASE), 'docs')
 
 os.makedirs(DOCS_FOLDER, exist_ok=True)
+
+_DATABASE_URL = os.environ.get('DATABASE_URL', '')
+_USE_POSTGRES = bool(_DATABASE_URL) and psycopg2 is not None
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
 ALLOWED_DOC_EXTENSIONS = {'xlsx', 'xls', 'csv', 'pdf'}
@@ -639,20 +647,124 @@ Devuelve ÚNICAMENTE el JSON válido, sin markdown, sin explicaciones adicionale
         return None, f'Error: {e}'
 
 # ---------------------------------------------------------------------------
+# PostgreSQL compatibility wrapper — makes psycopg2 behave like sqlite3
+# Translates: ? → %s, LIKE → ILIKE, strftime → substring, AUTOINCREMENT → SERIAL
+# ---------------------------------------------------------------------------
+
+class _NullCursor:
+    def fetchone(self): return None
+    def fetchall(self): return []
+    def close(self): pass
+    @property
+    def lastrowid(self): return None
+
+class _FakeResult:
+    def __init__(self, rows): self._rows = rows
+    def fetchone(self): return self._rows[0] if self._rows else None
+    def fetchall(self): return self._rows
+    def close(self): pass
+    @property
+    def lastrowid(self): return None
+
+class _PGCursor:
+    def __init__(self, cur, conn, is_insert=False):
+        self._cur = cur; self._conn = conn; self._is_insert = is_insert
+    def fetchone(self): return self._cur.fetchone()
+    def fetchall(self): return self._cur.fetchall()
+    def close(self): self._cur.close()
+    def __iter__(self): return iter(self._cur.fetchall())
+    @property
+    def lastrowid(self):
+        if not self._is_insert:
+            return None
+        try:
+            tmp = self._conn.cursor()
+            tmp.execute("SELECT lastval()")
+            row = tmp.fetchone()
+            return row[0] if row else None
+        except Exception:
+            return None
+
+class _PGWrapper:
+    _STRFTIME_RE = re.compile(r"strftime\('%Y-%m',\s*([\w.]+)\)", re.I)
+    _AUTOINCR_RE = re.compile(r'\bINTEGER PRIMARY KEY AUTOINCREMENT\b', re.I)
+    _DATETIME_RE = re.compile(r"DEFAULT\s*\(datetime\('now'\)\)", re.I)
+    _PG_TS = "DEFAULT (to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS'))"
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def _adapt(self, q):
+        q = q.replace('?', '%s')
+        q = q.replace(' LIKE ', ' ILIKE ')
+        q = self._STRFTIME_RE.sub(r'substring(\1, 1, 7)', q)
+        q = self._AUTOINCR_RE.sub('SERIAL PRIMARY KEY', q)
+        q = self._DATETIME_RE.sub(self._PG_TS, q)
+        return q
+
+    def execute(self, query, args=()):
+        q = query.strip()
+        qu = q.upper()
+        if qu == 'ROLLBACK':
+            self._conn.rollback(); return _NullCursor()
+        if qu == 'COMMIT':
+            self._conn.commit(); return _NullCursor()
+        if qu in ('BEGIN', 'BEGIN EXCLUSIVE'):
+            return _NullCursor()
+        m = re.match(r'PRAGMA\s+TABLE_INFO\s*\(\s*(\w+)\s*\)', q, re.I)
+        if m:
+            return self._pragma_table_info(m.group(1).lower())
+        if qu.startswith('PRAGMA'):
+            return _NullCursor()
+        is_insert = qu.startswith('INSERT')
+        cur = self._conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(self._adapt(query), args if args else None)
+        return _PGCursor(cur, self._conn, is_insert)
+
+    def _pragma_table_info(self, table):
+        cur = self._conn.cursor()
+        cur.execute("""SELECT column_name FROM information_schema.columns
+                       WHERE table_name=%s AND table_schema='public'
+                       ORDER BY ordinal_position""", (table,))
+        rows = cur.fetchall()
+        return _FakeResult([(i, r[0], 'TEXT', 0, None, 0) for i, r in enumerate(rows)])
+
+    def executescript(self, script):
+        adapted = self._adapt(script)
+        for stmt in adapted.split(';'):
+            stmt = stmt.strip()
+            if not stmt:
+                continue
+            try:
+                self._conn.cursor().execute(stmt)
+                self._conn.commit()
+            except Exception:
+                self._conn.rollback()
+
+    def commit(self): self._conn.commit()
+    def rollback(self): self._conn.rollback()
+    def close(self): self._conn.close()
+
+
+# ---------------------------------------------------------------------------
 # Database helpers
 # ---------------------------------------------------------------------------
 
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        os.makedirs(os.path.dirname(DATABASE), exist_ok=True)
-        db = g._database = sqlite3.connect(DATABASE, check_same_thread=False)
-        db.row_factory = sqlite3.Row
-        db.execute("PRAGMA foreign_keys = ON")
-        db.execute("PRAGMA journal_mode = WAL")   # lecturas concurrentes sin lock
-        db.execute("PRAGMA synchronous = NORMAL")  # más rápido, sigue siendo seguro
-        db.execute("PRAGMA cache_size = -8000")    # 8 MB cache en memoria
-        db.execute("PRAGMA temp_store = MEMORY")
+        if _USE_POSTGRES:
+            raw = psycopg2.connect(_DATABASE_URL)
+            db = g._database = _PGWrapper(raw)
+        else:
+            os.makedirs(os.path.dirname(DATABASE), exist_ok=True)
+            db = g._database = sqlite3.connect(DATABASE, check_same_thread=False)
+            db.row_factory = sqlite3.Row
+            db.execute("PRAGMA foreign_keys = ON")
+            db.execute("PRAGMA journal_mode = WAL")
+            db.execute("PRAGMA synchronous = NORMAL")
+            db.execute("PRAGMA cache_size = -8000")
+            db.execute("PRAGMA temp_store = MEMORY")
     return db
 
 
@@ -673,8 +785,9 @@ def query_db(query, args=(), one=False):
 def execute_db(query, args=()):
     db = get_db()
     cur = db.execute(query, args)
+    last_id = cur.lastrowid  # antes del commit — necesario para PostgreSQL (lastval())
     db.commit()
-    return cur.lastrowid
+    return last_id
 
 
 # ---------------------------------------------------------------------------

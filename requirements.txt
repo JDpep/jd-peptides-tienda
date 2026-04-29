@@ -4,3 +4,4 @@ gevent
 flask-compress
 openpyxl
 pdfplumber
+psycopg2-binary

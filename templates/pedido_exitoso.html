@@ -17,6 +17,41 @@
       Se enviará confirmación a <strong style="color:var(--text2)">{{ order['customer_email'] }}</strong>
     </p>
 
+    <!-- Visual order status tracker -->
+    {% set _order_status = (order['status'] or 'nuevo') %}
+    {% set _status_order = ['nuevo', 'procesando', 'enviado', 'entregado'] %}
+    {% set _current_idx = _status_order.index(_order_status) if _order_status in _status_order else 0 %}
+    {% set _is_cancelled = _order_status == 'cancelado' %}
+    <div class="order-tracker {% if _is_cancelled %}cancelled{% endif %}" style="margin-bottom:1.75rem">
+      {% if _is_cancelled %}
+        <div class="order-tracker-cancelled">
+          ❌ Pedido cancelado
+        </div>
+      {% else %}
+        <div class="order-tracker-line">
+          <div class="order-tracker-progress" style="width: {{ (_current_idx / 3 * 100)|round(1) }}%"></div>
+        </div>
+        <div class="order-tracker-steps">
+          {% for s in _status_order %}
+            {% set _idx = loop.index0 %}
+            {% set _state = 'done' if _idx < _current_idx else ('active' if _idx == _current_idx else 'pending') %}
+            <div class="order-tracker-step {{ _state }}">
+              <div class="order-tracker-dot">
+                {% if _idx < _current_idx %}✓{% else %}{{ _idx + 1 }}{% endif %}
+              </div>
+              <span class="order-tracker-label">
+                {% if s == 'nuevo' %}Recibido
+                {% elif s == 'procesando' %}Procesando
+                {% elif s == 'enviado' %}Enviado
+                {% elif s == 'entregado' %}Entregado
+                {% endif %}
+              </span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
     <!-- Items -->
     <div class="success-items">
       {% for item in items %}

@@ -86,6 +86,7 @@
             {% endif %}
           </div>
         </li>
+        <li><a href="{{ url_for('tracking') }}" class="{% if request.endpoint == 'tracking' %}active{% endif %}">Rastrear</a></li>
         <li><a href="{{ url_for('sobre_nosotros') }}" class="{% if request.endpoint == 'sobre_nosotros' %}active{% endif %}">Nosotros</a></li>
         <li><a href="{{ url_for('contacto') }}" class="{% if request.endpoint == 'contacto' %}active{% endif %}">Contacto</a></li>
       </ul>
@@ -106,6 +107,7 @@
   <div class="mobile-nav" id="mobileNav">
     <a href="{{ url_for('index') }}">Inicio</a>
     <a href="{{ url_for('catalogo') }}">Catálogo</a>
+    <a href="{{ url_for('tracking') }}">Rastrear pedido</a>
     <a href="{{ url_for('sobre_nosotros') }}">Nosotros</a>
     <a href="{{ url_for('contacto') }}">Contacto</a>
     <a href="{{ url_for('carrito') }}">🛒 Carrito ({{ cart_count() }})</a>

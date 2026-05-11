@@ -2507,3 +2507,93 @@ details summary::-webkit-details-marker { display: none; }
   color: var(--gold);
   padding-left: 6px;
 }
+
+/* =========================================================
+   ORDER STATUS TRACKER (pedido_exitoso.html)
+   ========================================================= */
+.order-tracker {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.75rem 1.5rem 1.25rem;
+  position: relative;
+}
+.order-tracker-line {
+  position: relative;
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  margin: 0 24px 0.85rem;
+}
+.order-tracker-progress {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--gold-dark), var(--gold));
+  border-radius: 4px;
+  transition: width 0.7s cubic-bezier(0.22,1,0.36,1);
+}
+.order-tracker-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  position: relative;
+  z-index: 1;
+  margin-top: -22px;
+}
+.order-tracker-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+.order-tracker-dot {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.85rem;
+  background: var(--bg3);
+  border: 2px solid var(--border);
+  color: var(--text3);
+  transition: all 0.4s cubic-bezier(0.22,1,0.36,1);
+}
+.order-tracker-step.done .order-tracker-dot {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #0d0d0d;
+}
+.order-tracker-step.active .order-tracker-dot {
+  background: var(--bg3);
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 0 0 rgba(199,154,58,0.5);
+  animation: trackerPulse 2.4s ease-in-out infinite;
+}
+.order-tracker-label {
+  font-size: 0.75rem;
+  color: var(--text3);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.order-tracker-step.done .order-tracker-label,
+.order-tracker-step.active .order-tracker-label {
+  color: var(--text);
+}
+.order-tracker-step.active .order-tracker-label {
+  color: var(--gold);
+}
+.order-tracker-cancelled {
+  text-align: center;
+  font-weight: 700;
+  color: var(--red);
+  font-size: 1rem;
+  padding: 0.75rem;
+}
+@keyframes trackerPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(199,154,58,0.45); }
+  50%      { box-shadow: 0 0 0 10px rgba(199,154,58,0); }
+}
+@media (max-width: 540px) {
+  .order-tracker-label { font-size: 0.66rem; }
+  .order-tracker-dot { width: 28px; height: 28px; font-size: 0.72rem; }
+}

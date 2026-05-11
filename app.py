@@ -67,11 +67,12 @@ def _security_headers(response):
     # the inline JS in admin pages and small bootstrap snippets; tighten later.
     response.headers.setdefault('Content-Security-Policy',
         "default-src 'self'; "
-        "img-src 'self' data: blob:; "
+        "img-src 'self' data: blob: https://*.openstreetmap.org; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src  'self' https://fonts.gstatic.com data:; "
         "script-src 'self' 'unsafe-inline'; "
-        "connect-src 'self'; "
+        # Nominatim para autocompletado de direcciones en checkout
+        "connect-src 'self' https://nominatim.openstreetmap.org; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
         "form-action 'self' https://wa.me;")
@@ -3234,6 +3235,32 @@ def terminos():
 @app.route('/faq')
 def faq():
     return render_template('faq.html')
+
+
+@app.route('/tracking', methods=['GET', 'POST'])
+def tracking():
+    """Entry point para rastrear un pedido: combina número de orden + email
+    en un solo formulario. Si coincide → whitelist en sesión y redirige a
+    /pedido/<num>. Sin coincidencia → mismo mensaje genérico (anti-enum) +
+    rate limit reutilizado del flujo de /pedido."""
+    if request.method == 'POST':
+        ip = (request.headers.get('X-Forwarded-For', request.remote_addr or '?')
+              .split(',')[0].strip())
+        if _pedido_rate_limited(ip):
+            flash('Demasiados intentos. Espera unos minutos.', 'error')
+            return render_template('tracking.html'), 429
+        order_number = (request.form.get('order_number') or '').strip()
+        email_in     = (request.form.get('email') or '').strip().lower()
+        if order_number and email_in:
+            order = query_db("SELECT * FROM orders WHERE order_number=?", (order_number,), one=True)
+            if order and email_in == (order['customer_email'] or '').strip().lower():
+                ww = session.get('view_orders') or []
+                if order_number not in ww:
+                    ww.append(order_number)
+                    session['view_orders'] = ww[-10:]
+                return redirect(url_for('pedido', order_number=order_number))
+        flash('No encontramos un pedido con esa información. Verifica el número y el correo.', 'error')
+    return render_template('tracking.html')
 
 
 @app.route('/nosotros')

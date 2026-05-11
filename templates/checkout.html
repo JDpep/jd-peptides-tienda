@@ -39,22 +39,33 @@
           <!-- Shipping -->
           <div class="form-card">
             <h3>Dirección de Envío</h3>
-            <div class="form-group">
-              <label>Dirección *</label>
-              <input type="text" name="address" class="form-control" placeholder="Calle, número, colonia" required autocomplete="street-address">
+            <div class="form-group" style="position:relative">
+              <label>
+                Dirección *
+                <span style="font-size:0.7rem;font-weight:400;color:var(--text3);margin-left:0.5rem">
+                  (escribe y selecciona para validar)
+                </span>
+              </label>
+              <input type="text" name="address" id="addr-input" class="form-control"
+                     placeholder="Calle, número, colonia, ciudad…" required
+                     autocomplete="street-address" autocapitalize="words" spellcheck="false">
+              <div id="addr-suggestions" class="addr-suggest" hidden></div>
+              <p id="addr-attr" style="font-size:0.65rem;color:var(--text3);margin-top:0.35rem;display:none">
+                Resultados por <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" style="color:var(--text2)">© OpenStreetMap</a>
+              </p>
             </div>
             <div class="form-row form-row-3">
               <div class="form-group">
                 <label>Ciudad *</label>
-                <input type="text" name="city" class="form-control" placeholder="Ciudad" required autocomplete="address-level2">
+                <input type="text" name="city" id="addr-city" class="form-control" placeholder="Ciudad" required autocomplete="address-level2">
               </div>
               <div class="form-group">
                 <label>Estado</label>
-                <input type="text" name="state" class="form-control" placeholder="Estado" autocomplete="address-level1">
+                <input type="text" name="state" id="addr-state" class="form-control" placeholder="Estado" autocomplete="address-level1">
               </div>
               <div class="form-group">
                 <label>C.P.</label>
-                <input type="text" name="zip_code" class="form-control" placeholder="00000" autocomplete="postal-code">
+                <input type="text" name="zip_code" id="addr-zip" class="form-control" placeholder="00000" autocomplete="postal-code">
               </div>
             </div>
           </div>
@@ -151,5 +162,106 @@ document.getElementById('checkoutForm').addEventListener('submit', function(e) {
   btn.disabled = true;
   btn.innerHTML = '⟳ Procesando…';
 });
+
+/* ---------------------------------------------------------------
+   Address autocomplete via OpenStreetMap Nominatim (gratuito).
+   - Debounce 400ms para respetar rate limit (1 req/s público).
+   - Country: MX. Limit 5 resultados.
+   - No requiere API key; atribución a OSM mostrada bajo el input.
+--------------------------------------------------------------- */
+(function () {
+  const input    = document.getElementById('addr-input');
+  const box      = document.getElementById('addr-suggestions');
+  const attr     = document.getElementById('addr-attr');
+  const cityIn   = document.getElementById('addr-city');
+  const stateIn  = document.getElementById('addr-state');
+  const zipIn    = document.getElementById('addr-zip');
+  if (!input || !box) return;
+
+  let timer = null, lastFetched = '', cache = new Map();
+
+  function close() { box.hidden = true; box.innerHTML = ''; }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  async function lookup(q) {
+    if (cache.has(q)) return cache.get(q);
+    const url = 'https://nominatim.openstreetmap.org/search'
+              + '?q=' + encodeURIComponent(q)
+              + '&format=jsonv2&countrycodes=mx&addressdetails=1&limit=5';
+    const r = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    if (!r.ok) return [];
+    const data = await r.json();
+    cache.set(q, data);
+    return data;
+  }
+
+  function render(results) {
+    if (!results.length) { close(); return; }
+    box.innerHTML = results.map((p, i) => `
+      <div class="addr-suggest-item" data-i="${i}">
+        <div class="addr-suggest-line1">${escapeHtml(p.display_name.split(',').slice(0, 3).join(','))}</div>
+        <div class="addr-suggest-line2">${escapeHtml(p.display_name.split(',').slice(3).join(',').trim())}</div>
+      </div>`).join('');
+    box.hidden = false;
+    attr.style.display = 'block';
+    box.querySelectorAll('.addr-suggest-item').forEach((el, i) => {
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const a = results[i].address || {};
+        const street = [a.road, a.house_number].filter(Boolean).join(' ');
+        const colonia = a.neighbourhood || a.suburb || a.quarter || '';
+        input.value = [street, colonia].filter(Boolean).join(', ');
+        if (cityIn) cityIn.value = a.city || a.town || a.village || a.municipality || '';
+        if (stateIn) stateIn.value = a.state || '';
+        if (zipIn) zipIn.value = a.postcode || '';
+        close();
+      });
+    });
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 4) { close(); return; }
+    if (q === lastFetched) return;
+    timer = setTimeout(async () => {
+      lastFetched = q;
+      try { render(await lookup(q)); }
+      catch (e) { close(); }
+    }, 400);
+  });
+
+  input.addEventListener('blur', () => setTimeout(close, 200));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+})();
 </script>
+<style>
+.addr-suggest {
+  position: absolute;
+  z-index: 50;
+  left: 0; right: 0;
+  top: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  margin-top: -1px;
+}
+.addr-suggest-item {
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+.addr-suggest-item:last-child { border-bottom: none; }
+.addr-suggest-item:hover { background: rgba(199,154,58,0.08); }
+.addr-suggest-line1 { color: var(--text); font-size: 0.88rem; font-weight: 600; }
+.addr-suggest-line2 { color: var(--text3); font-size: 0.74rem; margin-top: 0.2rem; }
+</style>
 {% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Consultar pedido — JD Peptides{% endblock %}
+
+{% block content %}
+<section class="section" style="min-height:60vh;display:flex;align-items:center">
+  <div class="container" style="max-width:520px">
+    <div class="form-card" style="padding:2rem">
+      <h1 style="font-size:1.5rem;margin-bottom:0.5rem">Consultar pedido</h1>
+      <p style="color:var(--text2);font-size:0.9rem;margin-bottom:1.5rem">
+        Para ver tu pedido <strong style="color:var(--gold)">{{ order_number }}</strong>
+        ingresa el correo electrónico con el que lo realizaste.
+      </p>
+
+      <form method="POST" action="{{ url_for('pedido', order_number=order_number) }}">
+        <div class="form-group">
+          <label>Correo electrónico</label>
+          <input type="email" name="email" class="form-control" required
+                 placeholder="tu@email.com" autocomplete="email" autofocus>
+        </div>
+        <button type="submit" class="btn btn-gold btn-block btn-lg">Ver pedido →</button>
+      </form>
+
+      <p style="font-size:0.78rem;color:var(--text3);margin-top:1.25rem;text-align:center">
+        Por seguridad, el acceso al detalle del pedido requiere verificar el correo del comprador.
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

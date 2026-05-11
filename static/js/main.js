@@ -405,38 +405,51 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function escHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
     function renderProductCard(p) {
-      const inStock = p.stock > 0;
-      const lowStock = p.stock > 0 && p.stock <= p.low_stock_alert;
-      const isJpeg = p.image_url && /\.(jpeg|jpg)$/i.test(p.image_url);
+      const inStock  = p.stock > 0;
+      const lowAlert = (p.low_stock_alert == null ? 5 : p.low_stock_alert);
+      const isJpeg   = p.image_url && /\.(jpeg|jpg)$/i.test(p.image_url);
+      const detailUrl = '/producto/' + encodeURIComponent(p.id);
+      const altText   = `Frasco ${p.name} ${p.dose} — For Research Use Only`;
+
       const imgTag = p.image_url
-        ? `<img src="${p.image_url}" alt="${p.name}" class="product-card-img${isJpeg ? ' img-vial-right' : ''}" loading="lazy">`
-        : `<div class="product-visual-name">${p.name}</div><div class="product-visual-dose">${p.dose}</div>`;
+        ? `<img src="${escHtml(p.image_url)}" alt="${escHtml(altText)}" class="product-card-img${isJpeg ? ' img-vial-right' : ''}" loading="lazy" decoding="async" width="320" height="533">`
+        : `<div class="product-visual-name">${escHtml(p.name)}</div><div class="product-visual-dose">${escHtml(p.dose)}</div>`;
 
-      const badge = !inStock
-        ? `<span class="badge badge-red">Sin stock</span>`
-        : lowStock
-          ? `<span class="badge badge-orange">Stock bajo</span>`
-          : `<span class="badge badge-green">Disponible</span>`;
+      let stockBadge;
+      if (!inStock)              stockBadge = `<span class="stock-badge out">Agotado</span>`;
+      else if (p.stock <= lowAlert) stockBadge = `<span class="stock-badge low">Pocas unidades (${p.stock})</span>`;
+      else                       stockBadge = `<span class="stock-badge ok">En stock</span>`;
 
+      // IMPORTANT: wrap visual in <a> so clicking the image/card navigates to
+      // the product detail. Previously this template was missing in the AJAX
+      // render → cards in filtered/searched catalog felt "dead".
       return `
         <div class="product-card" data-product-id="${p.id}">
-          <div class="product-visual${p.image_url ? ' product-visual-has-img' : ''}">
-            ${imgTag}
+          <a href="${detailUrl}" style="text-decoration:none;display:contents">
+            <div class="product-visual${p.image_url ? ' product-visual-has-img' : ''}">
+              <div class="product-visual-cat">
+                <span class="badge badge-gold">${escHtml(p.category)}</span>
+              </div>
+              ${imgTag}
+            </div>
+          </a>
+          <div class="product-body">
+            <h3 class="product-name">${escHtml(p.name)}</h3>
+            <p class="product-dose">${escHtml(p.sku || '')} · ${escHtml(p.dose)}</p>
+            <div class="product-price" style="color:var(--gold)">$${parseFloat(p.price).toFixed(2)} <span class="price-currency">USD</span></div>
+            <div style="margin-top:0.5rem">${stockBadge}</div>
           </div>
-          <div class="product-info" style="padding:1rem;display:flex;flex-direction:column;flex:1;gap:0.5rem">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
-              <span class="product-category" style="font-size:0.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:.06em">${p.category}</span>
-              ${badge}
-            </div>
-            <h3 style="font-size:0.95rem;margin:0">${p.name}</h3>
-            <span style="font-size:0.8rem;color:var(--text2)">${p.dose}</span>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:0.5rem">
-              <span class="product-price" style="font-size:1.15rem;font-weight:800;color:var(--gold)">$${parseFloat(p.price).toFixed(2)}</span>
-              ${inStock
-                ? `<button class="btn btn-gold btn-sm add-to-cart-btn" data-product-id="${p.id}">+ Agregar</button>`
-                : `<span style="font-size:0.78rem;color:var(--red)">Sin stock</span>`}
-            </div>
+          <div class="product-footer">
+            <a href="${detailUrl}" class="btn btn-ghost btn-sm">Ver detalle</a>
+            ${inStock
+              ? `<button class="btn btn-gold btn-sm add-to-cart-btn" data-product-id="${p.id}">+ Agregar</button>`
+              : `<span style="font-size:0.78rem;color:var(--red);font-weight:600">Sin stock</span>`}
           </div>
         </div>`;
     }

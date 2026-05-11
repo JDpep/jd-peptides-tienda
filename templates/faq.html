@@ -49,7 +49,11 @@
     <div style="margin-top:3rem;padding:1.5rem;background:#fdf8ee;border-radius:12px;border:1px solid #e8d89a;text-align:center">
       <p style="font-weight:600;color:#111;margin-bottom:0.5rem">¿No encontraste tu respuesta?</p>
       <p style="color:#555;margin-bottom:1rem">Escríbenos directamente, respondemos rápido.</p>
-      <a href="https://wa.me/1234567890" target="_blank" class="btn btn-primary">Contactar por WhatsApp</a>
+      {% if whatsapp_number %}
+        <a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener" class="btn btn-primary">Contactar por WhatsApp</a>
+      {% else %}
+        <a href="{{ url_for('contacto') }}" class="btn btn-primary">Contactar</a>
+      {% endif %}
     </div>
   </div>
 </div>

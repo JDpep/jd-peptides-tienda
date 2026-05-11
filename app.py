@@ -126,6 +126,13 @@ RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 EMAIL_FROM     = os.environ.get('EMAIL_FROM', 'JD Peptides <noreply@jdpeptides.com>')
 EMAIL_NOTIFY   = ['aamiga2006@gmail.com', 'jdpeptides@gmail.com']
 
+# ---------------------------------------------------------------------------
+# Contact configuration — set WHATSAPP_NUMBER in env (E.164 without '+', e.g. 5215551234567)
+# ---------------------------------------------------------------------------
+WHATSAPP_NUMBER  = os.environ.get('WHATSAPP_NUMBER', '').strip()
+CONTACT_EMAIL    = os.environ.get('CONTACT_EMAIL', 'info@jdpeptides.com').strip()
+CONTACT_LOCATION = os.environ.get('CONTACT_LOCATION', 'México').strip()
+
 def _build_items_rows(items):
     return ''.join(f"""
         <tr>
@@ -2838,6 +2845,35 @@ def faq():
     return render_template('faq.html')
 
 
+@app.route('/nosotros')
+def nosotros_alias():
+    return redirect(url_for('sobre_nosotros'), code=301)
+
+
+@app.route('/contacto', methods=['GET', 'POST'])
+def contacto():
+    sent = False
+    if request.method == 'POST':
+        nombre  = (request.form.get('name')    or '').strip()
+        email   = (request.form.get('email')   or '').strip()
+        mensaje = (request.form.get('message') or '').strip()
+        if nombre and email and mensaje:
+            try:
+                _send_email_bg(
+                    EMAIL_NOTIFY,
+                    f'[JD Peptides] Contacto — {nombre}',
+                    f'<p><strong>De:</strong> {nombre} &lt;{email}&gt;</p>'
+                    f'<p style="white-space:pre-wrap">{mensaje}</p>'
+                )
+            except Exception as e:
+                app.logger.warning(f'contacto email failed: {e}')
+            flash('Gracias, recibimos tu mensaje. Te respondemos por correo.', 'success')
+            sent = True
+            return redirect(url_for('contacto'))
+        flash('Completa nombre, email y mensaje.', 'error')
+    return render_template('contacto.html', sent=sent)
+
+
 _nav_cats_cache = {'data': [], 'ts': 0}
 _NAV_CATS_TTL = 60  # segundos
 
@@ -2854,7 +2890,13 @@ def inject_globals():
         cats = _nav_cats_cache['data']
     except Exception:
         pass
-    return {'now': datetime.now(), 'nav_categories': cats}
+    return {
+        'now': datetime.now(),
+        'nav_categories': cats,
+        'whatsapp_number': WHATSAPP_NUMBER,
+        'contact_email':   CONTACT_EMAIL,
+        'contact_location': CONTACT_LOCATION,
+    }
 
 
 # ---------------------------------------------------------------------------

@@ -113,7 +113,7 @@
         </div>
 
         <div class="product-detail-dose-price">
-          <span class="product-detail-price">${{ "%.2f"|format(product['price']) }}</span>
+          <span class="product-detail-price">${{ "%.2f"|format(product['price']) }} <span class="price-currency">USD</span></span>
           <span class="product-detail-dose-tag">{{ product['dose'] }}</span>
         </div>
 
@@ -211,7 +211,7 @@
               <div class="product-body">
                 <h3 class="product-name">{{ p['name'] }}</h3>
                 <p class="product-dose">{{ p['dose'] }}</p>
-                <div class="product-price">${{ "%.2f"|format(p['price']) }}</div>
+                <div class="product-price">${{ "%.2f"|format(p['price']) }} <span class="price-currency">USD</span></div>
               </div>
               <div class="product-footer">
                 <a href="{{ url_for('producto', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver más</a>

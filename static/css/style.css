@@ -2124,3 +2124,32 @@ dl.info-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; 
   100% { transform: scale(1); }
 }
 .cart-badge.bump { animation: badgeBump 0.4s ease; }
+
+/* =========================================================
+   GLOBAL LAYOUT GUARDRAIL — kill horizontal overflow
+   ========================================================= */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* =========================================================
+   PRICE CURRENCY SUFFIX  (e.g. "$89.99 USD")
+   ========================================================= */
+.price-currency {
+  font-size: 0.62em;
+  font-weight: 600;
+  color: var(--text2);
+  letter-spacing: 0.06em;
+  margin-left: 0.18em;
+  vertical-align: baseline;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   NAVBAR RESPONSIVE — hamburger replaces desktop nav ≤768px
+   ========================================================= */
+@media (max-width: 768px) {
+  .navbar-nav { display: none; }
+  .hamburger  { display: inline-flex; }
+}

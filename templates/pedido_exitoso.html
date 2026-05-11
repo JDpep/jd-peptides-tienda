@@ -87,7 +87,11 @@
 
     <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
       <a href="{{ url_for('catalogo') }}" class="btn btn-gold btn-lg">Continuar Comprando</a>
-      <a href="https://wa.me/1234567890" target="_blank" class="btn btn-outline btn-lg">Contactar por WhatsApp</a>
+      {% if whatsapp_number %}
+        <a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener" class="btn btn-outline btn-lg">Contactar por WhatsApp</a>
+      {% else %}
+        <a href="{{ url_for('contacto') }}" class="btn btn-outline btn-lg">Contactar</a>
+      {% endif %}
     </div>
 
   </div>

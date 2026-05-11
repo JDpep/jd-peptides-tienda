@@ -337,7 +337,7 @@
             {% if benefits %}
               <p style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">{{ benefits[0] }}</p>
             {% endif %}
-            <div class="product-price">${{ "%.2f"|format(p['price']) }}</div>
+            <div class="product-price">${{ "%.2f"|format(p['price']) }} <span class="price-currency">USD</span></div>
           </div>
           <div class="product-footer">
             <a href="{{ url_for('producto', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver más</a>

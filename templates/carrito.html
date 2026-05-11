@@ -35,7 +35,7 @@
                         <div class="cart-product-name">{{ item['name'] }}</div>
                         <div class="cart-product-dose">{{ item['dose'] }} · {{ item['sku'] }}</div>
                       </td>
-                      <td data-price="{{ item['price'] }}">${{ "%.2f"|format(item['price']) }}</td>
+                      <td data-price="{{ item['price'] }}">${{ "%.2f"|format(item['price']) }} <span class="price-currency">USD</span></td>
                       <td style="text-align:center">
                         <input
                           type="number"
@@ -90,7 +90,7 @@
               {% endif %}
               <div class="summary-row total">
                 <span>Total</span>
-                <span id="cart-total">${{ "%.2f"|format(total) }}</span>
+                <span id="cart-total">${{ "%.2f"|format(total) }} <span class="price-currency">USD</span></span>
               </div>
               <div style="margin-top:1.25rem">
                 <a href="{{ url_for('checkout') }}" class="btn btn-gold btn-block btn-lg">

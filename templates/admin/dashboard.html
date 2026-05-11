@@ -116,6 +116,7 @@
       </div>
     </div>
     <form id="dash-form-eliminar" method="POST" action="{{ url_for('admin_eliminar_ordenes') }}">
+    {{ csrf_field() }}
     <div style="overflow-x:auto">
       <table class="admin-table">
         <thead>

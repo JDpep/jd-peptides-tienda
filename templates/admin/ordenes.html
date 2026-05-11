@@ -43,6 +43,7 @@ var ORD_DATA = [
     </label>
   </div>
   <form id="ord-form-eliminar" method="POST" action="{{ url_for('admin_eliminar_ordenes') }}">
+  {{ csrf_field() }}
   <div style="overflow-x:auto">
     <table class="admin-table">
       <thead>

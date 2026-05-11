@@ -2,7 +2,11 @@ import os
 import re
 import csv
 import io
+import secrets
+import functools
 import sqlite3
+from collections import deque
+from markupsafe import Markup
 try:
     import psycopg2
     import psycopg2.extras
@@ -18,7 +22,7 @@ from datetime import datetime, date
 from functools import wraps
 from flask import (Flask, render_template, request, redirect, url_for,
                    session, flash, jsonify, g, send_from_directory,
-                   Response, stream_with_context, make_response)
+                   Response, stream_with_context, make_response, abort)
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_compress import Compress
@@ -80,6 +84,85 @@ def _security_headers(response):
         response.headers.setdefault('Strict-Transport-Security',
             'max-age=31536000; includeSubDomains')
     return response
+
+
+# ---------------------------------------------------------------------------
+# CSRF protection (admin routes only) + login rate limiting
+# ---------------------------------------------------------------------------
+from flask import session as _flask_session  # alias for clarity inside helpers
+
+def _ensure_csrf_token():
+    """Get or create a per-session CSRF token. Cookie is SameSite=Lax+HttpOnly,
+    so this token bound to the session cookie is sufficient as a synchronizer
+    token for state-changing requests."""
+    tok = _flask_session.get('_csrf')
+    if not tok:
+        tok = secrets.token_urlsafe(32)
+        _flask_session['_csrf'] = tok
+        _flask_session.permanent = True
+    return tok
+
+
+def csrf_field():
+    """Return ready-to-render hidden input for forms: {{ csrf_field() }}"""
+    return Markup(f'<input type="hidden" name="_csrf" value="{_ensure_csrf_token()}">')
+
+
+# Enforce CSRF on state-changing /admin/* requests. Public POST endpoints
+# (cart, checkout, contact) rely on SameSite=Lax cookies; admin is high-impact
+# so we add explicit synchronizer-token defense-in-depth.
+_CSRF_EXEMPT_PATHS = set()  # allow registering exempt paths (e.g. webhooks)
+
+@app.before_request
+def _enforce_admin_csrf():
+    if request.method not in ('POST', 'PUT', 'PATCH', 'DELETE'):
+        return None
+    if not request.path.startswith('/admin/'):
+        return None
+    if request.path in _CSRF_EXEMPT_PATHS:
+        return None
+    sent = request.form.get('_csrf') or request.headers.get('X-CSRFToken')
+    expected = _flask_session.get('_csrf')
+    if not expected or not sent or not secrets.compare_digest(sent, expected):
+        # Don't leak which side is missing
+        abort(403, description='CSRF token missing or invalid')
+
+
+# Login rate limiter — in-memory, per remote IP. 8 attempts / 10 minutes.
+# Sufficient for a single-worker deploy (Railway runs --workers=2 but with
+# gevent each worker shares its own dict; effective limit is ~16/10min, fine
+# for a small admin team). For stricter prod-grade limiting use Flask-Limiter
+# backed by Redis.
+_LOGIN_ATTEMPT_WINDOW = 600   # seconds
+_LOGIN_ATTEMPT_LIMIT  = 8
+_login_attempts = {}          # ip -> deque[float timestamps]
+_login_lock     = threading.Lock()
+
+
+def _login_rate_limited(ip):
+    """Return True if `ip` has exceeded the login attempt limit."""
+    now = time.time()
+    with _login_lock:
+        q = _login_attempts.setdefault(ip, deque())
+        # Drop old entries
+        while q and (now - q[0]) > _LOGIN_ATTEMPT_WINDOW:
+            q.popleft()
+        if len(q) >= _LOGIN_ATTEMPT_LIMIT:
+            return True
+        q.append(now)
+        return False
+
+
+def _login_attempts_reset(ip):
+    with _login_lock:
+        _login_attempts.pop(ip, None)
+
+
+# Expose csrf_field() to all templates
+@app.context_processor
+def _inject_csrf():
+    return {'csrf_field': csrf_field}
+
 
 # ---------------------------------------------------------------------------
 # Server-Sent Events bus — broadcasts real-time updates to connected clients
@@ -1893,17 +1976,42 @@ def pedido(order_number):
 def admin_login():
     if session.get('admin_logged_in'):
         return redirect(url_for('admin_dashboard'))
+    # Ensure a CSRF token exists for the login form (no session yet usually)
+    _ensure_csrf_token()
     if request.method == 'POST':
+        # Manual CSRF check — before_request only enforces /admin/* but login
+        # is /admin/login itself; the before_request hook already covered us,
+        # this is a redundant explicit guard.
+        sent = request.form.get('_csrf') or request.headers.get('X-CSRFToken')
+        expected = session.get('_csrf')
+        if not expected or not sent or not secrets.compare_digest(sent, expected):
+            abort(403, description='CSRF token missing or invalid')
+
+        # Rate-limit by IP
+        ip = (request.headers.get('X-Forwarded-For', request.remote_addr or '?')
+              .split(',')[0].strip())
+        if _login_rate_limited(ip):
+            flash('Demasiados intentos. Espera unos minutos.', 'error')
+            print(f'[Auth] Login rate-limited from ip={ip}')
+            return render_template('admin/login.html'), 429
+
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         user = query_db("SELECT * FROM admin_users WHERE username=? AND active=1", (username,), one=True)
         if user and check_password_hash(user['password_hash'], password):
+            # On success, clear attempt counter and rotate session token
+            _login_attempts_reset(ip)
+            session.clear()              # session fixation defense
             session['admin_logged_in'] = True
             session['admin_user'] = user['username']
             session['admin_role'] = user['role']
+            session['_csrf']      = secrets.token_urlsafe(32)
             flash(f'Bienvenido, {user["username"]}.', 'success')
+            print(f'[Auth] login success user={user["username"]} ip={ip}')
             return redirect(url_for('admin_dashboard'))
         else:
+            # Same error for missing-user and bad-password (no user enumeration)
+            print(f'[Auth] login failed user={username!r} ip={ip}')
             flash('Usuario o contraseña incorrectos.', 'error')
     return render_template('admin/login.html')
 

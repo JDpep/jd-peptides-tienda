@@ -106,6 +106,7 @@
       </div>
       <div class="admin-card-body">
         <form method="POST" action="{{ url_for('admin_subir_doc') }}" enctype="multipart/form-data" id="uploadForm">
+          {{ csrf_field() }}
           <div class="doc-upload-zone" id="uploadZone">
             <input type="file" name="document" accept=".xlsx,.xls,.csv,.pdf" required id="docFileInput">
             <div class="doc-upload-icon">📄</div>
@@ -155,6 +156,7 @@
               </td>
               <td style="text-align:right">
                 <form method="POST" action="{{ url_for('admin_eliminar_doc', doc_id=d['id']) }}" style="display:inline" onclick="event.stopPropagation()">
+                  {{ csrf_field() }}
                   <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar documento?')" style="padding:0.2rem 0.5rem">✕</button>
                 </form>
               </td>
@@ -217,6 +219,7 @@
         {% else %}
         <!-- Import form -->
         <form method="POST" action="{{ url_for('admin_importar_doc', doc_id=doc['id']) }}" id="importForm">
+          {{ csrf_field() }}
           <div class="admin-card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;padding-bottom:0">
             <div class="admin-form-group">
               <label class="admin-label">Proveedor</label>

@@ -12,6 +12,7 @@
   <div style="padding:1.25rem 1.5rem">
     <form method="POST" action="{{ url_for('admin_nuevo_usuario') }}"
           style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end">
+      {{ csrf_field() }}
       <div>
         <label class="admin-label">Usuario</label>
         <input type="text" name="username" class="admin-input" style="width:180px"
@@ -79,6 +80,7 @@
               {% if u['username'] != session.get('admin_user') %}
               <form method="POST" action="{{ url_for('admin_cambiar_password', uid=u['id']) }}"
                     style="display:flex;gap:0.4rem;align-items:center">
+                {{ csrf_field() }}
                 <input type="password" name="password" class="admin-input" style="width:160px"
                        placeholder="Nueva contraseña" required autocomplete="new-password">
                 <button type="submit" class="btn btn-ghost btn-sm">Actualizar</button>
@@ -91,12 +93,14 @@
               <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
                 {% if u['username'] != session.get('admin_user') %}
                   <form method="POST" action="{{ url_for('admin_toggle_usuario', uid=u['id']) }}">
+                    {{ csrf_field() }}
                     <button type="submit" class="btn btn-ghost btn-sm"
                             onclick="return confirm('¿Cambiar estado del usuario?')">
                       {% if u['active'] %}⏸ Desactivar{% else %}▶ Activar{% endif %}
                     </button>
                   </form>
                   <form method="POST" action="{{ url_for('admin_eliminar_usuario', uid=u['id']) }}">
+                    {{ csrf_field() }}
                     <button type="submit" class="btn btn-sm"
                             style="background:#c0392b;color:#fff;border:none;cursor:pointer"
                             onclick="return confirm('¿Eliminar usuario permanentemente? Esta acción no se puede deshacer.')">

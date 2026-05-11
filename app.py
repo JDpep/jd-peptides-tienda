@@ -24,10 +24,62 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_compress import Compress
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'jdp_secret_key_2024_ultra_secure')
+
+# ----- Secret key — fail loud if default is used in production -----
+_DEFAULT_SECRET = 'jdp_secret_key_2024_ultra_secure'  # legacy fallback
+_SECRET_KEY = os.environ.get('SECRET_KEY', _DEFAULT_SECRET)
+_is_prod = bool(os.environ.get('VERCEL') or os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PRODUCTION'))
+if _is_prod and _SECRET_KEY == _DEFAULT_SECRET:
+    # In prod we must NEVER use the default secret. Generate a per-process
+    # random secret so the app still boots, but session cookies signed with it
+    # will be invalidated on every restart — this is the safest fail mode
+    # (vs. crashing the deploy or accepting forgeable sessions).
+    import secrets as _secrets_mod
+    _SECRET_KEY = _secrets_mod.token_hex(32)
+    print('[SECURITY] WARNING: SECRET_KEY env var not set in production — '
+          'using ephemeral random key. SET A PERMANENT SECRET_KEY IN RAILWAY/VERCEL.')
+app.secret_key = _SECRET_KEY
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 60 * 60 * 24 * 30  # 30 days
+
+# ----- Session cookie security flags -----
+app.config['SESSION_COOKIE_HTTPONLY'] = True       # block JS access (XSS)
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'      # block cross-site CSRF on top-level POST
+app.config['SESSION_COOKIE_SECURE']   = _is_prod   # HTTPS-only in prod (allow http in dev)
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_SAMESITE'] = 'Lax'
+app.config['REMEMBER_COOKIE_SECURE']   = _is_prod
+
+# ----- Upload size limit (DoS guard) -----
+app.config['MAX_CONTENT_LENGTH'] = 25 * 1024 * 1024  # 25 MB per request
+
 Compress(app)
+
+# ----- Security headers (defense-in-depth: CSP, X-Frame, X-CTO, HSTS) -----
+@app.after_request
+def _security_headers(response):
+    # Allow Google Fonts (used by base.html) and inline styles (legacy inline
+    # style attributes in templates). 'unsafe-inline' for scripts is needed for
+    # the inline JS in admin pages and small bootstrap snippets; tighten later.
+    response.headers.setdefault('Content-Security-Policy',
+        "default-src 'self'; "
+        "img-src 'self' data: blob:; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src  'self' https://fonts.gstatic.com data:; "
+        "script-src 'self' 'unsafe-inline'; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self' https://wa.me;")
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.setdefault('Permissions-Policy',
+        'geolocation=(), camera=(), microphone=(), payment=()')
+    if _is_prod:
+        response.headers.setdefault('Strict-Transport-Security',
+            'max-age=31536000; includeSubDomains')
+    return response
 
 # ---------------------------------------------------------------------------
 # Server-Sent Events bus — broadcasts real-time updates to connected clients
@@ -356,7 +408,24 @@ def send_status_email(order, new_status, new_payment):
     else:
         subject = subject_map.get(new_status, f'Actualización de tu pedido — {order["order_number"]}')
     _send_email_bg(order['customer_email'], subject, html)
-    print(f"[Email] Estado encolado (bg) a {order['customer_email']} ({new_status or new_payment})")
+    print(f"[Email] Estado encolado (bg) a {_mask_email(order['customer_email'])} ({new_status or new_payment})")
+
+
+def _mask_email(addr):
+    """Mask an email address for logs: alice@example.com → a***e@example.com"""
+    try:
+        if isinstance(addr, (list, tuple)):
+            return '[' + ', '.join(_mask_email(a) for a in addr) + ']'
+        local, _, domain = (addr or '').partition('@')
+        if not domain:
+            return '***'
+        if len(local) <= 2:
+            masked = local[:1] + '***'
+        else:
+            masked = local[0] + '***' + local[-1]
+        return f'{masked}@{domain}'
+    except Exception:
+        return '***'
 
 
 def _send_email(to, subject, html):
@@ -377,12 +446,13 @@ def _send_email(to, subject, html):
     )
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
-            print(f"[Email] Enviado a {to} — {resp.status}")
+            print(f"[Email] Enviado a {_mask_email(to)} — {resp.status}")
             return True
     except urllib.error.HTTPError as e:
-        print(f"[Email] Resend HTTP {e.code}: {e.read().decode()}")
+        # body may include the raw email address — log status only
+        print(f"[Email] Resend HTTP {e.code} para {_mask_email(to)}")
     except Exception as e:
-        print(f"[Email] Error: {e}")
+        print(f"[Email] Error envío a {_mask_email(to)}: {type(e).__name__}")
     return False
 
 
@@ -401,7 +471,7 @@ def _do_send_emails(order, items):
     _send_email_bg(order['customer_email'],
                    f'✅ Confirmación de tu pedido — {order["order_number"]}',
                    customer_html)
-    print(f"[Email] Encolado (bg) — admins {EMAIL_NOTIFY} + cliente {order['customer_email']}")
+    print(f"[Email] Encolado (bg) — admins {[_mask_email(a) for a in EMAIL_NOTIFY]} + cliente {_mask_email(order['customer_email'])}")
 
 
 _EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
@@ -2913,12 +2983,12 @@ with app.app_context():
 if __name__ == '__main__':
     with app.app_context():
         init_db()
+        port = int(os.environ.get('PORT', 5000))
         print("=" * 50)
-        print("  JD PEPTIDES - Tienda Digital")
+        print("  JD PEPTIDES — Tienda Digital")
         print("=" * 50)
-        print(f"  URL: http://localhost:5000")
-        print(f"  Admin: http://localhost:5000/admin")
-        print(f"  Contraseña admin: Aa52902763")
+        print(f"  URL:   http://localhost:{port}")
+        print(f"  Admin: http://localhost:{port}/admin")
+        print(f"  Login: usa las credenciales registradas en la BD")
         print("=" * 50)
-    port = int(os.environ.get('PORT', 5000))
     app.run(debug=False, host='0.0.0.0', port=port)

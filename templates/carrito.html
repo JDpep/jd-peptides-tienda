@@ -73,19 +73,26 @@
                 <span>Subtotal</span>
                 <span id="cart-subtotal">${{ "%.2f"|format(subtotal) }}</span>
               </div>
+              {% set _wgrams = cart_total_weight() %}
+              <div class="summary-row" style="font-size:0.85rem;color:var(--text2)">
+                <span>Peso total</span>
+                <span>
+                  {% if _wgrams >= 1000 %}{{ "%.2f"|format(_wgrams / 1000) }} kg{% else %}{{ _wgrams }} g{% endif %}
+                </span>
+              </div>
               <div class="summary-row">
                 <span>Envío</span>
                 <span id="cart-shipping">
                   {% if shipping == 0 %}
                     <span class="free-shipping">Gratis</span>
                   {% else %}
-                    ${{ "%.2f"|format(shipping) }}
+                    ${{ "%.2f"|format(shipping) }} <span class="price-currency">USD</span>
                   {% endif %}
                 </span>
               </div>
-              {% if subtotal < 200 %}
+              {% if subtotal < FREE_SHIPPING_MIN_USD %}
                 <p style="font-size:0.78rem;color:var(--text3);margin-top:0.25rem">
-                  Agrega ${{ "%.2f"|format(200 - subtotal) }} más para envío gratis
+                  Agrega <strong style="color:var(--gold)">${{ "%.2f"|format(FREE_SHIPPING_MIN_USD - subtotal) }} USD</strong> más para envío gratis
                 </p>
               {% endif %}
               <div class="summary-row total">

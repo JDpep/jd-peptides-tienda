@@ -110,12 +110,17 @@
               <span>Subtotal</span>
               <span>${{ "%.2f"|format(subtotal) }}</span>
             </div>
+            {% set _wgrams = cart_total_weight() %}
+            <div class="summary-row" style="font-size:0.85rem;color:var(--text2)">
+              <span>Peso total</span>
+              <span>{% if _wgrams >= 1000 %}{{ "%.2f"|format(_wgrams / 1000) }} kg{% else %}{{ _wgrams }} g{% endif %}</span>
+            </div>
             <div class="summary-row">
               <span>Envío</span>
               {% if shipping == 0 %}
                 <span class="free-shipping">Gratis</span>
               {% else %}
-                <span>${{ "%.2f"|format(shipping) }}</span>
+                <span>${{ "%.2f"|format(shipping) }} <span class="price-currency">USD</span></span>
               {% endif %}
             </div>
             <div class="summary-row total">

@@ -1310,6 +1310,9 @@ def init_db():
     if 'low_stock_alerted_at' not in cols:
         db.execute("ALTER TABLE products ADD COLUMN low_stock_alerted_at TEXT DEFAULT NULL")
         db.commit()
+    if 'weight_grams' not in cols:
+        db.execute("ALTER TABLE products ADD COLUMN weight_grams INTEGER DEFAULT 50")
+        db.commit()
     # Migrate supplier_documents table
     try:
         db.execute("SELECT id FROM supplier_documents LIMIT 1")
@@ -1647,7 +1650,46 @@ def cart_total():
     return sum(item['quantity'] * item['price'] for item in cart.values())
 
 
+# ----- Shipping calculation -------------------------------------------------
+# Tabla por rangos de peso (gramos → costo USD). Edita aquí para reflejar tus
+# tarifas reales con DHL/Estafeta/FedEx. Envío gratis si subtotal >= umbral.
+DEFAULT_ITEM_WEIGHT_G = 50  # gramos por vial (fallback si producto sin peso)
+SHIPPING_TIERS = [
+    (  100,  5.00),  # hasta 100g  ≈ 1-2 viales
+    (  500,  8.00),  # hasta 500g  ≈ 3-10 viales
+    ( 1000, 12.00),  # hasta 1 kg
+    ( 2000, 18.00),  # hasta 2 kg
+    (99999, 25.00),  # más de 2 kg
+]
+FREE_SHIPPING_MIN_USD = 200.0
+
+
+def cart_total_weight():
+    """Suma de gramos del carrito, usando weight_grams por ítem (fallback 50g)."""
+    cart = get_cart()
+    return sum(int(item.get('weight_grams') or DEFAULT_ITEM_WEIGHT_G) * int(item['quantity'])
+               for item in cart.values())
+
+
+def compute_shipping(subtotal=None, weight_g=None):
+    """Devuelve el costo de envío en USD para el carrito actual.
+    Gratis si subtotal >= FREE_SHIPPING_MIN_USD; si no, tier por peso total."""
+    if subtotal is None:
+        subtotal = cart_total()
+    if weight_g is None:
+        weight_g = cart_total_weight()
+    if subtotal >= FREE_SHIPPING_MIN_USD:
+        return 0.0
+    for threshold, price in SHIPPING_TIERS:
+        if weight_g <= threshold:
+            return price
+    return SHIPPING_TIERS[-1][1]
+
+
 app.jinja_env.globals['cart_count'] = cart_count
+app.jinja_env.globals['cart_total_weight'] = cart_total_weight
+app.jinja_env.globals['compute_shipping']  = compute_shipping
+app.jinja_env.globals['FREE_SHIPPING_MIN_USD'] = FREE_SHIPPING_MIN_USD
 
 
 # ---------------------------------------------------------------------------
@@ -1776,7 +1818,7 @@ def api_actualizar_carrito():
         cart[pid]['quantity'] = qty
     save_cart(cart)
     subtotal = cart_total()
-    shipping = 0 if subtotal >= 200 else 15
+    shipping = compute_shipping(subtotal)
     return jsonify({
         'success': True,
         'cart_count': cart_count(),
@@ -1838,6 +1880,8 @@ def agregar_carrito():
             'price': product['price'],
             'sku': product['sku'],
             'quantity': qty,
+            'weight_grams': int(product['weight_grams'] or DEFAULT_ITEM_WEIGHT_G)
+                            if 'weight_grams' in product.keys() else DEFAULT_ITEM_WEIGHT_G,
         }
     save_cart(cart)
 
@@ -1853,7 +1897,7 @@ def agregar_carrito():
 def carrito():
     cart = get_cart()
     subtotal = cart_total()
-    shipping = 0 if subtotal >= 200 else 15
+    shipping = compute_shipping(subtotal)
     total = subtotal + shipping
     return render_template('carrito.html', cart=cart, subtotal=subtotal,
                            shipping=shipping, total=total)
@@ -1896,7 +1940,7 @@ def checkout():
         flash('Tu carrito está vacío.', 'error')
         return redirect(url_for('catalogo'))
     subtotal = cart_total()
-    shipping = 0 if subtotal >= 200 else 15
+    shipping = compute_shipping(subtotal)
     total = subtotal + shipping
     return render_template('checkout.html', cart=cart, subtotal=subtotal,
                            shipping=shipping, total=total)
@@ -1931,7 +1975,7 @@ def procesar_checkout():
         return redirect(url_for('checkout'))
 
     subtotal = cart_total()
-    shipping = 0 if subtotal >= 200 else 15
+    shipping = compute_shipping(subtotal)
     total = subtotal + shipping
 
     db = get_db()
@@ -2407,6 +2451,7 @@ def admin_nuevo_producto():
         price = safe_float(request.form.get('price', 0))
         stock = safe_int(request.form.get('stock', 0))
         low_stock_alert = safe_int(request.form.get('low_stock_alert', 5), 5)
+        weight_grams = max(1, safe_int(request.form.get('weight_grams', DEFAULT_ITEM_WEIGHT_G), DEFAULT_ITEM_WEIGHT_G))
         description = request.form.get('description', '').strip()
         benefits_raw = request.form.get('benefits', '').strip()
         benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
@@ -2414,9 +2459,9 @@ def admin_nuevo_producto():
 
         try:
             pid = execute_db(
-                """INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active, image_path)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '')""",
-                (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active)
+                """INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, image_path)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '')""",
+                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active)
             )
             files = request.files.getlist('images')
             first_uploaded = None
@@ -2461,6 +2506,7 @@ def admin_editar_producto(pid):
         price = safe_float(request.form.get('price', 0))
         stock = safe_int(request.form.get('stock', 0))
         low_stock_alert = safe_int(request.form.get('low_stock_alert', 5), 5)
+        weight_grams = max(1, safe_int(request.form.get('weight_grams', DEFAULT_ITEM_WEIGHT_G), DEFAULT_ITEM_WEIGHT_G))
         description = request.form.get('description', '').strip()
         benefits_raw = request.form.get('benefits', '').strip()
         benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
@@ -2469,8 +2515,8 @@ def admin_editar_producto(pid):
         try:
             execute_db(
                 """UPDATE products SET sku=?, name=?, category=?, dose=?, price=?, stock=?,
-                   low_stock_alert=?, description=?, benefits=?, active=? WHERE id=?""",
-                (sku, name, category, dose, price, stock, low_stock_alert, description, benefits, active, pid)
+                   low_stock_alert=?, weight_grams=?, description=?, benefits=?, active=? WHERE id=?""",
+                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, pid)
             )
             files = request.files.getlist('images')
             existing_count = query_db("SELECT COUNT(*) as c FROM product_images WHERE product_id=?", (pid,), one=True)['c']

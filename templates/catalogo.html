@@ -86,7 +86,7 @@
                 {% if _pimg %}
                   <img src="{{ url_for('static', filename='img/' + _pimg) }}"
                        alt="Frasco {{ p['name'] }} {{ p['dose'] }} — For Research Use Only"
-                       class="product-card-img{% if _pimg.endswith('.jpeg') or _pimg.endswith('.jpg') %} img-vial-right{% endif %}"
+                       class="product-card-img{% if _pimg.endswith('.jpeg') or _pimg.endswith('.jpg') or '_frasco_' in _pimg %} img-vial-right{% endif %}"
                        loading="{% if loop.index <= 3 %}eager{% else %}lazy{% endif %}"
                        {% if loop.index <= 3 %}fetchpriority="high"{% endif %}
                        decoding="async"

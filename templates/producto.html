@@ -79,7 +79,7 @@
           {% if prod_img %}
             <img src="{{ url_for('static', filename='img/' + prod_img) }}"
                  alt="{{ product['name'] }}"
-                 class="product-detail-img{% if prod_img.endswith('.jpeg') or prod_img.endswith('.jpg') %} img-vial-right{% endif %}">
+                 class="product-detail-img{% if prod_img.endswith('.jpeg') or prod_img.endswith('.jpg') or '_frasco_' in prod_img %} img-vial-right{% endif %}">
             <span class="badge badge-cat {{ _bc.get(product['category'], 'badge-cat-default') }}" style="position:absolute;top:1rem;left:1rem;z-index:2">{{ product['category'] }}</span>
           {% else %}
             <div style="position:absolute;inset:0;opacity:0.08">

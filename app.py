@@ -1232,7 +1232,7 @@ PRODUCTS_SEED = [
         'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Potencial beneficio cardiovascular y cardiometabólico|Resultados de pérdida de peso superiores a otros GLP-1 agonistas',
         'stock': 15,
         'low_stock_alert': 3,
-        'image_path': 'cat_reta_frasco_5mg.png',
+        'image_path': 'vial_retatrutide.jpeg',
     },
     {
         'sku': 'JDP-DSIP',
@@ -1504,7 +1504,7 @@ def init_db():
         # sku → [(filename, sort_order), ...]; primer item = imagen principal (image_path)
         _img_map = {
             'JDP-RETA': [
-                ('cat_reta_frasco_5mg.png', 0),
+                ('vial_retatrutide.jpeg', 0),         # foto limpia del vial — main
                 ('cat_reta_frasco_5mg_photo.jpeg', 1),
                 ('cat_reta_gold1.jpeg', 2),
                 ('cat_reta_gold2.jpeg', 3),
@@ -1600,6 +1600,37 @@ def init_db():
             )
         db.commit()
 
+    # Migration v5 (2026-05-11): foto limpia del vial de Retatrutide.
+    # v3 había seteado image_path = cat_reta_frasco_5mg.png (flyer recortado feo
+    # en el card). Cambia a vial_retatrutide.jpeg si la fila sigue apuntando al
+    # flyer. Solo afecta DBs que pasaron por v3; nuevos seeds ya nacen bien.
+    _mig_v5_tag = 'migration:v5:reta_clean_vial_image_20260511'
+    already_v5 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v5_tag,)
+    ).fetchone()
+    if not already_v5:
+        try:
+            db.execute(
+                "UPDATE products SET image_path=? WHERE sku=? AND image_path=?",
+                ('vial_retatrutide.jpeg', 'JDP-RETA', 'cat_reta_frasco_5mg.png')
+            )
+            # También reemplazar la entrada en product_images
+            db.execute(
+                "UPDATE product_images SET filename=? "
+                "WHERE filename=? AND product_id IN (SELECT id FROM products WHERE sku='JDP-RETA')",
+                ('vial_retatrutide.jpeg', 'cat_reta_frasco_5mg.png')
+            )
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v5_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v5 reta image skipped: {_e}')
+
 
 # ---------------------------------------------------------------------------
 # Auth decorator
@@ -1614,14 +1645,26 @@ def admin_required(f):
     return decorated
 
 
-OWNER_USER = 'Alb.peptide10'
+# Superadmin gate. La condición ahora chequea contra:
+#   1) Variable de entorno OWNER_USER (preferida en prod) o
+#   2) ADMIN_USERNAME (el bootstrap user creado en init_db) o
+#   3) El role 'superadmin' guardado en la sesión.
+# Antes era hardcoded 'Alb.peptide10' — quedaba inconsistente con admin envs.
+def _is_superadmin():
+    if not session.get('admin_logged_in'):
+        return False
+    owner = (os.environ.get('OWNER_USER') or os.environ.get('ADMIN_USERNAME') or '').strip()
+    if owner and session.get('admin_user') == owner:
+        return True
+    return session.get('admin_role') == 'superadmin'
+
 
 def superadmin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if not session.get('admin_logged_in'):
             return redirect(url_for('admin_login'))
-        if session.get('admin_user') != OWNER_USER:
+        if not _is_superadmin():
             flash('Acceso restringido al propietario del sistema.', 'error')
             return redirect(url_for('admin_dashboard'))
         return f(*args, **kwargs)

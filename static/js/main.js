@@ -552,6 +552,36 @@ document.addEventListener('DOMContentLoaded', function () {
       card.style.setProperty('--delay', i * 0.06 + 's');
     });
   }
+
+  // ---------------------------------------------------------
+  // Premium polish — cursor-tracked gold glow + vial tilt
+  // Skipped automatically if user prefers reduced motion.
+  // ---------------------------------------------------------
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduceMotion && window.matchMedia('(pointer: fine)').matches) {
+    document.querySelectorAll('.product-card').forEach(card => {
+      const visual = card.querySelector('.product-visual-has-img');
+      const img    = card.querySelector('.product-card-img');
+      card.addEventListener('pointermove', (e) => {
+        const r = card.getBoundingClientRect();
+        const mx = ((e.clientX - r.left) / r.width)  * 100;
+        const my = ((e.clientY - r.top ) / r.height) * 100;
+        card.style.setProperty('--mx', mx + '%');
+        card.style.setProperty('--my', my + '%');
+        if (visual && img) {
+          // very subtle 3D tilt (max ~3deg) — gives a "weight" feel without being gimmicky
+          const tx = (mx - 50) / 50; // -1 .. 1
+          const ty = (my - 50) / 50;
+          img.style.transform = `scale(1.07) translateY(-2px) rotateY(${tx * 2.2}deg) rotateX(${-ty * 1.6}deg)`;
+        }
+      }, { passive: true });
+      card.addEventListener('pointerleave', () => {
+        card.style.removeProperty('--mx');
+        card.style.removeProperty('--my');
+        if (img) img.style.transform = '';
+      });
+    });
+  }
 });
 
 // SSE is only used in the admin panel (admin/base.html).

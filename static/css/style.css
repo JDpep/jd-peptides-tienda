@@ -1929,13 +1929,19 @@ dl.info-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; 
 .reveal {
   opacity: 0;
   transform: translateY(24px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: var(--delay, 0s);
+  will-change: transform, opacity;
 }
+.reveal-left  { opacity: 0; transform: translateX(-32px); transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1); transition-delay: var(--delay, 0s); }
+.reveal-right { opacity: 0; transform: translateX( 32px); transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1); transition-delay: var(--delay, 0s); }
 .product-card.visible,
-.reveal.visible {
+.reveal.visible,
+.reveal-left.visible,
+.reveal-right.visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(0, 0);
 }
 
 /* --- Staggered grid entrance (AJAX + page load) --- */
@@ -2132,6 +2138,42 @@ html, body {
   overflow-x: hidden;
   max-width: 100%;
 }
+html { scroll-behavior: smooth; }
+
+/* Custom scrollbar — premium dark feel */
+@media (pointer: fine) {
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--gold-dark), var(--gold));
+    border-radius: 10px;
+    border: 2px solid var(--bg);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+  html { scrollbar-color: var(--gold-dark) var(--bg); scrollbar-width: thin; }
+}
+
+/* Accessible focus rings */
+*:focus { outline: none; }
+*:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect users with motion sensitivity */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .product-card, .reveal, .reveal-left, .reveal-right {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
 
 /* =========================================================
    PRICE CURRENCY SUFFIX  (e.g. "$89.99 USD")
@@ -2288,3 +2330,133 @@ details summary::-webkit-details-marker { display: none; }
 .stock-badge.ok    { background: rgba(34,197,94,0.10);  color: var(--green);  border: 1px solid rgba(34,197,94,0.28); }
 .stock-badge.low   { background: rgba(249,115,22,0.10); color: var(--orange); border: 1px solid rgba(249,115,22,0.28); }
 .stock-badge.out   { background: rgba(239,68,68,0.10);  color: var(--red);    border: 1px solid rgba(239,68,68,0.28); }
+
+/* =========================================================
+   PREMIUM POLISH — Wave B (UI/UX upgrade)
+   ========================================================= */
+
+/* — Enhanced product card hover (spring lift + radial gold glow) — */
+.product-card { position: relative; isolation: isolate; transition: transform 0.45s cubic-bezier(0.22,1,0.36,1), box-shadow 0.35s ease, border-color 0.3s ease; }
+.product-card::after {
+  content: "";
+  position: absolute; inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(420px 220px at var(--mx, 50%) var(--my, 0%),
+              rgba(199,154,58,0.18), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 1;
+}
+.product-card:hover {
+  border-color: rgba(199,154,58,0.55);
+  box-shadow: 0 22px 48px -18px rgba(0,0,0,0.6), 0 0 0 1px rgba(199,154,58,0.18), 0 0 36px -10px rgba(199,154,58,0.35);
+  transform: translateY(-6px);
+}
+.product-card:hover::after { opacity: 1; }
+.product-card > * { position: relative; z-index: 2; }
+.product-card:hover .product-card-img { transform: scale(1.07) translateY(-2px); }
+.product-card-img { transition: transform 0.55s cubic-bezier(0.22,1,0.36,1); }
+
+/* — Animated gradient shimmer on hero gold highlight — */
+.hero h1 .highlight {
+  background: linear-gradient(110deg, var(--gold) 0%, #f4d28a 28%, var(--gold) 56%, #b8860b 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: goldShimmer 6.5s ease-in-out infinite;
+}
+@keyframes goldShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* — Category pill: sliding gold underline + scale — */
+.pill { position: relative; overflow: hidden; }
+.pill::before {
+  content: "";
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%; height: 2px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
+}
+.pill:hover::before, .pill.active::before { transform: scaleX(1); }
+.pill:hover { transform: translateY(-1px); }
+
+/* — Cart icon pulse when has items — */
+.cart-btn { position: relative; }
+.cart-badge:not([style*="display:none"]) {
+  animation: cartGlow 2.6s ease-in-out infinite;
+}
+@keyframes cartGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(199,154,58,0.45); }
+  50%      { box-shadow: 0 0 0 6px rgba(199,154,58,0); }
+}
+
+/* — Navbar shimmer on scroll (subtle gold underline) — */
+.navbar.scrolled::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(199,154,58,0.55), transparent);
+}
+
+/* — Section title divider animation — */
+.section-header .divider h2 { display: inline-block; }
+.section-header .divider {
+  position: relative;
+  display: inline-block;
+}
+.section-header .divider::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  margin: 0.85rem auto 0;
+  border-radius: 2px;
+  transform: scaleX(0.4);
+  transform-origin: left;
+  transition: transform 0.6s cubic-bezier(0.22,1,0.36,1);
+}
+.reveal.visible .section-header .divider::after,
+.section .section-header .divider::after { transform: scaleX(1); }
+
+/* — Buttons: ripple-ish hover sheen — */
+.btn-gold, .btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+.btn-gold::before, .btn-primary::before {
+  content: "";
+  position: absolute;
+  top: 0; left: -75%;
+  width: 50%; height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.25), transparent);
+  transform: skewX(-22deg);
+  transition: left 0.55s ease;
+  pointer-events: none;
+}
+.btn-gold:hover::before, .btn-primary:hover::before { left: 125%; }
+
+/* — Subtle vial tilt on hover (3D-ish without JS) — */
+.product-visual-has-img { perspective: 800px; }
+.product-card:hover .product-visual-has-img .product-card-img {
+  transform: scale(1.07) translateY(-2px) rotateZ(0.4deg);
+}
+
+/* — Footer link hover slide — */
+.footer-col ul a {
+  position: relative;
+  padding-left: 0;
+  transition: color var(--transition), padding-left var(--transition);
+}
+.footer-col ul a:hover {
+  color: var(--gold);
+  padding-left: 6px;
+}

@@ -114,6 +114,16 @@
                 <p style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">{{ benefits[0] }}</p>
               {% endif %}
               <div class="product-price" style="color:var(--gold)">${{ "%.2f"|format(p['price']) }} <span class="price-currency">USD</span></div>
+              {% set _low = p['low_stock_alert'] if p['low_stock_alert'] is not none else 5 %}
+              <div style="margin-top:0.5rem">
+                {% if p['stock'] > _low %}
+                  <span class="stock-badge ok">En stock</span>
+                {% elif p['stock'] > 0 %}
+                  <span class="stock-badge low">Pocas unidades ({{ p['stock'] }})</span>
+                {% else %}
+                  <span class="stock-badge out">Agotado</span>
+                {% endif %}
+              </div>
             </div>
             <div class="product-footer">
               <a href="{{ url_for('producto', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver detalle</a>

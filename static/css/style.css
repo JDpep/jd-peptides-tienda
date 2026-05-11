@@ -2254,3 +2254,37 @@ html, body {
 /* FAQ details/summary — from faq.html inline */
 details[open] summary span { transform: rotate(45deg); }
 details summary::-webkit-details-marker { display: none; }
+
+/* =========================================================
+   WHATSAPP "Order via WhatsApp" CTA  (cart page)
+   ========================================================= */
+.btn-whatsapp {
+  background: #25d366;
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  transition: background var(--transition), transform var(--transition);
+}
+.btn-whatsapp:hover {
+  background: #1ebd5b;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   STOCK BADGES — catalog + product cards
+   ========================================================= */
+.stock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+.stock-badge::before { content: "●"; font-size: 0.55rem; line-height: 1; }
+.stock-badge.ok    { background: rgba(34,197,94,0.10);  color: var(--green);  border: 1px solid rgba(34,197,94,0.28); }
+.stock-badge.low   { background: rgba(249,115,22,0.10); color: var(--orange); border: 1px solid rgba(249,115,22,0.28); }
+.stock-badge.out   { background: rgba(239,68,68,0.10);  color: var(--red);    border: 1px solid rgba(239,68,68,0.28); }

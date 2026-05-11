@@ -76,7 +76,7 @@
         {% for p in products %}
           {% set benefits = p['benefits'].split('|') if p['benefits'] else [] %}
           <div class="product-card" data-product-id="{{ p['id'] }}" style="--delay:{{ loop.index0 * 0.06 }}s">
-            <a href="{{ url_for('producto', pid=p['id']) }}" style="text-decoration:none;display:contents">
+            <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" style="text-decoration:none;display:contents">
               <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
                 {% set _bc = {'Recuperación':'badge-cat-recuperacion','Performance':'badge-cat-performance','Anti-aging':'badge-cat-antiaging','Pérdida de Peso':'badge-cat-perdida','Bienestar':'badge-cat-bienestar'} %}
                 <div class="product-visual-cat">
@@ -129,7 +129,7 @@
               </div>
             </div>
             <div class="product-footer">
-              <a href="{{ url_for('producto', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver detalle</a>
+              <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver detalle</a>
               {% if p['stock'] > 0 %}
                 <button class="btn btn-gold btn-sm add-to-cart-btn" data-product-id="{{ p['id'] }}">
                   + Agregar

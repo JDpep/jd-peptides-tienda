@@ -5,8 +5,35 @@ import io
 import secrets
 import functools
 import sqlite3
+import unicodedata
 from collections import deque
 from markupsafe import Markup
+
+
+# ---------------------------------------------------------------------------
+# Slug helpers — SEO-friendly URLs (/producto/bpc-157 en vez de /producto/4)
+# ---------------------------------------------------------------------------
+_SLUG_STRIP_RE = re.compile(r'[^a-z0-9-]+')
+_SLUG_COLLAPSE_RE = re.compile(r'-{2,}')
+
+
+def _make_slug(text, max_len=80):
+    """Produce un slug seguro para URL: ascii, kebab-case, sin acentos.
+    Ej: 'IGF-1 LR3' → 'igf-1-lr3' ; 'BPC-157' → 'bpc-157' ;
+    'Péptido α' → 'peptido-a'.
+    """
+    if not text:
+        return ''
+    # Normaliza unicode (decompone acentos), descarta no-ascii
+    s = unicodedata.normalize('NFKD', str(text)).encode('ascii', 'ignore').decode('ascii')
+    s = s.lower().strip()
+    # Espacios y separadores comunes → guion
+    s = re.sub(r'[\s_/.]+', '-', s)
+    # Quita lo que no sea alfanumérico/guion
+    s = _SLUG_STRIP_RE.sub('', s)
+    # Colapsa guiones repetidos y trim
+    s = _SLUG_COLLAPSE_RE.sub('-', s).strip('-')
+    return s[:max_len] or 'producto'
 try:
     import psycopg2
     import psycopg2.extras
@@ -1600,6 +1627,51 @@ def init_db():
             )
         db.commit()
 
+    # Migration v6 (2026-05-11): slugs SEO en URLs de producto.
+    # Agrega columna slug TEXT UNIQUE, backfilea desde name+sku para evitar
+    # colisiones, e indexa. /producto/<int:id> sigue funcionando vía redirect
+    # 301 a /producto/<slug>, así los links viejos no se rompen.
+    if 'slug' not in cols:
+        db.execute("ALTER TABLE products ADD COLUMN slug TEXT DEFAULT ''")
+        db.commit()
+
+    # Backfill (idempotente — solo toca filas con slug vacío)
+    _empty_slug_rows = db.execute(
+        "SELECT id, sku, name FROM products WHERE slug IS NULL OR slug='' "
+    ).fetchall()
+    if _empty_slug_rows:
+        _seen = set(
+            r[0] for r in db.execute("SELECT slug FROM products WHERE slug != ''").fetchall()
+            if r[0]
+        )
+        for _row in _empty_slug_rows:
+            _pid  = _row['id']  if hasattr(_row, '__getitem__') else _row[0]
+            _sku  = _row['sku'] if hasattr(_row, '__getitem__') else _row[1]
+            _name = _row['name'] if hasattr(_row, '__getitem__') else _row[2]
+            _base = _make_slug(_name)
+            _slug = _base
+            # Si colisiona, append SKU; si colisiona aún, append counter
+            if _slug in _seen:
+                _slug = f"{_base}-{_make_slug(_sku)}" if _sku else f"{_base}-{_pid}"
+            _suffix = 2
+            while _slug in _seen:
+                _slug = f"{_base}-{_suffix}"
+                _suffix += 1
+            _seen.add(_slug)
+            db.execute("UPDATE products SET slug=? WHERE id=?", (_slug, _pid))
+        db.commit()
+    # Índice único parcial (excluye '') — algunas BDs viejas pueden tenerlo NULL
+    try:
+        db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_products_slug ON products(slug) WHERE slug != ''")
+        db.commit()
+    except Exception:
+        # Postgres syntax difiere — el wrapper podría no soportar WHERE en índice
+        try:
+            db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_products_slug ON products(slug)")
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] idx_products_slug skipped: {_e}')
+
     # Migration v5 (2026-05-11): foto limpia del vial de Retatrutide.
     # v3 había seteado image_path = cat_reta_frasco_5mg.png (flyer recortado feo
     # en el card). Cambia a vial_retatrutide.jpeg si la fila sigue apuntando al
@@ -1873,17 +1945,34 @@ def api_actualizar_carrito():
 
 
 @app.route('/producto/<int:pid>')
-def producto(pid):
-    product = query_db("SELECT * FROM products WHERE id=? AND active=1", (pid,), one=True)
+def producto_by_id(pid):
+    """Legacy: /producto/123 → 301 a /producto/<slug>. Mantiene compatibilidad
+    con emails antiguos / bookmarks / links externos."""
+    row = query_db("SELECT slug FROM products WHERE id=?", (pid,), one=True)
+    if row and row['slug']:
+        return redirect(url_for('producto', slug=row['slug']), code=301)
+    # Producto no existe o no tiene slug todavía (caso extremo)
+    flash('Producto no encontrado.', 'error')
+    return redirect(url_for('catalogo'))
+
+
+@app.route('/producto/<slug>')
+def producto(slug):
+    """Detalle de producto por slug SEO-friendly."""
+    # Solo aceptamos slugs en formato esperado para evitar paths raros
+    if not re.match(r'^[a-z0-9-]+$', slug):
+        flash('Producto no encontrado.', 'error')
+        return redirect(url_for('catalogo'))
+    product = query_db("SELECT * FROM products WHERE slug=? AND active=1", (slug,), one=True)
     if not product:
         flash('Producto no encontrado.', 'error')
         return redirect(url_for('catalogo'))
     related = query_db(
         "SELECT * FROM products WHERE active=1 AND category=? AND id!=? LIMIT 3",
-        (product['category'], pid)
+        (product['category'], product['id'])
     )
     benefits = product['benefits'].split('|') if product['benefits'] else []
-    images_raw = query_db("SELECT * FROM product_images WHERE product_id=? ORDER BY sort_order, id", (pid,))
+    images_raw = query_db("SELECT * FROM product_images WHERE product_id=? ORDER BY sort_order, id", (product['id'],))
     # Solo pasar imágenes cuyos archivos existen (evita entradas huérfanas de uploads borrados)
     images = [img for img in images_raw if
               os.path.exists(os.path.join(UPLOAD_FOLDER, img['filename'])) or
@@ -2502,10 +2591,19 @@ def admin_nuevo_producto():
         active = 1 if request.form.get('active') else 0
 
         try:
+            # Genera slug único; si colisiona con producto existente, sufija con SKU/uuid
+            _base = _make_slug(name) or _make_slug(sku) or 'producto'
+            _slug = _base
+            if query_db("SELECT 1 FROM products WHERE slug=?", (_slug,), one=True):
+                _slug = f"{_base}-{_make_slug(sku)}" if sku else f"{_base}-{secrets.token_hex(3)}"
+                _sfx = 2
+                while query_db("SELECT 1 FROM products WHERE slug=?", (_slug,), one=True):
+                    _slug = f"{_base}-{_sfx}"
+                    _sfx += 1
             pid = execute_db(
-                """INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, image_path)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '')""",
-                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active)
+                """INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, image_path, slug)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?)""",
+                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, _slug)
             )
             files = request.files.getlist('images')
             first_uploaded = None
@@ -2557,10 +2655,24 @@ def admin_editar_producto(pid):
         active = 1 if request.form.get('active') else 0
 
         try:
+            # Regenera slug si cambió el nombre o si está vacío
+            _cur_slug = (product['slug'] if 'slug' in product.keys() and product['slug'] else '')
+            _name_changed = (name.strip().lower() != (product['name'] or '').strip().lower())
+            if not _cur_slug or _name_changed:
+                _base = _make_slug(name) or _make_slug(sku) or 'producto'
+                _slug = _base
+                if query_db("SELECT 1 FROM products WHERE slug=? AND id!=?", (_slug, pid), one=True):
+                    _slug = f"{_base}-{_make_slug(sku)}" if sku else f"{_base}-{pid}"
+                    _sfx = 2
+                    while query_db("SELECT 1 FROM products WHERE slug=? AND id!=?", (_slug, pid), one=True):
+                        _slug = f"{_base}-{_sfx}"
+                        _sfx += 1
+            else:
+                _slug = _cur_slug
             execute_db(
                 """UPDATE products SET sku=?, name=?, category=?, dose=?, price=?, stock=?,
-                   low_stock_alert=?, weight_grams=?, description=?, benefits=?, active=? WHERE id=?""",
-                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, pid)
+                   low_stock_alert=?, weight_grams=?, description=?, benefits=?, active=?, slug=? WHERE id=?""",
+                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, _slug, pid)
             )
             files = request.files.getlist('images')
             existing_count = query_db("SELECT COUNT(*) as c FROM product_images WHERE product_id=?", (pid,), one=True)['c']

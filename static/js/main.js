@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const inStock  = p.stock > 0;
       const lowAlert = (p.low_stock_alert == null ? 5 : p.low_stock_alert);
       const isJpeg   = p.image_url && (/\.(jpeg|jpg)$/i.test(p.image_url) || /_frasco_/i.test(p.image_url));
-      const detailUrl = '/producto/' + encodeURIComponent(p.id);
+      const detailUrl = '/producto/' + encodeURIComponent(p.slug || p.id);
       const altText   = `Frasco ${p.name} ${p.dose} — For Research Use Only`;
 
       const imgTag = p.image_url

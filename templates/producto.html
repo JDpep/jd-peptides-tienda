@@ -200,7 +200,7 @@
           {% for p in related %}
             {% set rbenefits = p['benefits'].split('|') if p['benefits'] else [] %}
             <div class="product-card">
-              <a href="{{ url_for('producto', pid=p['id']) }}" style="text-decoration:none;display:contents">
+              <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" style="text-decoration:none;display:contents">
                 {% set _rimg = p['image_path'] or img_map.get(p['sku'], '') %}
                 <div class="product-visual {% if _rimg %}product-visual-has-img{% endif %}">
                   <div class="product-visual-cat"><span class="badge badge-cat {{ _bc.get(p['category'], 'badge-cat-default') }}">{{ p['category'] }}</span></div>
@@ -228,7 +228,7 @@
                 <div class="product-price">${{ "%.2f"|format(p['price']) }} <span class="price-currency">USD</span></div>
               </div>
               <div class="product-footer">
-                <a href="{{ url_for('producto', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver más</a>
+                <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver más</a>
                 <button class="btn btn-gold btn-sm add-to-cart-btn" data-product-id="{{ p['id'] }}">+ Agregar</button>
               </div>
             </div>

@@ -83,7 +83,7 @@
             <td>
               <div style="display:flex;gap:0.4rem">
                 <a href="{{ url_for('admin_editar_producto', pid=p['id']) }}" class="btn btn-ghost btn-sm">Editar</a>
-                <a href="{{ url_for('producto', pid=p['id']) }}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>
+                <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>
                 <form method="POST" action="{{ url_for('admin_eliminar_producto', pid=p['id']) }}"
                       onsubmit="return confirm('¿Eliminar «{{ p['name'] }}»?\nEsta acción no se puede deshacer.\n\nSi tiene pedidos vinculados, se desactivará en lugar de borrarse.')">
                   {{ csrf_field() }}

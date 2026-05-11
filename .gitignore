@@ -18,3 +18,9 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local agent state
+.claude/
+
+# Vercel
+.vercel/

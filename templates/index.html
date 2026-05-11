@@ -217,8 +217,13 @@
                 <span class="badge badge-gold">{{ p['category'] }}</span>
               </div>
               {% if pimg %}
-                <img src="{{ url_for('static', filename='img/' + pimg) }}" loading="lazy"
-                     alt="{{ p['name'] }}" class="product-card-img">
+                <img src="{{ url_for('static', filename='img/' + pimg) }}"
+                     loading="{% if loop.index <= 3 %}eager{% else %}lazy{% endif %}"
+                     {% if loop.index <= 3 %}fetchpriority="high"{% endif %}
+                     decoding="async"
+                     width="320" height="533"
+                     alt="Frasco {{ p['name'] }} {{ p['dose'] }} — For Research Use Only"
+                     class="product-card-img">
               {% else %}
                 <div class="product-visual-pattern">
                   <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">

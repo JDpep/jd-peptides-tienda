@@ -193,7 +193,6 @@
           <ul>
             <li><a href="{{ url_for('privacidad') }}">Política de Privacidad</a></li>
             <li><a href="{{ url_for('terminos') }}">Términos y Condiciones</a></li>
-            <li><a href="#" data-show-disclaimer="1">Aviso Research Use Only</a></li>
             <li><span style="color:var(--text3)">Devoluciones: ventas finales</span></li>
           </ul>
         </div>
@@ -274,87 +273,6 @@
     </svg>
   </a>
   {% endif %}
-
-  <!-- Entry disclaimer modal (research-use-only) — se muestra en primera visita -->
-  <div class="entry-disclaimer-overlay" id="entryDisclaimer" hidden role="dialog" aria-modal="true" aria-labelledby="edTitle">
-    <div class="entry-disclaimer-modal">
-      <div class="entry-disclaimer-brand">
-        <svg width="56" height="62" viewBox="0 0 40 44" fill="none">
-          <defs>
-            <radialGradient id="arc-d" cx="50%" cy="30%" r="50%">
-              <stop offset="0%" stop-color="#c79a3a" stop-opacity="1"/>
-              <stop offset="100%" stop-color="#c79a3a" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <ellipse cx="20" cy="38" rx="15" ry="3.5" fill="url(#arc-d)"/>
-          <polygon points="20,4 32,11 32,25 20,32 8,25 8,11" fill="none" stroke="#c79a3a" stroke-width="2.5" stroke-linejoin="round"/>
-          <circle cx="20" cy="4"  r="3" fill="#c79a3a"/>
-          <circle cx="32" cy="11" r="3" fill="#c79a3a"/>
-          <circle cx="32" cy="25" r="3" fill="#c79a3a"/>
-          <circle cx="20" cy="32" r="3" fill="#c79a3a"/>
-          <circle cx="8"  cy="25" r="3" fill="#c79a3a"/>
-          <circle cx="8"  cy="11" r="3" fill="#c79a3a"/>
-        </svg>
-        <h2 id="edTitle">JD Peptides</h2>
-      </div>
-
-      <p class="entry-disclaimer-intro">
-        <strong>jdpeptides.com</strong> proporciona materiales exclusivamente para
-        <strong>investigación científica de laboratorio</strong>. Para continuar
-        debes aceptar lo siguiente:
-      </p>
-
-      <ul class="entry-disclaimer-list">
-        <li>
-          <strong>Edad mínima:</strong> Confirmas tener al menos
-          <strong>18 años cumplidos</strong>.
-        </li>
-        <li>
-          <strong>Uso del producto:</strong> Todos los productos se venden
-          <strong>exclusivamente para investigación in vitro</strong>. No están
-          destinados al consumo humano, veterinario, uso cosmético ni como
-          suplementos dietéticos.
-        </li>
-        <li>
-          <strong>Sin asesoría médica:</strong> No somos farmacia ni proveedor
-          médico. No damos consejo médico, instrucciones de dosis ni guía de
-          reconstitución para uso humano.
-        </li>
-        <li>
-          <strong>Cumplimiento legal:</strong> Es responsabilidad del
-          investigador manejar todos los materiales conforme a los protocolos
-          institucionales y las leyes locales aplicables.
-        </li>
-        <li>
-          <strong>Ventas finales:</strong> Por la naturaleza de estos
-          materiales, <strong>las ventas son finales</strong> — no aceptamos
-          devoluciones ni cambios excepto por daño en tránsito documentado.
-        </li>
-      </ul>
-
-      <p class="entry-disclaimer-legal">
-        Al hacer clic en <em>“Acepto”</em> confirmas haber leído y aceptado
-        nuestros <a href="{{ url_for('terminos') }}">Términos y Condiciones</a>,
-        la <a href="{{ url_for('privacidad') }}">Política de Privacidad</a>
-        y este Aviso Legal.
-      </p>
-
-      <div class="entry-disclaimer-actions">
-        <button type="button" class="btn btn-gold btn-lg" id="entryDisclaimerAccept">
-          Acepto
-        </button>
-        <button type="button" class="btn btn-outline btn-lg" id="entryDisclaimerDecline">
-          No acepto
-        </button>
-      </div>
-
-      <p class="entry-disclaimer-footnote">
-        Tu confirmación se guarda localmente en este navegador (sin cookies de
-        rastreo). Puedes revisar este aviso desde el footer en cualquier
-        momento.
-      </p>
-    </div>
-  </div>
 
   <script>window.TAG_LABELS = {{ TAG_LABELS | tojson }};</script>
   <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>

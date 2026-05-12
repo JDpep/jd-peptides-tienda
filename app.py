@@ -1426,6 +1426,15 @@ def init_db():
         # la primaria; tags es el eje secundario para cross-reference.
         db.execute("ALTER TABLE products ADD COLUMN tags TEXT DEFAULT ''")
         db.commit()
+
+    # status_history en orders — JSON array de eventos de cambio. Resuelve la
+    # queja "el pedido desaparece al cambiar status" mostrando timeline al
+    # comprador y auditando cambios internos.
+    _order_cols = [row[1] for row in db.execute("PRAGMA table_info(orders)").fetchall()]
+    if 'status_history' not in _order_cols:
+        db.execute("ALTER TABLE orders ADD COLUMN status_history TEXT DEFAULT '[]'")
+        db.commit()
+
     # Migrate supplier_documents table
     try:
         db.execute("SELECT id FROM supplier_documents LIMIT 1")
@@ -1977,6 +1986,19 @@ def tag_label(slug):
 app.jinja_env.globals['parse_tags'] = parse_tags
 app.jinja_env.globals['tag_label']  = tag_label
 app.jinja_env.globals['TAG_LABELS'] = TAG_LABELS
+
+
+@app.template_filter('fromjson_safe')
+def _fromjson_safe(raw):
+    """Parse JSON safely en templates. Devuelve [] si falla — útil para
+    columnas como orders.status_history que pueden venir vacías o NULL."""
+    if not raw:
+        return []
+    try:
+        data = json.loads(raw)
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -3168,7 +3190,18 @@ def admin_ordenes():
         )
     else:
         orders = query_db("SELECT * FROM orders ORDER BY created_at DESC")
-    return render_template('admin/ordenes.html', orders=orders, status_filter=status_filter)
+
+    # Counts por status para los chips — ayuda al admin a "encontrar"
+    # órdenes que cambiaron de estado y salieron del filtro actual.
+    _count_rows = query_db(
+        "SELECT status, COUNT(*) AS n FROM orders GROUP BY status"
+    )
+    status_counts = {r['status']: r['n'] for r in _count_rows}
+    status_counts['_total'] = sum(status_counts.values())
+
+    return render_template('admin/ordenes.html', orders=orders,
+                           status_filter=status_filter,
+                           status_counts=status_counts)
 
 
 @app.route('/admin/ordenes/<int:oid>')
@@ -3216,6 +3249,35 @@ def admin_actualizar_estado(oid):
         execute_db("UPDATE orders SET status=? WHERE id=?", (new_status, oid))
     if payment_changed:
         execute_db("UPDATE orders SET payment_status=? WHERE id=?", (new_payment, oid))
+
+    # Append a status_history. Sirve para el timeline público de /pedido y
+    # para auditoría interna. Solo el `status` y `timestamp` se exponen al
+    # comprador; admin_user queda en la fila para que tú lo veas en el detail.
+    if status_changed or payment_changed:
+        try:
+            _hist_raw = order['status_history'] if 'status_history' in order.keys() else '[]'
+            try:
+                _hist = json.loads(_hist_raw or '[]')
+                if not isinstance(_hist, list):
+                    _hist = []
+            except Exception:
+                _hist = []
+            _evt = {
+                'timestamp':  datetime.now().isoformat(timespec='seconds'),
+                'admin_user': session.get('admin_user', 'admin'),
+            }
+            if status_changed:
+                _evt['status']     = new_status
+                _evt['status_old'] = old_status
+            if payment_changed:
+                _evt['payment_status']     = new_payment
+                _evt['payment_status_old'] = old_payment
+            _hist.append(_evt)
+            # Cap a últimos 50 eventos para evitar crecimiento descontrolado
+            execute_db("UPDATE orders SET status_history=? WHERE id=?",
+                       (json.dumps(_hist[-50:]), oid))
+        except Exception as _e:
+            print(f'[Orders] No se pudo actualizar status_history: {_e}')
 
     # Mover inventario solo si cambia el estado de "libre"
     if era_libre != sera_libre:

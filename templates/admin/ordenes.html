@@ -4,15 +4,23 @@
 
 {% block content %}
 
-<!-- Status filter -->
-<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
-  <a href="{{ url_for('admin_ordenes') }}" class="pill {% if not status_filter %}active{% endif %}">Todas</a>
-  <a href="{{ url_for('admin_ordenes', status='nuevo') }}"     class="pill {% if status_filter == 'nuevo' %}active{% endif %}">Nuevas</a>
-  <a href="{{ url_for('admin_ordenes', status='procesando') }}" class="pill {% if status_filter == 'procesando' %}active{% endif %}">Procesando</a>
-  <a href="{{ url_for('admin_ordenes', status='enviado') }}"   class="pill {% if status_filter == 'enviado' %}active{% endif %}">Enviadas</a>
-  <a href="{{ url_for('admin_ordenes', status='entregado') }}" class="pill {% if status_filter == 'entregado' %}active{% endif %}">Entregadas</a>
-  <a href="{{ url_for('admin_ordenes', status='cancelado') }}" class="pill {% if status_filter == 'cancelado' %}active{% endif %}">Canceladas</a>
+<!-- Status filter — chips con contadores. "Todas" es siempre el default. -->
+{% set sc = status_counts or {} %}
+<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem">
+  <a href="{{ url_for('admin_ordenes') }}"
+     class="pill {% if not status_filter %}active{% endif %}">
+    Todas <span style="opacity:0.65">({{ sc.get('_total', 0) }})</span>
+  </a>
+  {% for slug, label in [('nuevo','Nuevas'), ('procesando','Procesando'), ('enviado','Enviadas'), ('entregado','Entregadas'), ('cancelado','Canceladas')] %}
+    <a href="{{ url_for('admin_ordenes', status=slug) }}"
+       class="pill {% if status_filter == slug %}active{% endif %}">
+      {{ label }} <span style="opacity:0.65">({{ sc.get(slug, 0) }})</span>
+    </a>
+  {% endfor %}
 </div>
+<p style="font-size:0.78rem;color:var(--text3);margin:0 0 1.25rem">
+  💡 Al cambiar el status de un pedido, este se mueve al chip correspondiente — no se borra.
+</p>
 
 <script>
 var ORD_DATA = [

@@ -2599,6 +2599,66 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 /* =========================================================
+   ORDER TIMELINE — eventos cronológicos del pedido
+   ========================================================= */
+.order-timeline {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.75rem;
+  text-align: left;
+}
+.order-timeline-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin: 0 0 1rem;
+}
+.order-timeline-list {
+  list-style: none;
+  padding: 0; margin: 0;
+  position: relative;
+}
+.order-timeline-list::before {
+  content: '';
+  position: absolute;
+  left: 5px; top: 8px; bottom: 8px;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--gold) 0%, var(--gold-deep) 60%, var(--border) 100%);
+  border-radius: 1px;
+}
+.order-timeline-event {
+  position: relative;
+  padding: 0.4rem 0 0.4rem 1.85rem;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+.order-timeline-event strong { display: block; margin-bottom: 0.15rem; }
+.order-timeline-event time {
+  font-size: 0.72rem;
+  color: var(--text3);
+  font-variant-numeric: tabular-nums;
+}
+.order-timeline-dot {
+  position: absolute;
+  left: 0; top: 0.7rem;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 3px var(--bg3), 0 0 12px rgba(199,154,58,0.4);
+}
+.order-timeline-event--created .order-timeline-dot {
+  background: var(--text2);
+  box-shadow: 0 0 0 3px var(--bg3);
+}
+.order-timeline-event:last-child .order-timeline-dot {
+  animation: trackerPulse 2.4s ease-in-out infinite;
+}
+
+/* =========================================================
    MOBILE UX REFRESH (≤ 768px)
    ========================================================= */
 

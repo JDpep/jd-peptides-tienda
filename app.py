@@ -56,19 +56,52 @@ from flask_compress import Compress
 
 app = Flask(__name__)
 
-# ----- Secret key — fail loud if default is used in production -----
-_DEFAULT_SECRET = 'jdp_secret_key_2024_ultra_secure'  # legacy fallback
-_SECRET_KEY = os.environ.get('SECRET_KEY', _DEFAULT_SECRET)
+# ----- Secret key resolution ------------------------------------------------
+# Priority order:
+#   1. SECRET_KEY env (preferred — set this in Railway/Vercel).
+#   2. Hash derived from platform deployment metadata (commit SHA, deployment
+#      ID). Stable within a single deployment so session cookies survive cold
+#      starts on the same release. Rotates on next deploy.
+#   3. Per-process random (only safe for local dev — invalidates sessions on
+#      every restart, but at least never re-uses the public default).
+#
+# Why the metadata fallback exists: Vercel Python runs each request as a
+# possibly-new serverless container. If we generated a random key per process
+# (the old SEC-1 behavior) every cold start would mint a different key and
+# CSRF/session tokens would fail across containers in the same deploy, which
+# is exactly the "CSRF token missing or invalid" bug at /admin/login.
+import hashlib as _hashlib
+_DEFAULT_SECRET = 'jdp_secret_key_2024_ultra_secure'  # legacy fallback (public)
+_SECRET_FROM_ENV = (os.environ.get('SECRET_KEY') or '').strip()
 _is_prod = bool(os.environ.get('VERCEL') or os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PRODUCTION'))
-if _is_prod and _SECRET_KEY == _DEFAULT_SECRET:
-    # In prod we must NEVER use the default secret. Generate a per-process
-    # random secret so the app still boots, but session cookies signed with it
-    # will be invalidated on every restart — this is the safest fail mode
-    # (vs. crashing the deploy or accepting forgeable sessions).
-    import secrets as _secrets_mod
-    _SECRET_KEY = _secrets_mod.token_hex(32)
-    print('[SECURITY] WARNING: SECRET_KEY env var not set in production — '
-          'using ephemeral random key. SET A PERMANENT SECRET_KEY IN RAILWAY/VERCEL.')
+
+if _SECRET_FROM_ENV and _SECRET_FROM_ENV != _DEFAULT_SECRET:
+    _SECRET_KEY = _SECRET_FROM_ENV
+    _SECRET_SOURCE = 'env'
+else:
+    _deploy_id = (
+        os.environ.get('VERCEL_GIT_COMMIT_SHA')
+        or os.environ.get('VERCEL_DEPLOYMENT_ID')
+        or os.environ.get('RAILWAY_DEPLOYMENT_ID')
+        or os.environ.get('RAILWAY_GIT_COMMIT_SHA')
+        or ''
+    )
+    if _deploy_id:
+        _SECRET_KEY = _hashlib.sha256(
+            (_deploy_id + '|jdp-fallback-salt-2026').encode()
+        ).hexdigest()
+        _SECRET_SOURCE = 'deployment-hash'
+    else:
+        import secrets as _secrets_mod
+        _SECRET_KEY = _secrets_mod.token_hex(32)
+        _SECRET_SOURCE = 'ephemeral'
+
+if _is_prod and _SECRET_SOURCE != 'env':
+    print('[SECURITY] WARNING: SECRET_KEY env var NO configurada. '
+          f'Usando fallback ({_SECRET_SOURCE}). Las sesiones se invalidarán '
+          'al re-deployar. CONFIGURA SECRET_KEY EN RAILWAY/VERCEL CON UNA '
+          'CLAVE ALEATORIA DE 64 HEX (python -c "import secrets; print(secrets.token_hex(32))").')
+
 app.secret_key = _SECRET_KEY
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 60 * 60 * 24 * 30  # 30 days
@@ -1360,23 +1393,38 @@ def init_db():
             created_at TEXT DEFAULT (datetime('now')), processed_at TEXT
         )""")
         db.commit()
-    # Bootstrap admin user(s).
-    # SECURITY: no hardcoded credentials. On an empty admin_users table we
-    # create exactly ONE superadmin from env vars ADMIN_USERNAME + ADMIN_PASSWORD.
-    # If those aren't set we log a loud warning and leave the table empty —
-    # better lockout than silently-known credentials.
-    user_count = db.execute("SELECT COUNT(*) FROM admin_users").fetchone()[0]
-    if user_count == 0:
-        _adm_user = (os.environ.get('ADMIN_USERNAME', '') or '').strip()
-        _adm_pass = os.environ.get('ADMIN_PASSWORD', '') or ''
-        if _adm_user and len(_adm_pass) >= 10:
-            db.execute("INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)",
-                       (_adm_user,
-                        generate_password_hash(_adm_pass, method='pbkdf2:sha256'),
-                        'superadmin'))
+    # Bootstrap admin user(s) desde env — SIN credenciales hardcoded.
+    #
+    # Comportamiento idempotente: si ADMIN_USERNAME + ADMIN_PASSWORD (≥10
+    # chars) están en env, garantizamos que ese usuario exista como
+    # superadmin. Si ya existe se deja como está (no se re-hashea para no
+    # pisar cambios manuales de password vía /admin/usuarios). Si no existe
+    # se crea, AUNQUE haya otros admins en la tabla — esto te permite añadir
+    # un nuevo admin desde Vercel/Railway sin perder los existentes.
+    #
+    # Para rotar la password del usuario bootstrap: borra el row vía
+    # /admin/usuarios y deja que el siguiente boot lo re-cree con la nueva
+    # password del env.
+    _adm_user = (os.environ.get('ADMIN_USERNAME', '') or '').strip()
+    _adm_pass = os.environ.get('ADMIN_PASSWORD', '') or ''
+    if _adm_user and len(_adm_pass) >= 10:
+        _exists = db.execute(
+            "SELECT id FROM admin_users WHERE username=?", (_adm_user,)
+        ).fetchone()
+        if not _exists:
+            db.execute(
+                "INSERT INTO admin_users (username, password_hash, role, active) "
+                "VALUES (?, ?, 'superadmin', 1)",
+                (_adm_user,
+                 generate_password_hash(_adm_pass, method='pbkdf2:sha256'))
+            )
             db.commit()
-            print(f'[INIT] Bootstrap admin user creado desde env: {_adm_user}')
-        else:
+            print(f'[INIT] Admin desde env creado: {_adm_user}')
+    else:
+        # Sin env vars: revisa si la tabla está vacía (lockout) o ya tiene
+        # admins de boots previos.
+        _user_count = db.execute("SELECT COUNT(*) FROM admin_users").fetchone()[0]
+        if _user_count == 0:
             print('[INIT] ⚠️  admin_users vacío y ADMIN_USERNAME/ADMIN_PASSWORD '
                   'no están configurados (o password <10 chars). '
                   '/admin/login estará inaccesible hasta que crees un usuario.')

@@ -3635,8 +3635,19 @@ def inject_globals():
 # Inicializar BD al arrancar (funciona con gunicorn y python app.py)
 # ---------------------------------------------------------------------------
 
-with app.app_context():
-    init_db()
+# Si init_db() falla (ej. Postgres mal configurado), NO crashees el módulo:
+# logueamos el stack trace completo para diagnóstico y dejamos que la app
+# arranque. Las rutas que necesiten DB fallarán individualmente con 500 pero
+# al menos el sitio responde y se pueden ver los errores.
+try:
+    with app.app_context():
+        init_db()
+except Exception as _init_err:
+    import traceback as _tb
+    print('[INIT] ❌ init_db() FALLÓ — la app arranca igual, pero las rutas '
+          'que toquen DB van a fallar. Stack trace completo:')
+    print(_tb.format_exc())
+    print(f'[INIT] Error: {type(_init_err).__name__}: {_init_err}')
 
 # ---------------------------------------------------------------------------
 # Main

@@ -1341,6 +1341,13 @@ def init_db():
     if 'weight_grams' not in cols:
         db.execute("ALTER TABLE products ADD COLUMN weight_grams INTEGER DEFAULT 50")
         db.commit()
+
+    if 'tags' not in cols:
+        # Tags cross-reference (multi-categoría): pipe-separated en slug format.
+        # Ej: 'metabolismo|hormonal|anti-aging'. La columna category sigue siendo
+        # la primaria; tags es el eje secundario para cross-reference.
+        db.execute("ALTER TABLE products ADD COLUMN tags TEXT DEFAULT ''")
+        db.commit()
     # Migrate supplier_documents table
     try:
         db.execute("SELECT id FROM supplier_documents LIMIT 1")
@@ -1627,6 +1634,43 @@ def init_db():
             )
         db.commit()
 
+    # Migration v7 (2026-05-11): backfill de tags cross-reference.
+    # Mapeo basado en brand book v2 y mecanismo farmacológico de cada péptido.
+    # Permite que un péptido aparezca bajo múltiples categorías (ej. Tesamorelin
+    # en metabolismo Y hormonal Y anti-aging).
+    _mig_v7_tag = 'migration:v7:backfill_tags_20260511'
+    already_v7 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v7_tag,)
+    ).fetchone()
+    if not already_v7:
+        _tag_map = {
+            'JDP-IGF1':   'performance|anti-aging|recuperacion|hormonal',
+            'JDP-KPV':    'inmuno|anti-inflamatorio|recuperacion',
+            'JDP-MOTSC':  'metabolismo|performance|anti-aging',
+            'JDP-BPC157': 'recuperacion|anti-inflamatorio|inmuno',
+            'JDP-TB500':  'recuperacion|performance|anti-inflamatorio',
+            'JDP-GHKCU':  'anti-aging|recuperacion|skin',
+            'JDP-RETA':   'metabolismo|perdida-de-peso',
+            'JDP-DSIP':   'sueno|bienestar|anti-estres',
+            'JDP-TA1':    'inmuno|anti-aging',
+            'JDP-IPA':    'hormonal|performance|recuperacion',
+            'JDP-TESA':   'metabolismo|hormonal|anti-aging',
+        }
+        for _sku, _tags in _tag_map.items():
+            # Solo seedea si el producto existe y tags está vacío (no pisa edits)
+            db.execute(
+                "UPDATE products SET tags=? WHERE sku=? AND (tags IS NULL OR tags='')",
+                (_tags, _sku)
+            )
+        _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+        if _any_prod:
+            _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+            db.execute(
+                'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                (_any_id, 'ajuste', 0, _mig_v7_tag, datetime.now().isoformat())
+            )
+        db.commit()
+
     # Migration v6 (2026-05-11): slugs SEO en URLs de producto.
     # Agrega columna slug TEXT UNIQUE, backfilea desde name+sku para evitar
     # colisiones, e indexa. /producto/<int:id> sigue funcionando vía redirect
@@ -1808,6 +1852,40 @@ app.jinja_env.globals['compute_shipping']  = compute_shipping
 app.jinja_env.globals['FREE_SHIPPING_MIN_USD'] = FREE_SHIPPING_MIN_USD
 
 
+# ----- Cross-reference tags --------------------------------------------------
+# Labels legibles para slugs de tag — orden = orden de display en UI.
+TAG_LABELS = {
+    'metabolismo':       'Metabolismo',
+    'hormonal':          'Hormonal',
+    'performance':       'Performance',
+    'recuperacion':      'Recuperación',
+    'anti-aging':        'Anti-aging',
+    'anti-inflamatorio': 'Antiinflamatorio',
+    'inmuno':            'Inmuno',
+    'sueno':             'Sueño',
+    'bienestar':         'Bienestar',
+    'anti-estres':       'Anti-estrés',
+    'perdida-de-peso':   'Pérdida de peso',
+    'skin':              'Skin care',
+}
+
+
+def parse_tags(raw):
+    """De 'metabolismo|hormonal' a ['metabolismo','hormonal'] sin vacíos."""
+    if not raw:
+        return []
+    return [t.strip().lower() for t in str(raw).split('|') if t and t.strip()]
+
+
+def tag_label(slug):
+    return TAG_LABELS.get((slug or '').strip().lower(), (slug or '').replace('-', ' ').title())
+
+
+app.jinja_env.globals['parse_tags'] = parse_tags
+app.jinja_env.globals['tag_label']  = tag_label
+app.jinja_env.globals['TAG_LABELS'] = TAG_LABELS
+
+
 # ---------------------------------------------------------------------------
 # Admin polling endpoint — lightweight replacement for SSE
 # ---------------------------------------------------------------------------
@@ -1854,55 +1932,60 @@ def index():
     return render_template('index.html', products=products, categories=categories)
 
 
+def _filter_products(category='', search='', tag=''):
+    """Filtra products activos por categoría + tag + search (LIKE). Solo permite
+    tags conocidos para evitar inyección semántica."""
+    clauses = ["active=1"]
+    params = []
+    if category:
+        clauses.append("category=?")
+        params.append(category)
+    if search:
+        clauses.append("(name LIKE ? OR description LIKE ?)")
+        params.extend([f'%{search}%', f'%{search}%'])
+    if tag:
+        # Whitelist contra TAG_LABELS para no permitir LIKE de strings arbitrarios
+        tag = tag.strip().lower()
+        if tag in TAG_LABELS:
+            # tag está rodeado de | en la columna; usamos un LIKE con bordes
+            # explícitos para no matchear substrings (ej. 'inmuno' vs 'inmuno-x')
+            clauses.append("('|' || tags || '|') LIKE ?")
+            params.append(f'%|{tag}|%')
+    sql = "SELECT * FROM products WHERE " + " AND ".join(clauses) + " ORDER BY name"
+    return query_db(sql, tuple(params))
+
+
 @app.route('/catalogo')
 def catalogo():
     category = request.args.get('categoria', '')
-    search = request.args.get('q', '')
-    if category and search:
-        products = query_db(
-            "SELECT * FROM products WHERE active=1 AND category=? AND (name LIKE ? OR description LIKE ?) ORDER BY name",
-            (category, f'%{search}%', f'%{search}%')
-        )
-    elif category:
-        products = query_db(
-            "SELECT * FROM products WHERE active=1 AND category=? ORDER BY name",
-            (category,)
-        )
-    elif search:
-        products = query_db(
-            "SELECT * FROM products WHERE active=1 AND (name LIKE ? OR description LIKE ?) ORDER BY name",
-            (f'%{search}%', f'%{search}%')
-        )
-    else:
-        products = query_db("SELECT * FROM products WHERE active=1 ORDER BY name")
+    search   = request.args.get('q', '')
+    tag      = request.args.get('tag', '')
+
+    products = _filter_products(category=category, search=search, tag=tag)
 
     categories = query_db("SELECT DISTINCT category FROM products WHERE active=1 ORDER BY category")
+
+    # Tags disponibles (intersección con TAG_LABELS para mantener orden curado)
+    _all_tag_rows = query_db("SELECT tags FROM products WHERE active=1 AND tags IS NOT NULL AND tags != ''")
+    _present = set()
+    for r in _all_tag_rows:
+        for t in parse_tags(r['tags']):
+            _present.add(t)
+    available_tags = [t for t in TAG_LABELS.keys() if t in _present]
+
     return render_template('catalogo.html', products=products, categories=categories,
-                           current_category=category, search=search)
+                           current_category=category, search=search,
+                           current_tag=tag, available_tags=available_tags)
 
 
 @app.route('/api/productos')
 def api_productos():
     """AJAX endpoint — returns filtered products as JSON for catalog search."""
     category = request.args.get('categoria', '')
-    search = request.args.get('q', '')
-    if category and search:
-        products = query_db(
-            "SELECT * FROM products WHERE active=1 AND category=? AND (name LIKE ? OR description LIKE ?) ORDER BY name",
-            (category, f'%{search}%', f'%{search}%')
-        )
-    elif category:
-        products = query_db(
-            "SELECT * FROM products WHERE active=1 AND category=? ORDER BY name",
-            (category,)
-        )
-    elif search:
-        products = query_db(
-            "SELECT * FROM products WHERE active=1 AND (name LIKE ? OR description LIKE ?) ORDER BY name",
-            (f'%{search}%', f'%{search}%')
-        )
-    else:
-        products = query_db("SELECT * FROM products WHERE active=1 ORDER BY name")
+    search   = request.args.get('q', '')
+    tag      = request.args.get('tag', '')
+
+    products = _filter_products(category=category, search=search, tag=tag)
 
     SKU_IMAGE_MAP = {
         'JDP-IGF1': 'vial_igf1_lr3.jpeg', 'JDP-KPV': 'vial_kpv.jpeg',
@@ -2588,6 +2671,9 @@ def admin_nuevo_producto():
         description = request.form.get('description', '').strip()
         benefits_raw = request.form.get('benefits', '').strip()
         benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
+        # Tags whitelist contra TAG_LABELS
+        tags_raw = request.form.get('tags', '').strip()
+        tags = '|'.join(t for t in parse_tags(tags_raw) if t in TAG_LABELS)
         active = 1 if request.form.get('active') else 0
 
         try:
@@ -2601,9 +2687,9 @@ def admin_nuevo_producto():
                     _slug = f"{_base}-{_sfx}"
                     _sfx += 1
             pid = execute_db(
-                """INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, image_path, slug)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?)""",
-                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, _slug)
+                """INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, image_path, slug, tags)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)""",
+                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, _slug, tags)
             )
             files = request.files.getlist('images')
             first_uploaded = None
@@ -2652,6 +2738,8 @@ def admin_editar_producto(pid):
         description = request.form.get('description', '').strip()
         benefits_raw = request.form.get('benefits', '').strip()
         benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
+        tags_raw = request.form.get('tags', '').strip()
+        tags = '|'.join(t for t in parse_tags(tags_raw) if t in TAG_LABELS)
         active = 1 if request.form.get('active') else 0
 
         try:
@@ -2671,8 +2759,8 @@ def admin_editar_producto(pid):
                 _slug = _cur_slug
             execute_db(
                 """UPDATE products SET sku=?, name=?, category=?, dose=?, price=?, stock=?,
-                   low_stock_alert=?, weight_grams=?, description=?, benefits=?, active=?, slug=? WHERE id=?""",
-                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, _slug, pid)
+                   low_stock_alert=?, weight_grams=?, description=?, benefits=?, active=?, slug=?, tags=? WHERE id=?""",
+                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, _slug, tags, pid)
             )
             files = request.files.getlist('images')
             existing_count = query_db("SELECT COUNT(*) as c FROM product_images WHERE product_id=?", (pid,), one=True)['c']

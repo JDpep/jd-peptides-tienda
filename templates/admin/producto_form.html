@@ -89,6 +89,17 @@
         <span style="font-size:0.75rem;color:var(--text3);margin-top:0.3rem;display:block">Peso real del vial empaquetado. Se suma al carrito para calcular el envío.</span>
       </div>
 
+      <!-- Tags cross-reference -->
+      <div class="admin-form-group" style="grid-column: 1 / -1">
+        <label class="admin-label" for="tags">Tags / cross-reference</label>
+        <input type="text" id="tags" name="tags" class="admin-input"
+               value="{{ product['tags'] if product and product['tags'] else '' }}"
+               placeholder="metabolismo|hormonal|anti-aging">
+        <span style="font-size:0.75rem;color:var(--text3);margin-top:0.3rem;display:block">
+          Separa con <code>|</code>. Slugs válidos: {{ TAG_LABELS.keys() | join(', ') }}.
+        </span>
+      </div>
+
       <!-- Activo -->
       <div class="admin-form-group" style="display:flex;align-items:center;gap:0.75rem;padding-top:1.5rem">
         <label class="toggle-switch">

@@ -426,6 +426,13 @@ document.addEventListener('DOMContentLoaded', function () {
       else if (p.stock <= lowAlert) stockBadge = `<span class="stock-badge low">Pocas unidades (${p.stock})</span>`;
       else                       stockBadge = `<span class="stock-badge ok">En stock</span>`;
 
+      const tagLabels = window.TAG_LABELS || {};
+      const tagsHtml = (p.tags || '').split('|').filter(Boolean).slice(0, 3).map(t => {
+        const label = tagLabels[t] || t.replace(/-/g, ' ');
+        return `<a href="/catalogo?tag=${encodeURIComponent(t)}" class="tag-chip" onclick="event.stopPropagation()">${escHtml(label)}</a>`;
+      }).join('');
+      const tagsBlock = tagsHtml ? `<div class="card-tags">${tagsHtml}</div>` : '';
+
       // IMPORTANT: wrap visual in <a> so clicking the image/card navigates to
       // the product detail. Previously this template was missing in the AJAX
       // render → cards in filtered/searched catalog felt "dead".
@@ -442,6 +449,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="product-body">
             <h3 class="product-name">${escHtml(p.name)}</h3>
             <p class="product-dose">${escHtml(p.sku || '')} · ${escHtml(p.dose)}</p>
+            ${tagsBlock}
             <div class="product-price" style="color:var(--gold)">$${parseFloat(p.price).toFixed(2)} <span class="price-currency">USD</span></div>
             <div style="margin-top:0.5rem">${stockBadge}</div>
           </div>

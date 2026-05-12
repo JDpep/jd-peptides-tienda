@@ -209,6 +209,7 @@
   </a>
   {% endif %}
 
+  <script>window.TAG_LABELS = {{ TAG_LABELS | tojson }};</script>
   <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
   {% block extra_js %}{% endblock %}
 </body>

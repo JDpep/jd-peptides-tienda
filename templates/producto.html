@@ -131,6 +131,15 @@
           <span class="product-detail-dose-tag">{{ product['dose'] }}</span>
         </div>
 
+        {% set _ptags = parse_tags(product['tags']) %}
+        {% if _ptags %}
+          <div class="card-tags" style="margin:0.5rem 0 0">
+            {% for t in _ptags %}
+              <a href="{{ url_for('catalogo', tag=t) }}" class="tag-chip">{{ tag_label(t) }}</a>
+            {% endfor %}
+          </div>
+        {% endif %}
+
         {% if product['description'] %}
           <p style="font-size:0.92rem;line-height:1.75;color:var(--text2)">{{ product['description'] }}</p>
         {% endif %}

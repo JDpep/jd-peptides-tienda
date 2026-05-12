@@ -2715,3 +2715,57 @@ details summary::-webkit-details-marker { display: none; }
 /* Hide-on-scroll behavior toggled by JS */
 .mobile-tabbar.hidden { transform: translateY(110%); transition: transform 0.3s ease; }
 .mobile-tabbar { transition: transform 0.3s ease; }
+
+/* =========================================================
+   TAG CHIPS — cross-reference badges en cards y detail
+   ========================================================= */
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(199,154,58,0.08);
+  border: 1px solid rgba(199,154,58,0.22);
+  color: var(--gold);
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.tag-chip:hover {
+  background: rgba(199,154,58,0.18);
+  border-color: var(--gold);
+  color: var(--gold-light);
+  transform: translateY(-1px);
+}
+
+/* Tag pills (en la fila de cross-ref del catálogo) — más compactas que category pills */
+.tag-pill {
+  font-size: 0.78rem;
+  padding: 0.45rem 0.9rem;
+}
+.tag-pill.active {
+  background: rgba(199,154,58,0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.tag-pill-clear {
+  font-size: 0.74rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: var(--red);
+  border-radius: 999px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tag-pill-clear:hover { background: rgba(239,68,68,0.18); color: #fff; }

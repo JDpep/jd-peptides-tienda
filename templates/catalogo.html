@@ -51,7 +51,7 @@
       {% set _cat_cls = {'Recuperación':'cat-recuperacion','Performance':'cat-performance','Anti-aging':'cat-antiaging','Pérdida de Peso':'cat-perdida','Bienestar':'cat-bienestar'} %}
       <div class="category-pills" style="margin-bottom:0;flex:1">
         <a href="{{ url_for('catalogo') }}"
-           class="pill category-pill {% if not current_category %}active{% endif %}"
+           class="pill category-pill {% if not current_category and not current_tag %}active{% endif %}"
            data-category="">Todos</a>
         {% for cat in categories %}
           <a href="{{ url_for('catalogo', categoria=cat['category']) }}"
@@ -62,6 +62,26 @@
         {% endfor %}
       </div>
     </div>
+
+    <!-- Tag pills (cross-reference, secondary axis) -->
+    {% if available_tags %}
+      <div style="margin: 0 0 1.25rem; display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap">
+        <span style="font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--text3); font-weight:700; flex:0 0 auto">Cross-ref</span>
+        <div class="category-pills" style="margin:0; flex:1">
+          {% for tslug in available_tags %}
+            <a href="{{ url_for('catalogo', tag=tslug, categoria=current_category) }}"
+               class="pill tag-pill {% if current_tag == tslug %}active{% endif %}"
+               data-tag="{{ tslug }}">
+              {{ tag_label(tslug) }}
+            </a>
+          {% endfor %}
+          {% if current_tag %}
+            <a href="{{ url_for('catalogo', categoria=current_category) }}"
+               class="pill tag-pill-clear" title="Quitar filtro de tag">✕ Quitar</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
 
     <!-- Product count -->
     <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem">
@@ -113,6 +133,15 @@
             <div class="product-body">
               <h3 class="product-name">{{ p['name'] }}</h3>
               <p class="product-dose">{{ p['sku'] }} · {{ p['dose'] }}</p>
+              {% set _tags = parse_tags(p['tags']) %}
+              {% if _tags %}
+                <div class="card-tags">
+                  {% for t in _tags[:3] %}
+                    <a href="{{ url_for('catalogo', tag=t) }}" class="tag-chip"
+                       onclick="event.stopPropagation()">{{ tag_label(t) }}</a>
+                  {% endfor %}
+                </div>
+              {% endif %}
               {% if benefits %}
                 <p style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">{{ benefits[0] }}</p>
               {% endif %}

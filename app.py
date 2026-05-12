@@ -315,7 +315,29 @@ else:
 os.makedirs(DOCS_FOLDER, exist_ok=True)
 
 _DATABASE_URL = os.environ.get('DATABASE_URL', '')
-_USE_POSTGRES = bool(_DATABASE_URL) and psycopg2 is not None
+_USE_POSTGRES = False
+
+if _DATABASE_URL and psycopg2 is not None:
+    # Supabase requiere SSL — inyecta sslmode=require si no está en la URL.
+    if 'sslmode=' not in _DATABASE_URL:
+        _DATABASE_URL += ('&' if '?' in _DATABASE_URL else '?') + 'sslmode=require'
+
+    # Sanity-check: intenta conectar una vez. Si falla, NO usamos Postgres y
+    # caemos a SQLite (ephemeral en /tmp) — preferimos un sitio funcional con
+    # datos efímeros que un sitio caído por una env mal configurada.
+    try:
+        _probe = psycopg2.connect(_DATABASE_URL, connect_timeout=8)
+        _probe.close()
+        _USE_POSTGRES = True
+        print('[INIT] ✓ Postgres connection OK — usando DB persistente')
+    except Exception as _pg_err:
+        _err_msg = str(_pg_err).replace('\n', ' ')[:300]
+        print(f'[INIT] ❌ Postgres connection FALLÓ: {type(_pg_err).__name__}: {_err_msg}')
+        print(f'[INIT] Fallback automático a SQLite en {DATABASE} (efímero). '
+              f'Revisa que DATABASE_URL apunte a POSTGRES_URL pooled (puerto 6543) '
+              f'y que el host sea accesible desde Vercel. Para volver a SQLite '
+              f'permanentemente, quita DATABASE_URL de las env vars de Vercel.')
+        _USE_POSTGRES = False
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
 ALLOWED_DOC_EXTENSIONS = {'xlsx', 'xls', 'csv', 'pdf'}

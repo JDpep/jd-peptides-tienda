@@ -25,6 +25,28 @@
 </head>
 <body>
 
+  <!-- Top announcement marquee — mensajes auto-scroll arriba del navbar -->
+  <div class="marquee-bar" role="region" aria-label="Anuncios">
+    <div class="marquee-track">
+      {# Mismo set de mensajes duplicado dos veces para loop sin gap visible #}
+      {% set _announcements = [
+        '99%+ pureza verificada por HPLC',
+        'Empaque profesional con control de temperatura',
+        'For Research Use Only',
+        'Envío gratis a México sobre $200 USD',
+        'Pago: Stripe, transferencia o cripto',
+        'Análisis (CoA) de terceros por cada lote',
+        'Síntesis en México — trazabilidad por lote',
+      ] %}
+      {% for _ in range(2) %}
+        {% for msg in _announcements %}
+          <span class="marquee-item">{{ msg }}</span>
+          <span class="marquee-sep" aria-hidden="true">●</span>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+
   <!-- Flash Messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -118,63 +140,107 @@
     {% block content %}{% endblock %}
   </main>
 
-  <!-- Footer -->
-  <footer class="footer">
+  <!-- Footer (rediseñado tipo editorial — 4 columnas + logo grande) -->
+  <footer class="footer footer-pro">
     <div class="container">
+
       <div class="footer-grid">
-        <div class="footer-brand">
-          <a href="{{ url_for('index') }}" class="navbar-logo" style="margin-bottom:0.5rem">
-            <svg width="32" height="35" viewBox="0 0 40 44" fill="none">
-              <defs>
-                <radialGradient id="arc-f" cx="50%" cy="30%" r="50%">
-                  <stop offset="0%" stop-color="#c79a3a" stop-opacity="1"/>
-                  <stop offset="100%" stop-color="#c79a3a" stop-opacity="0"/>
-                </radialGradient>
-              </defs>
-              <ellipse cx="20" cy="38" rx="15" ry="3.5" fill="url(#arc-f)"/>
-              <polygon points="20,4 32,11 32,25 20,32 8,25 8,11"
-                       fill="none" stroke="#c79a3a" stroke-width="2.5" stroke-linejoin="round"/>
-              <circle cx="20" cy="4"  r="3" fill="#c79a3a"/>
-              <circle cx="32" cy="11" r="3" fill="#c79a3a"/>
-              <circle cx="32" cy="25" r="3" fill="#c79a3a"/>
-              <circle cx="20" cy="32" r="3" fill="#c79a3a"/>
-              <circle cx="8"  cy="25" r="3" fill="#c79a3a"/>
-              <circle cx="8"  cy="11" r="3" fill="#c79a3a"/>
-            </svg>
-            <span class="logo-text" style="font-size:0.9rem">JD <span>PEPTIDES</span></span>
-          </a>
-          <p>Péptidos de investigación de calidad superior. Comprometidos con la ciencia y la excelencia.</p>
+
+        <!-- Newsletter / loop -->
+        <div class="footer-col footer-col-newsletter">
+          <h4>STAY IN THE LOOP</h4>
+          <p style="color:var(--text2);font-size:0.85rem;margin:0 0 0.85rem">
+            Suscríbete y recibe novedades de catálogo, CoAs y disponibilidad.
+          </p>
+          <form action="{{ url_for('contacto') }}" method="GET" class="footer-newsletter">
+            <input type="email" name="email" placeholder="tu@email.com" required>
+            <button type="submit">SUSCRIBIRSE</button>
+          </form>
+          <p style="font-size:0.7rem;color:var(--text3);margin-top:0.65rem">
+            Solo mandamos información relevante. Sin spam.
+          </p>
         </div>
+
+        <!-- Brand / catálogo -->
         <div class="footer-col">
-          <h4>Tienda</h4>
+          <h4>BRAND</h4>
           <ul>
+            <li><a href="{{ url_for('sobre_nosotros') }}">Sobre Nosotros</a></li>
             <li><a href="{{ url_for('catalogo') }}">Catálogo Completo</a></li>
-            <li><a href="{{ url_for('catalogo') }}?categoria=Performance">Performance</a></li>
-            <li><a href="{{ url_for('catalogo') }}?categoria=Recuperación">Recuperación</a></li>
-            <li><a href="{{ url_for('catalogo') }}?categoria=Anti-aging">Anti-aging</a></li>
+            <li><a href="{{ url_for('catalogo', categoria='Performance') }}">Performance</a></li>
+            <li><a href="{{ url_for('catalogo', categoria='Recuperación') }}">Recuperación</a></li>
+            <li><a href="{{ url_for('catalogo', categoria='Anti-aging') }}">Anti-aging</a></li>
+            <li><a href="{{ url_for('info') }}">Centro de Información</a></li>
+          </ul>
+        </div>
+
+        <!-- Support -->
+        <div class="footer-col">
+          <h4>SUPPORT</h4>
+          <ul>
+            <li><a href="{{ url_for('tracking') }}">Seguimiento de pedido</a></li>
+            {% if whatsapp_number %}<li><a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener">WhatsApp</a></li>{% endif %}
+            <li><a href="mailto:{{ contact_email }}">Email</a></li>
+            <li><a href="{{ url_for('contacto') }}">Contacto</a></li>
+            <li><a href="{{ url_for('faq') }}">FAQ</a></li>
             <li><a href="{{ url_for('carrito') }}">Mi Carrito</a></li>
           </ul>
         </div>
+
+        <!-- Legal / "boring stuff" -->
         <div class="footer-col">
-          <h4>Soporte</h4>
+          <h4>LEGAL</h4>
           <ul>
-            {% if whatsapp_number %}
-            <li><a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener">WhatsApp</a></li>
-            {% endif %}
-            <li><a href="mailto:{{ contact_email }}">Email</a></li>
-            <li><a href="{{ url_for('contacto') }}">Contacto</a></li>
             <li><a href="{{ url_for('privacidad') }}">Política de Privacidad</a></li>
             <li><a href="{{ url_for('terminos') }}">Términos y Condiciones</a></li>
-            <li><a href="{{ url_for('faq') }}">Preguntas Frecuentes</a></li>
+            <li><a href="#" data-show-disclaimer="1">Aviso Research Use Only</a></li>
+            <li><span style="color:var(--text3)">Devoluciones: ventas finales</span></li>
           </ul>
         </div>
       </div>
+
+      <!-- Locale + social row -->
+      <div class="footer-locale-row">
+        <div class="footer-locale">
+          <span class="footer-locale-label">PAÍS · MONEDA · IDIOMA</span>
+          <span class="footer-locale-value">México · USD · Español</span>
+        </div>
+
+        <div class="footer-social">
+          {% if whatsapp_number %}
+          <a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener" aria-label="WhatsApp" title="WhatsApp">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1c-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20"/></svg>
+          </a>
+          {% endif %}
+          <a href="mailto:{{ contact_email }}" aria-label="Email" title="Email">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </a>
+          <a href="{{ url_for('contacto') }}" aria-label="Contacto" title="Contacto">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Disclaimer band -->
       <div class="footer-disclaimer">
         <strong style="color:var(--gold)">FOR RESEARCH USE ONLY</strong> — Los productos de JD Peptides son exclusivamente para uso en investigación científica. No están destinados al uso humano o veterinario, diagnóstico, tratamiento o prevención de enfermedades.
       </div>
+
+      <!-- Mega logo + copyright -->
+      <div class="footer-mega-logo" aria-hidden="true">
+        <svg viewBox="0 0 1000 200" preserveAspectRatio="xMidYMid meet">
+          <text x="500" y="160" text-anchor="middle"
+                font-family="'Space Grotesk', sans-serif" font-weight="800"
+                font-size="190" fill="currentColor"
+                letter-spacing="-6">
+            JD Peptides
+          </text>
+        </svg>
+      </div>
+
       <div class="footer-bottom">
         <p>&copy; {{ now.year }} JD Peptides. Todos los derechos reservados.</p>
-        <p style="color:var(--text3); font-size:0.75rem">For Research Use Only</p>
+        <p style="color:var(--text3); font-size:0.75rem">For Research Use Only · No para uso humano o veterinario</p>
       </div>
     </div>
   </footer>
@@ -208,6 +274,87 @@
     </svg>
   </a>
   {% endif %}
+
+  <!-- Entry disclaimer modal (research-use-only) — se muestra en primera visita -->
+  <div class="entry-disclaimer-overlay" id="entryDisclaimer" hidden role="dialog" aria-modal="true" aria-labelledby="edTitle">
+    <div class="entry-disclaimer-modal">
+      <div class="entry-disclaimer-brand">
+        <svg width="56" height="62" viewBox="0 0 40 44" fill="none">
+          <defs>
+            <radialGradient id="arc-d" cx="50%" cy="30%" r="50%">
+              <stop offset="0%" stop-color="#c79a3a" stop-opacity="1"/>
+              <stop offset="100%" stop-color="#c79a3a" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="20" cy="38" rx="15" ry="3.5" fill="url(#arc-d)"/>
+          <polygon points="20,4 32,11 32,25 20,32 8,25 8,11" fill="none" stroke="#c79a3a" stroke-width="2.5" stroke-linejoin="round"/>
+          <circle cx="20" cy="4"  r="3" fill="#c79a3a"/>
+          <circle cx="32" cy="11" r="3" fill="#c79a3a"/>
+          <circle cx="32" cy="25" r="3" fill="#c79a3a"/>
+          <circle cx="20" cy="32" r="3" fill="#c79a3a"/>
+          <circle cx="8"  cy="25" r="3" fill="#c79a3a"/>
+          <circle cx="8"  cy="11" r="3" fill="#c79a3a"/>
+        </svg>
+        <h2 id="edTitle">JD Peptides</h2>
+      </div>
+
+      <p class="entry-disclaimer-intro">
+        <strong>jdpeptides.com</strong> proporciona materiales exclusivamente para
+        <strong>investigación científica de laboratorio</strong>. Para continuar
+        debes aceptar lo siguiente:
+      </p>
+
+      <ul class="entry-disclaimer-list">
+        <li>
+          <strong>Edad mínima:</strong> Confirmas tener al menos
+          <strong>18 años cumplidos</strong>.
+        </li>
+        <li>
+          <strong>Uso del producto:</strong> Todos los productos se venden
+          <strong>exclusivamente para investigación in vitro</strong>. No están
+          destinados al consumo humano, veterinario, uso cosmético ni como
+          suplementos dietéticos.
+        </li>
+        <li>
+          <strong>Sin asesoría médica:</strong> No somos farmacia ni proveedor
+          médico. No damos consejo médico, instrucciones de dosis ni guía de
+          reconstitución para uso humano.
+        </li>
+        <li>
+          <strong>Cumplimiento legal:</strong> Es responsabilidad del
+          investigador manejar todos los materiales conforme a los protocolos
+          institucionales y las leyes locales aplicables.
+        </li>
+        <li>
+          <strong>Ventas finales:</strong> Por la naturaleza de estos
+          materiales, <strong>las ventas son finales</strong> — no aceptamos
+          devoluciones ni cambios excepto por daño en tránsito documentado.
+        </li>
+      </ul>
+
+      <p class="entry-disclaimer-legal">
+        Al hacer clic en <em>“Acepto”</em> confirmas haber leído y aceptado
+        nuestros <a href="{{ url_for('terminos') }}">Términos y Condiciones</a>,
+        la <a href="{{ url_for('privacidad') }}">Política de Privacidad</a>
+        y este Aviso Legal.
+      </p>
+
+      <div class="entry-disclaimer-actions">
+        <button type="button" class="btn btn-gold btn-lg" id="entryDisclaimerAccept">
+          Acepto
+        </button>
+        <button type="button" class="btn btn-outline btn-lg" id="entryDisclaimerDecline">
+          No acepto
+        </button>
+      </div>
+
+      <p class="entry-disclaimer-footnote">
+        Tu confirmación se guarda localmente en este navegador (sin cookies de
+        rastreo). Puedes revisar este aviso desde el footer en cualquier
+        momento.
+      </p>
+    </div>
+  </div>
 
   <script>window.TAG_LABELS = {{ TAG_LABELS | tojson }};</script>
   <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>

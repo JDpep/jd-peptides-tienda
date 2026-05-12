@@ -781,6 +781,47 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------------------------------------------------------
+  // Entry disclaimer modal — research-use-only acceptance gate.
+  // Se muestra UNA VEZ por navegador (localStorage); en visitas posteriores
+  // queda oculto. El link en el footer permite re-abrirlo manualmente.
+  // ---------------------------------------------------------
+  const edOverlay  = document.getElementById('entryDisclaimer');
+  const edAccept   = document.getElementById('entryDisclaimerAccept');
+  const edDecline  = document.getElementById('entryDisclaimerDecline');
+  const ED_KEY     = 'jdp:disclaimer:v1';
+
+  function edShow() {
+    if (!edOverlay) return;
+    edOverlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function edHide() {
+    if (!edOverlay) return;
+    edOverlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+  function edAcceptHandler() {
+    try { localStorage.setItem(ED_KEY, '1'); } catch (e) { /* private mode */ }
+    edHide();
+  }
+  function edDeclineHandler() {
+    // No persistimos rechazo; le mandamos a Google y dejamos el modal
+    window.location.href = 'https://www.google.com/';
+  }
+
+  if (edOverlay && edAccept && edDecline) {
+    let accepted = false;
+    try { accepted = localStorage.getItem(ED_KEY) === '1'; } catch (e) {}
+    if (!accepted) edShow();
+    edAccept.addEventListener('click', edAcceptHandler);
+    edDecline.addEventListener('click', edDeclineHandler);
+    // Footer link "Aviso Research Use Only" re-abre el modal
+    document.querySelectorAll('[data-show-disclaimer]').forEach(a => {
+      a.addEventListener('click', (e) => { e.preventDefault(); edShow(); });
+    });
+  }
+
+  // ---------------------------------------------------------
   // Mobile tab bar — auto-hide on scroll down, show on scroll up
   // ---------------------------------------------------------
   const tabbar = document.getElementById('mobileTabbar');

@@ -1387,6 +1387,42 @@ PRODUCTS_SEED = [
         'low_stock_alert': 5,
         'image_path': 'jdp_vial_tesa.png',
     },
+    {
+        'sku': 'JDP-NAD',
+        'name': 'NAD+',
+        'category': 'Anti-aging',
+        'dose': '500 mg',
+        'price': 89.99,
+        'description': 'NAD+ (Nicotinamida Adenina Dinucleótido) es una coenzima fundamental implicada en más de 500 reacciones enzimáticas, incluyendo la respiración mitocondrial, la reparación del ADN y la activación de sirtuinas. Sus niveles disminuyen hasta un 50% con la edad; su restauración se investiga activamente en longevidad, función cognitiva y salud metabólica.',
+        'benefits': 'Potencia la producción de energía celular (ATP) a nivel mitocondrial|Activa sirtuinas (SIRT1-7) relacionadas con la longevidad|Mejora la función, biogénesis y eficiencia mitocondrial|Soporte cognitivo, neuroprotección y claridad mental|Favorece la reparación del ADN y la estabilidad genómica|Reduce marcadores de inflamación crónica de bajo grado',
+        'stock': 25,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_nad.png',
+    },
+    {
+        'sku': 'JDP-CP',
+        'name': 'C-Péptido',
+        'category': 'Bienestar',
+        'dose': '10 mg',
+        'price': 69.99,
+        'description': 'El C-Péptido es un polipéptido de 31 aminoácidos co-secretado equimolarmente con la insulina por las células beta del páncreas. Posee actividad biológica propia e independiente de la insulina, siendo investigado por sus efectos protectores en neuropatía diabética, nefropatía, disfunción endotelial y regeneración vascular en modelos de diabetes.',
+        'benefits': 'Protección y mejora de la función de células beta pancreáticas|Reduce las complicaciones neuropáticas y renales de la diabetes|Propiedades antiinflamatorias y vasoprotectoras en endotelio|Protección cardiovascular en contextos de insulinopenia|Biomarcador funcional de la secreción endógena de insulina|Investigado en neuropatía periférica y microangiopatía diabética',
+        'stock': 25,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_cp.png',
+    },
+    {
+        'sku': 'JDP-BAC',
+        'name': 'BAC Water',
+        'category': 'Accesorios',
+        'dose': '10 ml',
+        'price': 14.99,
+        'description': 'Agua bacteriostática (BAC Water) es una solución estéril de agua para inyecciones con 0.9% de alcohol bencílico como agente antimicrobiano. Es el estándar de la industria para la reconstitución y dilución de péptidos liofilizados, garantizando la estabilidad de la preparación y la esterilidad multidosis del vial.',
+        'benefits': 'Solvente estéril para reconstitución de péptidos liofilizados|Alcohol bencílico 0.9% como agente bacteriostático de amplio espectro|Permite múltiples extracciones con aguja manteniendo la esterilidad|pH neutro compatible con péptidos sensibles|Calidad USP para uso en investigación|Prolonga la vida útil del vial reconstituido',
+        'stock': 100,
+        'low_stock_alert': 20,
+        'image_path': 'jdp_vial_bac.png',
+    },
 ]
 
 
@@ -1898,6 +1934,68 @@ def init_db():
             db.commit()
         except Exception as _e:
             print(f'[INIT] migration v8 official vials skipped: {_e}')
+
+    # Migration v9 (2026-05-12): agregar 3 nuevos productos al catálogo con
+    # las portadas oficiales JDP_ImagenIA_*. Insertamos solo si no existen
+    # (por SKU) para ser idempotente y no pisar nada que el admin haya creado.
+    _mig_v9_tag = 'migration:v9:add_nad_cp_bac_20260512'
+    already_v9 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v9_tag,)
+    ).fetchone()
+    if not already_v9:
+        try:
+            _new_products = [
+                # (sku, name, category, dose, price, stock, low_alert, image, tags, description, benefits)
+                ('JDP-NAD', 'NAD+', 'Anti-aging', '500 mg', 89.99, 25, 5,
+                 'jdp_vial_nad.png',
+                 'anti-aging|metabolismo|bienestar',
+                 'NAD+ (Nicotinamida Adenina Dinucleótido) es una coenzima fundamental implicada en más de 500 reacciones enzimáticas, incluyendo la respiración mitocondrial, la reparación del ADN y la activación de sirtuinas. Sus niveles disminuyen hasta un 50% con la edad; su restauración se investiga activamente en longevidad, función cognitiva y salud metabólica.',
+                 'Potencia la producción de energía celular (ATP) a nivel mitocondrial|Activa sirtuinas (SIRT1-7) relacionadas con la longevidad|Mejora la función, biogénesis y eficiencia mitocondrial|Soporte cognitivo, neuroprotección y claridad mental|Favorece la reparación del ADN y la estabilidad genómica|Reduce marcadores de inflamación crónica de bajo grado'),
+                ('JDP-CP', 'C-Péptido', 'Bienestar', '10 mg', 69.99, 25, 5,
+                 'jdp_vial_cp.png',
+                 'metabolismo|bienestar',
+                 'El C-Péptido es un polipéptido de 31 aminoácidos co-secretado equimolarmente con la insulina por las células beta del páncreas. Posee actividad biológica propia e independiente de la insulina, siendo investigado por sus efectos protectores en neuropatía diabética, nefropatía, disfunción endotelial y regeneración vascular en modelos de diabetes.',
+                 'Protección y mejora de la función de células beta pancreáticas|Reduce las complicaciones neuropáticas y renales de la diabetes|Propiedades antiinflamatorias y vasoprotectoras en endotelio|Protección cardiovascular en contextos de insulinopenia|Biomarcador funcional de la secreción endógena de insulina|Investigado en neuropatía periférica y microangiopatía diabética'),
+                ('JDP-BAC', 'BAC Water', 'Accesorios', '10 ml', 14.99, 100, 20,
+                 'jdp_vial_bac.png',
+                 'bienestar',
+                 'Agua bacteriostática (BAC Water) es una solución estéril de agua para inyecciones con 0.9% de alcohol bencílico como agente antimicrobiano. Es el estándar de la industria para la reconstitución y dilución de péptidos liofilizados, garantizando la estabilidad de la preparación y la esterilidad multidosis del vial.',
+                 'Solvente estéril para reconstitución de péptidos liofilizados|Alcohol bencílico 0.9% como agente bacteriostático de amplio espectro|Permite múltiples extracciones con aguja manteniendo la esterilidad|pH neutro compatible con péptidos sensibles|Calidad USP para uso en investigación|Prolonga la vida útil del vial reconstituido'),
+            ]
+            for (sku, name, category, dose, price, stock, low, img, tags, desc, bens) in _new_products:
+                exists = db.execute("SELECT id FROM products WHERE sku=?", (sku,)).fetchone()
+                if exists:
+                    continue
+                # Generar slug único
+                _base = _make_slug(name) or _make_slug(sku) or 'producto'
+                _slug = _base
+                if db.execute("SELECT 1 FROM products WHERE slug=?", (_slug,)).fetchone():
+                    _slug = f"{_base}-{_make_slug(sku)}"
+                db.execute(
+                    """INSERT INTO products
+                       (sku, name, category, dose, price, stock, low_stock_alert,
+                        description, benefits, active, image_path, slug, tags, weight_grams)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)""",
+                    (sku, name, category, dose, price, stock, low, desc, bens, img, _slug, tags, 50)
+                )
+                # Insertar la portada también en product_images (sort_order=0)
+                _new_pid = db.execute("SELECT id FROM products WHERE sku=?", (sku,)).fetchone()
+                if _new_pid:
+                    _pid = _new_pid['id'] if hasattr(_new_pid, '__getitem__') else _new_pid[0]
+                    db.execute(
+                        "INSERT INTO product_images (product_id, filename, sort_order) VALUES (?,?,0)",
+                        (_pid, img)
+                    )
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v9_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v9 add new products skipped: {_e}')
 
 
 # ---------------------------------------------------------------------------

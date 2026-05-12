@@ -1256,16 +1256,40 @@ CREATE TABLE IF NOT EXISTS supplier_documents (
 
 PRODUCTS_SEED = [
     {
-        'sku': 'JDP-IGF1',
-        'name': 'IGF-1 LR3',
-        'category': 'Performance',
-        'dose': '1 mg',
-        'price': 89.99,
-        'description': 'IGF-1 LR3 (Insulin-like Growth Factor-1 Long Arg3) es una forma modificada del factor de crecimiento similar a la insulina con vida media prolongada de hasta 20 horas. Es uno de los péptidos de investigación más estudiados para comprender los mecanismos del crecimiento celular, la síntesis proteica y la regeneración tisular en modelos preclínicos.',
-        'benefits': 'Potente efecto anabólico en tejido muscular esquelético|Estimula la síntesis de proteínas y la proliferación celular|Favorece la reducción del tejido adiposo|Apoya la regeneración de cartílagos y tejidos blandos|Vida media prolongada para efectos sostenidos en investigación|Modulación de diferenciación celular y procesos neuroprotectores',
+        'sku': 'JDP-RT20',
+        'name': 'RT20',
+        'category': 'Pérdida de Peso',
+        'dose': '20 mg',
+        'price': 199.99,
+        'description': 'RT20 — Retatrutide 20 mg. Agonista triple de los receptores GIP, GLP-1 y Glucagón actualmente en ensayos clínicos de Fase 3. Su mecanismo combina la reducción del apetito, el aumento del gasto energético y la mejora de la sensibilidad insulínica.',
+        'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas|Dosis 20 mg para investigación de protocolos de mayor intensidad',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'cat_igf1_vial.jpeg',
+        'image_path': 'vial_rt20.png',
+    },
+    {
+        'sku': 'JDP-RT10',
+        'name': 'RT10',
+        'category': 'Pérdida de Peso',
+        'dose': '10 mg',
+        'price': 169.99,
+        'description': 'RT10 — Retatrutide 10 mg. Agonista triple de los receptores GIP, GLP-1 y Glucagón actualmente en ensayos clínicos de Fase 3. Dosis intermedia para protocolos de investigación de pérdida de peso.',
+        'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas',
+        'stock': 25,
+        'low_stock_alert': 5,
+        'image_path': 'vial_rt10.png',
+    },
+    {
+        'sku': 'JDP-KLOW80',
+        'name': 'KLOW80',
+        'category': 'Pérdida de Peso',
+        'dose': '80 mg',
+        'price': 89.99,
+        'description': 'KLOW80 — formulación de investigación para protocolos de manejo metabólico y composición corporal. Presentación 80 mg para uso exclusivo en investigación in vitro.',
+        'benefits': 'Formulación de investigación de alta concentración|Presentación 80 mg para protocolos extendidos|Análisis (CoA) de terceros disponible por lote|Síntesis con estándares de laboratorio|For research use only',
+        'stock': 20,
+        'low_stock_alert': 5,
+        'image_path': 'vial_klow80.png',
     },
     {
         'sku': 'JDP-KPV',
@@ -1328,22 +1352,10 @@ PRODUCTS_SEED = [
         'image_path': 'jdp_vial_ghkcu.png',
     },
     {
-        'sku': 'JDP-RETA',
-        'name': 'Retatrutide',
-        'category': 'Pérdida de Peso',
-        'dose': '5 mg',
-        'price': 149.99,
-        'description': 'Retatrutide es un agonista triple de los receptores GIP, GLP-1 y Glucagón actualmente en ensayos clínicos de Fase 3. Su mecanismo triple combina la reducción del apetito, el aumento del gasto energético y la mejora de la sensibilidad insulínica, mostrando los mayores porcentajes de pérdida de peso reportados para un agente farmacológico hasta la fecha.',
-        'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Potencial beneficio cardiovascular y cardiometabólico|Resultados de pérdida de peso superiores a otros GLP-1 agonistas',
-        'stock': 15,
-        'low_stock_alert': 3,
-        'image_path': 'vial_retatrutide.jpeg',
-    },
-    {
         'sku': 'JDP-DSIP',
         'name': 'DSIP',
         'category': 'Bienestar',
-        'dose': '10 mg',
+        'dose': '5 mg',
         'price': 64.99,
         'description': 'DSIP (Delta Sleep-Inducing Peptide) es un neuropéptido nonapéptido descubierto en 1974, investigado por su capacidad de inducir el sueño de ondas lentas (delta), reducir el estrés oxidativo y modular múltiples funciones neuroendocrinas. Es uno de los péptidos con mayor evidencia experimental en regulación del ciclo sueño-vigilia.',
         'benefits': 'Mejora la calidad y profundidad del sueño (ondas delta)|Facilita la conciliación del sueño y reduce el insomnio|Regula los ritmos circadianos y la temperatura corporal|Reduce el estrés oxidativo a nivel cerebral|Efecto ansiolítico y adaptogénico en modelos de estrés|Modulación del eje neuroendocrino hipotalámico',
@@ -1352,28 +1364,16 @@ PRODUCTS_SEED = [
         'image_path': 'cat_dsip_vial.png',
     },
     {
-        'sku': 'JDP-TA1',
-        'name': 'Thymosin Alpha 1',
-        'category': 'Anti-aging',
-        'dose': '1.6 mg',
-        'price': 84.99,
-        'description': 'Thymosin Alpha 1 (Ta1) es un péptido inmunomodulador de 28 aminoácidos de origen tímico, con más de cuatro décadas de investigación clínica activa. Aprobado en más de 35 países para infecciones virales crónicas e inmunodeficiencias, ha demostrado capacidad de restaurar y potenciar la inmunidad adaptativa en estados de inmunosupresión e infección.',
-        'benefits': 'Potencia y restaura la actividad de linfocitos T y células NK|Efecto antiviral e inmunomodulador respaldado clínicamente|Apoya la función tímica y la inmunidad adaptativa|Investigado en hepatitis B/C, sepsis e inmunodeficiencias|Acción sinérgica con vacunas y tratamientos antivirales|Reduce la inmunosenescencia asociada al envejecimiento',
-        'stock': 18,
-        'low_stock_alert': 4,
-        'image_path': 'cat_ta1_vial.png',
-    },
-    {
-        'sku': 'JDP-IPA',
-        'name': 'Ipamorelin',
-        'category': 'Performance',
+        'sku': 'JDP-SEMAX',
+        'name': 'Semax',
+        'category': 'Bienestar',
         'dose': '5 mg',
-        'price': 69.99,
-        'description': 'Ipamorelin es un secretagogo selectivo de hormona de crecimiento (GH) de quinta generación que actúa sobre el receptor GHSR-1a con alta especificidad. A diferencia de otros secretagogos, estimula la liberación pulsátil de GH sin elevar el cortisol, la prolactina ni el ACTH, lo que le confiere el perfil de selectividad más favorable documentado en la literatura.',
-        'benefits': 'Estimula de forma selectiva la liberación pulsátil de GH|Mejora la composición corporal: mayor masa magra y menor grasa|Favorece la recuperación muscular y la regeneración tisular|Mejora la calidad del sueño profundo (fase III-IV NREM)|Sin impacto en cortisol, prolactina ni ACTH|Efecto sinérgico con CJC-1295 para amplificación del pulso GH',
-        'stock': 32,
-        'low_stock_alert': 6,
-        'image_path': 'cat_ipamorelin_vial.png',
+        'price': 59.99,
+        'description': 'Semax es un heptapéptido sintético análogo de la ACTH(4-7), desarrollado en el Instituto de Biología Molecular de Moscú y ampliamente estudiado como nootrópico, neuroprotector y neuroestimulante. Aumenta significativamente la expresión del BDNF y el NGF, siendo investigado en ictus, déficit cognitivo y trastornos de atención.',
+        'benefits': 'Mejora la memoria, concentración, aprendizaje y procesamiento cognitivo|Eleva los niveles de BDNF y NGF en tejido cerebral|Neuroprotección ante isquemia, daño oxidativo y excitotoxicidad|Efectos ansiolíticos y adaptogénicos respaldados en modelos animales|Favorece la recuperación neurológica post-lesión e ictus|Alta biodisponibilidad por vía intranasal en investigación',
+        'stock': 25,
+        'low_stock_alert': 5,
+        'image_path': 'vial_semax.png',
     },
     {
         'sku': 'JDP-TESA',
@@ -1996,6 +1996,87 @@ def init_db():
             db.commit()
         except Exception as _e:
             print(f'[INIT] migration v9 add new products skipped: {_e}')
+
+    # Migration v10 (2026-05-12): catálogo final solicitado por el usuario.
+    # - Desactivar (active=0) los SKUs que ya no comercializa: IGF-1 LR3,
+    #   Thymosin Alpha 1, Ipamorelin y Retatrutide 5mg (reemplazado por
+    #   RT10 y RT20).
+    # - Cambiar dose DSIP 10mg → 5mg (label real actualizado).
+    # - INSERT RT20, RT10, KLOW80 y SEMAX si no existen.
+    # NUNCA borramos rows — solo desactivamos para preservar el historial
+    # de pedidos previos que las referencian.
+    _mig_v10_tag = 'migration:v10:final_catalog_20260512'
+    already_v10 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v10_tag,)
+    ).fetchone()
+    if not already_v10:
+        try:
+            # 1) Desactivar SKUs eliminados
+            for _sku in ('JDP-IGF1', 'JDP-TA1', 'JDP-IPA', 'JDP-RETA'):
+                db.execute("UPDATE products SET active=0 WHERE sku=?", (_sku,))
+
+            # 2) Cambiar dose DSIP a 5 mg
+            db.execute("UPDATE products SET dose='5 mg' WHERE sku='JDP-DSIP'")
+
+            # 3) INSERT nuevos productos (idempotente — solo si no existen)
+            _new_products_v10 = [
+                # (sku, name, category, dose, price, stock, low_alert, image, tags, description, benefits)
+                ('JDP-RT20', 'RT20', 'Pérdida de Peso', '20 mg', 199.99, 25, 5,
+                 'vial_rt20.png',
+                 'metabolismo|perdida-de-peso',
+                 'RT20 — Retatrutide 20 mg. Agonista triple de los receptores GIP, GLP-1 y Glucagón actualmente en ensayos clínicos de Fase 3. Su mecanismo combina la reducción del apetito, el aumento del gasto energético y la mejora de la sensibilidad insulínica.',
+                 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas|Dosis 20 mg para investigación de protocolos de mayor intensidad'),
+
+                ('JDP-RT10', 'RT10', 'Pérdida de Peso', '10 mg', 169.99, 25, 5,
+                 'vial_rt10.png',
+                 'metabolismo|perdida-de-peso',
+                 'RT10 — Retatrutide 10 mg. Agonista triple de los receptores GIP, GLP-1 y Glucagón actualmente en ensayos clínicos de Fase 3. Dosis intermedia para protocolos de investigación de pérdida de peso.',
+                 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas'),
+
+                ('JDP-KLOW80', 'KLOW80', 'Pérdida de Peso', '80 mg', 89.99, 20, 5,
+                 'vial_klow80.png',
+                 'metabolismo|perdida-de-peso',
+                 'KLOW80 — formulación de investigación para protocolos de manejo metabólico y composición corporal. Presentación 80 mg para uso exclusivo en investigación in vitro.',
+                 'Formulación de investigación de alta concentración|Presentación 80 mg para protocolos extendidos|Análisis (CoA) de terceros disponible por lote|Síntesis con estándares de laboratorio|For research use only'),
+
+                ('JDP-SEMAX', 'Semax', 'Bienestar', '5 mg', 59.99, 25, 5,
+                 'vial_semax.png',
+                 'bienestar|anti-estres',
+                 'Semax es un heptapéptido sintético análogo de la ACTH(4-7), desarrollado en el Instituto de Biología Molecular de Moscú y ampliamente estudiado como nootrópico, neuroprotector y neuroestimulante. Aumenta significativamente la expresión del BDNF y el NGF, siendo investigado en ictus, déficit cognitivo y trastornos de atención.',
+                 'Mejora la memoria, concentración, aprendizaje y procesamiento cognitivo|Eleva los niveles de BDNF y NGF en tejido cerebral|Neuroprotección ante isquemia, daño oxidativo y excitotoxicidad|Efectos ansiolíticos y adaptogénicos respaldados en modelos animales|Favorece la recuperación neurológica post-lesión e ictus|Alta biodisponibilidad por vía intranasal en investigación'),
+            ]
+            for (sku, name, category, dose, price, stock, low, img, tags, desc, bens) in _new_products_v10:
+                if db.execute("SELECT id FROM products WHERE sku=?", (sku,)).fetchone():
+                    continue
+                _base = _make_slug(name) or _make_slug(sku) or 'producto'
+                _slug = _base
+                if db.execute("SELECT 1 FROM products WHERE slug=?", (_slug,)).fetchone():
+                    _slug = f"{_base}-{_make_slug(sku)}"
+                db.execute(
+                    """INSERT INTO products
+                       (sku, name, category, dose, price, stock, low_stock_alert,
+                        description, benefits, active, image_path, slug, tags, weight_grams)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)""",
+                    (sku, name, category, dose, price, stock, low, desc, bens, img, _slug, tags, 50)
+                )
+                _new_pid = db.execute("SELECT id FROM products WHERE sku=?", (sku,)).fetchone()
+                if _new_pid:
+                    _pid = _new_pid['id'] if hasattr(_new_pid, '__getitem__') else _new_pid[0]
+                    db.execute(
+                        "INSERT INTO product_images (product_id, filename, sort_order) VALUES (?,?,0)",
+                        (_pid, img)
+                    )
+
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v10_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v10 final catalog skipped: {_e}')
 
 
 # ---------------------------------------------------------------------------

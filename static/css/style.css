@@ -2809,7 +2809,7 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 .footer-mega-logo {
-  color: rgba(199,154,58,0.18);
+  color: rgba(244, 228, 181, 0.22);  /* Champagne #f4e4b5 — fondo suave */
   margin: 1rem 0 0.5rem;
   line-height: 0;
   user-select: none;

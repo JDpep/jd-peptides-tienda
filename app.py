@@ -1277,7 +1277,7 @@ PRODUCTS_SEED = [
         'benefits': 'Potente acción antiinflamatoria sistémica y local|Protege y repara la mucosa intestinal dañada|Modula la respuesta inmune sin causar inmunosupresión|Alivia la inflamación en modelos de enfermedad intestinal|Favorece la integridad de la barrera epitelial|Investigado en dermatitis, colitis y síndrome de intestino permeable',
         'stock': 30,
         'low_stock_alert': 5,
-        'image_path': 'cat_kpv_vial.jpeg',
+        'image_path': 'jdp_vial_kpv.png',
     },
     {
         'sku': 'JDP-MOTSC',
@@ -1301,7 +1301,7 @@ PRODUCTS_SEED = [
         'benefits': 'Regenera y protege la mucosa gástrica e intestinal|Acelera la curación de tendones, ligamentos y músculo|Efecto antiinflamatorio potente en tejidos lesionados|Promueve la angiogénesis y vascularización|Modulación del sistema nervioso central y periférico|Amplio perfil de seguridad documentado en estudios preclínicos',
         'stock': 35,
         'low_stock_alert': 5,
-        'image_path': 'cat_bpc157_vial.jpeg',
+        'image_path': 'jdp_vial_bpc157.png',
     },
     {
         'sku': 'JDP-TB500',
@@ -1313,19 +1313,19 @@ PRODUCTS_SEED = [
         'benefits': 'Acelera la recuperación de lesiones musculoesqueléticas|Promueve la regeneración tendinosa y ligamentosa|Estimula la angiogénesis y formación de nuevos vasos|Favorece la cicatrización de heridas y úlceras crónicas|Reduce la inflamación y la fibrosis en tejidos dañados|Mejora la flexibilidad articular y el rango de movimiento',
         'stock': 28,
         'low_stock_alert': 5,
-        'image_path': 'cat_tb500_frasco_10mg.jpeg',
+        'image_path': 'jdp_vial_tb500.png',
     },
     {
         'sku': 'JDP-GHKCU',
         'name': 'GHK-Cu',
         'category': 'Anti-aging',
-        'dose': '50 mg',
+        'dose': '100 mg',
         'price': 54.99,
         'description': 'GHK-Cu (Glicil-L-histidil-L-lisina cobre) es un tripéptido de cobre que ocurre naturalmente en el plasma humano, cuya concentración disminuye con la edad. Investigado por su capacidad de activar más de 4,000 genes relacionados con la reparación tisular, el rejuvenecimiento dérmico y la reducción del estrés oxidativo.',
         'benefits': 'Estimula la síntesis de colágeno, elastina y glucosaminoglicanos|Potente efecto anti-envejecimiento en piel y tejidos|Promueve el crecimiento, densidad y engrosamiento del cabello|Acelera la cicatrización de heridas, quemaduras y úlceras|Reduce la inflamación y el daño oxidativo celular|Activa genes de reparación del ADN y procesos regenerativos',
         'stock': 40,
         'low_stock_alert': 8,
-        'image_path': 'cat_ghkcu_vial.jpeg',
+        'image_path': 'jdp_vial_ghkcu.png',
     },
     {
         'sku': 'JDP-RETA',
@@ -1379,13 +1379,13 @@ PRODUCTS_SEED = [
         'sku': 'JDP-TESA',
         'name': 'Tesamorelin',
         'category': 'Pérdida de Peso',
-        'dose': '2 mg',
+        'dose': '10 mg',
         'price': 89.99,
         'description': 'Tesamorelin es un análogo sintético estabilizado de la hormona liberadora de hormona de crecimiento (GHRH), aprobado por la FDA para la lipodistrofia asociada al VIH. Es el único GHRH análogo con aprobación regulatoria, investigado además por sus efectos neuroprotectores, la mejora de la función cognitiva y la reducción de grasa visceral en población general.',
         'benefits': 'Reduce selectivamente la grasa visceral abdominal|Estimula la producción endógena y pulsátil de GH|Mejora la composición corporal sin retención de líquidos|Apoya la función cognitiva y la neuroplasticidad|Efectos metabólicos favorables en resistencia a la insulina|Perfil de seguridad validado en ensayos clínicos aleatorizados',
         'stock': 3,
         'low_stock_alert': 5,
-        'image_path': 'cat_tesamorelin_vial.png',
+        'image_path': 'jdp_vial_tesa.png',
     },
 ]
 
@@ -1848,6 +1848,56 @@ def init_db():
             db.commit()
         except Exception as _e:
             print(f'[INIT] migration v5 reta image skipped: {_e}')
+
+    # Migration v8 (2026-05-12): nuevas portadas oficiales JDP_ImagenIA + dosis
+    # reales en etiquetas. El usuario proveyó 5 mockups de vial con branding
+    # JD Peptides oficial — usar como imagen principal en BPC-157, KPV, TB-500,
+    # Tesam y GHK-Cu. Además 2 dosis se actualizan al label real del frasco:
+    #   - JDP-TESA: 2 mg → 10 mg   (vial label Tesam 10mg)
+    #   - JDP-GHKCU: 50 mg → 100 mg (vial label GHK-CU 100mg)
+    _mig_v8_tag = 'migration:v8:jdp_official_vials_20260512'
+    already_v8 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v8_tag,)
+    ).fetchone()
+    if not already_v8:
+        try:
+            _img_updates = {
+                'JDP-BPC157': 'jdp_vial_bpc157.png',
+                'JDP-KPV':    'jdp_vial_kpv.png',
+                'JDP-TB500':  'jdp_vial_tb500.png',
+                'JDP-TESA':   'jdp_vial_tesa.png',
+                'JDP-GHKCU':  'jdp_vial_ghkcu.png',
+            }
+            _dose_updates = {
+                'JDP-TESA':  '10 mg',
+                'JDP-GHKCU': '100 mg',
+            }
+            for _sku, _img in _img_updates.items():
+                # 1) image_path como portada principal
+                db.execute("UPDATE products SET image_path=? WHERE sku=?", (_img, _sku))
+                # 2) product_images: insertar la nueva imagen como sort_order=0
+                _prod = db.execute("SELECT id FROM products WHERE sku=?", (_sku,)).fetchone()
+                if _prod:
+                    _pid = _prod['id'] if hasattr(_prod, '__getitem__') else _prod[0]
+                    # Empuja todas las imágenes existentes hacia abajo y mete la nueva en 0
+                    db.execute("UPDATE product_images SET sort_order = sort_order + 1 WHERE product_id=?", (_pid,))
+                    db.execute(
+                        "INSERT INTO product_images (product_id, filename, sort_order) VALUES (?,?,0)",
+                        (_pid, _img)
+                    )
+            for _sku, _dose in _dose_updates.items():
+                db.execute("UPDATE products SET dose=? WHERE sku=?", (_dose, _sku))
+
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v8_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v8 official vials skipped: {_e}')
 
 
 # ---------------------------------------------------------------------------

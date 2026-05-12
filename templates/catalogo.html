@@ -3,189 +3,277 @@
 
 {% block content %}
 {% set img_map = {
-  'JDP-RT20':  'vial_rt20.png',
-  'JDP-RT10':  'vial_rt10.png',
-  'JDP-KLOW80':'vial_klow80.png',
   'JDP-MOTSC': 'vial_mots_c.png',
   'JDP-DSIP':  'vial_dsip.png',
-  'JDP-SEMAX': 'vial_semax.png',
-  'JDP-NAD':   'vial_nad.png',
   'JDP-BPC157':'vial_bpc157.png',
   'JDP-KPV':   'vial_kpv.png',
   'JDP-TB500': 'vial_tb500.png',
-  'JDP-CP':    'vial_cp.png',
   'JDP-TESA':  'vial_tesamorelin.png',
-  'JDP-GHKCU': 'vial_ghk_cu.png',
-  'JDP-BAC':   'vial_bac.png'
+  'JDP-GHKCU': 'vial_ghk_cu.png'
 } %}
 
-<!-- Page header -->
+{% set _cat_cls = {'Recuperación':'cat-recuperacion','Performance':'cat-performance','Anti-aging':'cat-antiaging','Pérdida de Peso':'cat-perdida','Bienestar':'cat-bienestar'} %}
+{% set _bc      = {'Recuperación':'badge-cat-recuperacion','Performance':'badge-cat-performance','Anti-aging':'badge-cat-antiaging','Pérdida de Peso':'badge-cat-perdida','Bienestar':'badge-cat-bienestar'} %}
+
+<!-- ─────────────────────────  Page header  ───────────────────────── -->
 <div class="page-strip">
   <div class="container">
     <h1>Catálogo de <span class="gold">Péptidos</span></h1>
-    <p>{{ products|length }} producto{{ 's' if products|length != 1 else '' }} disponible{{ 's' if products|length != 1 else '' }}
+    <p>
+      <span id="catalog-count">{{ products|length }} producto{{ 's' if products|length != 1 else '' }}</span>
       {% if current_category %} en <strong style="color:var(--gold)">{{ current_category }}</strong>{% endif %}
+      {% if current_tag %} · <strong style="color:var(--gold)">{{ tag_label(current_tag) }}</strong>{% endif %}
     </p>
   </div>
 </div>
 
-<section class="section" style="padding-top:2rem">
+<section class="section" style="padding-top:1.75rem">
   <div class="container">
 
-    <!-- Filters row -->
-    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;margin-bottom:1.75rem">
-      <!-- Search -->
-      <div class="search-wrap" style="flex:1;min-width:220px;max-width:360px">
-        <span class="search-icon">🔍</span>
-        <input
-          type="text"
-          id="catalogSearch"
-          class="form-control"
-          placeholder="Buscar péptido…"
-          value="{{ search }}"
-          autocomplete="off"
-        >
-      </div>
+    <div class="catalog-layout">
 
-      <!-- Category pills -->
-      {% set _cat_cls = {'Recuperación':'cat-recuperacion','Performance':'cat-performance','Anti-aging':'cat-antiaging','Pérdida de Peso':'cat-perdida','Bienestar':'cat-bienestar'} %}
-      <div class="category-pills" style="margin-bottom:0;flex:1">
-        <a href="{{ url_for('catalogo') }}"
-           class="pill category-pill {% if not current_category and not current_tag %}active{% endif %}"
-           data-category="">Todos</a>
-        {% for cat in categories %}
-          <a href="{{ url_for('catalogo', categoria=cat['category']) }}"
-             class="pill category-pill {{ _cat_cls.get(cat['category'], '') }} {% if current_category == cat['category'] %}active{% endif %}"
-             data-category="{{ cat['category'] }}">
-            {{ cat['category'] }}
-          </a>
-        {% endfor %}
-      </div>
-    </div>
+      <!-- ═════════════ SIDEBAR de filtros (desktop) / drawer (mobile) ════════════ -->
+      <aside class="catalog-sidebar" id="catalogSidebar">
 
-    <!-- Tag pills (cross-reference, secondary axis) -->
-    {% if available_tags %}
-      <div style="margin: 0 0 1.25rem; display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap">
-        <span style="font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--text3); font-weight:700; flex:0 0 auto">Cross-ref</span>
-        <div class="category-pills" style="margin:0; flex:1">
-          {% for tslug in available_tags %}
-            <a href="{{ url_for('catalogo', tag=tslug, categoria=current_category) }}"
-               class="pill tag-pill {% if current_tag == tslug %}active{% endif %}"
-               data-tag="{{ tslug }}">
-              {{ tag_label(tslug) }}
-            </a>
-          {% endfor %}
-          {% if current_tag %}
-            <a href="{{ url_for('catalogo', categoria=current_category) }}"
-               class="pill tag-pill-clear" title="Quitar filtro de tag">✕ Quitar</a>
-          {% endif %}
-        </div>
-      </div>
-    {% endif %}
+        <header class="catalog-sidebar-header">
+          <h3>Filtros</h3>
+          <button type="button" class="catalog-sidebar-close" id="catalogSidebarClose" aria-label="Cerrar filtros">✕</button>
+        </header>
 
-    <!-- Product count -->
-    <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem">
-      <span id="catalog-count">{{ products|length }} producto{{ 's' if products|length != 1 else '' }}</span>
-      {% if current_category %} en <strong style="color:var(--gold)">{{ current_category }}</strong>{% endif %}
-    </p>
+        <form id="catalogFiltersForm" class="catalog-filters">
 
-    <!-- Grid (AJAX target) -->
-    <div id="catalog-grid">
-    {% if products %}
-      <div class="products-grid animate-stagger">
-        {% for p in products %}
-          {% set benefits = p['benefits'].split('|') if p['benefits'] else [] %}
-          <div class="product-card" data-product-id="{{ p['id'] }}" style="--delay:{{ loop.index0 * 0.06 }}s">
-            <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" style="text-decoration:none;display:contents">
-              <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
-                {% set _bc = {'Recuperación':'badge-cat-recuperacion','Performance':'badge-cat-performance','Anti-aging':'badge-cat-antiaging','Pérdida de Peso':'badge-cat-perdida','Bienestar':'badge-cat-bienestar'} %}
-                <div class="product-visual-cat">
-                  <span class="badge badge-cat {{ _bc.get(p['category'], 'badge-cat-default') }}">{{ p['category'] }}</span>
-                </div>
-                {% set _pimg = p['image_path'] or img_map.get(p['sku'], '') %}
-                {% if _pimg %}
-                  <img src="{{ url_for('static', filename='img/' + _pimg) }}"
-                       alt="Frasco {{ p['name'] }} {{ p['dose'] }} — For Research Use Only"
-                       class="product-card-img{% if _pimg.endswith('.jpeg') or _pimg.endswith('.jpg') or '_frasco_' in _pimg %} img-vial-right{% endif %}"
-                       loading="{% if loop.index <= 3 %}eager{% else %}lazy{% endif %}"
-                       {% if loop.index <= 3 %}fetchpriority="high"{% endif %}
-                       decoding="async"
-                       width="320" height="533">
-                {% else %}
-                  <div class="product-visual-pattern">
-                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="100" cy="100" r="12" fill="#c9a227"/>
-                      <circle cx="40"  cy="60"  r="8"  fill="#c9a227" opacity="0.6"/>
-                      <circle cx="160" cy="60"  r="8"  fill="#c9a227" opacity="0.6"/>
-                      <circle cx="40"  cy="140" r="8"  fill="#c9a227" opacity="0.6"/>
-                      <circle cx="160" cy="140" r="8"  fill="#c9a227" opacity="0.6"/>
-                      <line x1="100" y1="88"  x2="40"  y2="60"  stroke="#c9a227" stroke-width="2" opacity="0.5"/>
-                      <line x1="100" y1="88"  x2="160" y2="60"  stroke="#c9a227" stroke-width="2" opacity="0.5"/>
-                      <line x1="100" y1="112" x2="40"  y2="140" stroke="#c9a227" stroke-width="2" opacity="0.5"/>
-                      <line x1="100" y1="112" x2="160" y2="140" stroke="#c9a227" stroke-width="2" opacity="0.5"/>
-                    </svg>
-                  </div>
-                  <div class="product-visual-name">{{ p['name'] }}</div>
-                  <div class="product-visual-dose">{{ p['dose'] }}</div>
-                {% endif %}
-              </div>
-            </a>
-            <div class="product-body">
-              <h3 class="product-name">{{ p['name'] }}</h3>
-              <p class="product-dose">{{ p['sku'] }} · {{ p['dose'] }}</p>
-              {% set _tags = parse_tags(p['tags']) %}
-              {% if _tags %}
-                <div class="card-tags">
-                  {% for t in _tags[:3] %}
-                    <a href="{{ url_for('catalogo', tag=t) }}" class="tag-chip"
-                       onclick="event.stopPropagation()">{{ tag_label(t) }}</a>
-                  {% endfor %}
-                </div>
-              {% endif %}
-              {% if benefits %}
-                <p style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">{{ benefits[0] }}</p>
-              {% endif %}
-              <div class="product-price" style="color:var(--gold)">${{ "%.2f"|format(p['price']) }} <span class="price-currency">USD</span></div>
-              {% set _low = p['low_stock_alert'] if p['low_stock_alert'] is not none else 5 %}
-              <div style="margin-top:0.5rem">
-                {% if p['stock'] > _low %}
-                  <span class="stock-badge ok">En stock</span>
-                {% elif p['stock'] > 0 %}
-                  <span class="stock-badge low">Pocas unidades ({{ p['stock'] }})</span>
-                {% else %}
-                  <span class="stock-badge out">Agotado</span>
-                {% endif %}
-              </div>
-            </div>
-            <div class="product-footer">
-              <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver detalle</a>
-              {% if p['stock'] > 0 %}
-                <button class="btn btn-gold btn-sm add-to-cart-btn" data-product-id="{{ p['id'] }}">
-                  + Agregar
-                </button>
-              {% else %}
-                <span style="font-size:0.78rem;color:var(--red);font-weight:600">Sin stock</span>
-              {% endif %}
+          <!-- Búsqueda -->
+          <div class="catalog-filter-group">
+            <label class="catalog-filter-label" for="catalogSearch">Buscar</label>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="search" id="catalogSearch" name="q" class="form-control"
+                     placeholder="Péptido, descripción…" value="{{ search }}" autocomplete="off">
             </div>
           </div>
-        {% endfor %}
-      </div>
 
-    {% else %}
-      <div class="cart-empty" style="padding:4rem 2rem">
-        <div style="font-size:3rem;margin-bottom:1rem">🔬</div>
-        <h3>No se encontraron productos</h3>
-        <p style="margin:0.5rem 0 1.5rem">Intenta con otra categoría o término de búsqueda.</p>
-        <a href="{{ url_for('catalogo') }}" class="btn btn-outline">Ver todos los productos</a>
-      </div>
-    {% endif %}
-    </div><!-- #catalog-grid -->
+          <!-- Categorías -->
+          <div class="catalog-filter-group">
+            <span class="catalog-filter-label">Categoría</span>
+            <div class="catalog-filter-list">
+              <label class="cf-radio">
+                <input type="radio" name="categoria" value="" {% if not current_category %}checked{% endif %}>
+                <span>Todas</span>
+              </label>
+              {% for cat in categories %}
+                <label class="cf-radio {{ _cat_cls.get(cat['category'], '') }}">
+                  <input type="radio" name="categoria" value="{{ cat['category'] }}"
+                         {% if current_category == cat['category'] %}checked{% endif %}>
+                  <span>{{ cat['category'] }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
 
-    <!-- Disclaimer -->
-    <div class="disclaimer-banner" style="margin-top:3rem">
-      <p><strong>FOR RESEARCH USE ONLY</strong> — Todos los péptidos listados son exclusivamente para investigación científica y no están destinados al uso humano o veterinario.</p>
-    </div>
+          <!-- Cross-reference tags -->
+          {% if available_tags %}
+            <div class="catalog-filter-group">
+              <span class="catalog-filter-label">Cross-reference</span>
+              <div class="catalog-filter-list">
+                <label class="cf-radio">
+                  <input type="radio" name="tag" value="" {% if not current_tag %}checked{% endif %}>
+                  <span>Todos</span>
+                </label>
+                {% for tslug in available_tags %}
+                  <label class="cf-radio">
+                    <input type="radio" name="tag" value="{{ tslug }}"
+                           {% if current_tag == tslug %}checked{% endif %}>
+                    <span>{{ tag_label(tslug) }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
 
+          <!-- Rango de precio -->
+          <div class="catalog-filter-group">
+            <span class="catalog-filter-label">
+              Rango de precio
+              <span class="catalog-filter-hint" id="priceRangeLabel">USD</span>
+            </span>
+            <div class="catalog-price-range">
+              <input type="number" name="min_price" id="minPrice" class="form-control" placeholder="Mín"
+                     min="{{ price_min_bound|int }}" max="{{ price_max_bound|int }}" step="1"
+                     value="{{ current_min_price if current_min_price is not none else '' }}">
+              <span class="catalog-price-dash">—</span>
+              <input type="number" name="max_price" id="maxPrice" class="form-control" placeholder="Máx"
+                     min="{{ price_min_bound|int }}" max="{{ price_max_bound|int }}" step="1"
+                     value="{{ current_max_price if current_max_price is not none else '' }}">
+            </div>
+            <div class="catalog-price-bounds">
+              ${{ "%.0f"|format(price_min_bound) }} – ${{ "%.0f"|format(price_max_bound) }} USD
+            </div>
+          </div>
+
+          <!-- Disponibilidad -->
+          <div class="catalog-filter-group">
+            <span class="catalog-filter-label">Disponibilidad</span>
+            <label class="cf-checkbox">
+              <input type="checkbox" name="in_stock" value="1" {% if current_in_stock %}checked{% endif %}>
+              <span>Solo en stock</span>
+            </label>
+          </div>
+
+          <!-- Clear all -->
+          <button type="button" id="catalogClearAll" class="btn btn-ghost btn-block btn-sm">
+            ✕ Limpiar todos los filtros
+          </button>
+
+        </form>
+      </aside>
+
+      <!-- ═════════════════════  Backdrop mobile  ═════════════════════ -->
+      <div class="catalog-sidebar-backdrop" id="catalogSidebarBackdrop"></div>
+
+      <!-- ═════════════════════════  Main: grid  ═════════════════════════ -->
+      <div class="catalog-main">
+
+        <!-- Toolbar: sort + open filters (mobile) -->
+        <div class="catalog-toolbar">
+          <button type="button" id="catalogSidebarOpen" class="btn btn-outline btn-sm catalog-filters-open">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            Filtros <span class="catalog-filters-count" id="catalogFiltersCount" hidden></span>
+          </button>
+
+          <div class="catalog-toolbar-spacer"></div>
+
+          <label class="catalog-sort-wrap">
+            <span>Ordenar:</span>
+            <select id="catalogSort" name="sort" class="form-control">
+              <option value="name_asc"   {% if current_sort == 'name_asc' %}selected{% endif %}>Nombre A–Z</option>
+              <option value="name_desc"  {% if current_sort == 'name_desc' %}selected{% endif %}>Nombre Z–A</option>
+              <option value="price_asc"  {% if current_sort == 'price_asc' %}selected{% endif %}>Precio ↑</option>
+              <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>Precio ↓</option>
+              <option value="stock_desc" {% if current_sort == 'stock_desc' %}selected{% endif %}>Mayor stock</option>
+              <option value="newest"     {% if current_sort == 'newest' %}selected{% endif %}>Más recientes</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- Active filter chips -->
+        <div class="catalog-active-chips" id="catalogActiveChips" hidden></div>
+
+        <!-- Grid (AJAX target) -->
+        <div id="catalog-grid">
+          {% if products %}
+            <div class="products-grid animate-stagger">
+              {% for p in products %}
+                {% set benefits = p['benefits'].split('|') if p['benefits'] else [] %}
+                <div class="product-card" data-product-id="{{ p['id'] }}" style="--delay:{{ loop.index0 * 0.05 }}s">
+                  <button type="button" class="product-quickview-btn"
+                          data-product-id="{{ p['id'] }}"
+                          title="Vista rápida" aria-label="Vista rápida">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+
+                  <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" style="text-decoration:none;display:contents">
+                    <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
+                      <div class="product-visual-cat">
+                        <span class="badge badge-cat {{ _bc.get(p['category'], 'badge-cat-default') }}">{{ p['category'] }}</span>
+                      </div>
+                      {% set _pimg = p['image_path'] or img_map.get(p['sku'], '') %}
+                      {% if _pimg %}
+                        <img src="{{ url_for('static', filename='img/' + _pimg) }}"
+                             alt="Frasco {{ p['name'] }} {{ p['dose'] }} — For Research Use Only"
+                             class="product-card-img{% if _pimg.endswith('.jpeg') or _pimg.endswith('.jpg') or '_frasco_' in _pimg %} img-vial-right{% endif %}"
+                             loading="{% if loop.index <= 3 %}eager{% else %}lazy{% endif %}"
+                             {% if loop.index <= 3 %}fetchpriority="high"{% endif %}
+                             decoding="async"
+                             width="320" height="533">
+                      {% else %}
+                        <div class="product-visual-pattern">
+                          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="100" cy="100" r="12" fill="#c9a227"/>
+                            <circle cx="40"  cy="60"  r="8"  fill="#c9a227" opacity="0.6"/>
+                            <circle cx="160" cy="60"  r="8"  fill="#c9a227" opacity="0.6"/>
+                            <circle cx="40"  cy="140" r="8"  fill="#c9a227" opacity="0.6"/>
+                            <circle cx="160" cy="140" r="8"  fill="#c9a227" opacity="0.6"/>
+                          </svg>
+                        </div>
+                        <div class="product-visual-name">{{ p['name'] }}</div>
+                        <div class="product-visual-dose">{{ p['dose'] }}</div>
+                      {% endif %}
+                    </div>
+                  </a>
+                  <div class="product-body">
+                    <h3 class="product-name">{{ p['name'] }}</h3>
+                    <p class="product-dose">{{ p['sku'] }} · {{ p['dose'] }}</p>
+                    {% set _tags = parse_tags(p['tags']) %}
+                    {% if _tags %}
+                      <div class="card-tags">
+                        {% for t in _tags[:3] %}
+                          <a href="{{ url_for('catalogo', tag=t) }}" class="tag-chip"
+                             onclick="event.stopPropagation()">{{ tag_label(t) }}</a>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                    {% if benefits %}
+                      <p style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">{{ benefits[0] }}</p>
+                    {% endif %}
+                    <div class="product-price" style="color:var(--gold)">${{ "%.2f"|format(p['price']) }} <span class="price-currency">USD</span></div>
+                    {% set _low = p['low_stock_alert'] if p['low_stock_alert'] is not none else 5 %}
+                    <div style="margin-top:0.5rem">
+                      {% if p['stock'] > _low %}
+                        <span class="stock-badge ok">En stock</span>
+                      {% elif p['stock'] > 0 %}
+                        <span class="stock-badge low">Pocas unidades ({{ p['stock'] }})</span>
+                      {% else %}
+                        <span class="stock-badge out">Agotado</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="product-footer">
+                    <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver detalle</a>
+                    {% if p['stock'] > 0 %}
+                      <button class="btn btn-gold btn-sm add-to-cart-btn" data-product-id="{{ p['id'] }}">+ Agregar</button>
+                    {% else %}
+                      <span style="font-size:0.78rem;color:var(--red);font-weight:600">Sin stock</span>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="catalog-empty">
+              <div class="catalog-empty-illustration">
+                <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" width="96" height="96" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="52" cy="52" r="32" opacity="0.5"/>
+                  <line x1="76" y1="76" x2="104" y2="104" stroke-linecap="round"/>
+                  <line x1="40" y1="52" x2="64" y2="52" opacity="0.6"/>
+                  <line x1="52" y1="40" x2="52" y2="64" opacity="0.6"/>
+                </svg>
+              </div>
+              <h3>No encontramos péptidos con esos filtros</h3>
+              <p>Prueba quitando algún filtro o buscando con otro término.</p>
+              <button type="button" id="catalogEmptyClear" class="btn btn-gold btn-sm">Limpiar filtros</button>
+            </div>
+          {% endif %}
+        </div><!-- #catalog-grid -->
+
+        <!-- Disclaimer -->
+        <div class="disclaimer-banner" style="margin-top:3rem">
+          <p><strong>FOR RESEARCH USE ONLY</strong> — Todos los péptidos listados son exclusivamente para investigación científica y no están destinados al uso humano o veterinario.</p>
+        </div>
+
+      </div><!-- /.catalog-main -->
+    </div><!-- /.catalog-layout -->
   </div>
 </section>
+
+<!-- ════════════════════════  QUICK VIEW MODAL  ═══════════════════════ -->
+<div class="qv-overlay" id="quickViewOverlay" hidden>
+  <div class="qv-modal" id="quickViewModal" role="dialog" aria-modal="true" aria-labelledby="qvTitle">
+    <button type="button" class="qv-close" id="quickViewClose" aria-label="Cerrar">✕</button>
+    <div class="qv-loading" id="quickViewLoading">
+      <div class="qv-spinner"></div>
+    </div>
+    <div class="qv-content" id="quickViewContent"></div>
+  </div>
+</div>
+
 {% endblock %}

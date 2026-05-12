@@ -2025,9 +2025,20 @@ def index():
     return render_template('index.html', products=products, categories=categories)
 
 
-def _filter_products(category='', search='', tag=''):
-    """Filtra products activos por categoría + tag + search (LIKE). Solo permite
-    tags conocidos para evitar inyección semántica."""
+_SORT_WHITELIST = {
+    'name_asc':   'name ASC',
+    'name_desc':  'name DESC',
+    'price_asc':  'price ASC',
+    'price_desc': 'price DESC',
+    'stock_desc': 'stock DESC, name ASC',
+    'newest':     'created_at DESC, id DESC',
+}
+
+
+def _filter_products(category='', search='', tag='', sort='', in_stock=False,
+                     min_price=None, max_price=None):
+    """Filtra products activos por múltiples ejes. Whitelist defensivo en sort y
+    tag para evitar inyección. Min/max price se aceptan como float."""
     clauses = ["active=1"]
     params = []
     if category:
@@ -2037,24 +2048,48 @@ def _filter_products(category='', search='', tag=''):
         clauses.append("(name LIKE ? OR description LIKE ?)")
         params.extend([f'%{search}%', f'%{search}%'])
     if tag:
-        # Whitelist contra TAG_LABELS para no permitir LIKE de strings arbitrarios
         tag = tag.strip().lower()
         if tag in TAG_LABELS:
-            # tag está rodeado de | en la columna; usamos un LIKE con bordes
-            # explícitos para no matchear substrings (ej. 'inmuno' vs 'inmuno-x')
             clauses.append("('|' || tags || '|') LIKE ?")
             params.append(f'%|{tag}|%')
-    sql = "SELECT * FROM products WHERE " + " AND ".join(clauses) + " ORDER BY name"
+    if in_stock:
+        clauses.append("stock > 0")
+    if min_price is not None:
+        clauses.append("price >= ?")
+        params.append(float(min_price))
+    if max_price is not None:
+        clauses.append("price <= ?")
+        params.append(float(max_price))
+    order_sql = _SORT_WHITELIST.get(sort, 'name ASC')
+    sql = "SELECT * FROM products WHERE " + " AND ".join(clauses) + f" ORDER BY {order_sql}"
     return query_db(sql, tuple(params))
+
+
+def _parse_price_arg(raw):
+    """'12.5' → 12.5  /  '' or None → None  /  bad → None"""
+    if raw is None or raw == '':
+        return None
+    try:
+        v = float(raw)
+        return v if v >= 0 else None
+    except (TypeError, ValueError):
+        return None
 
 
 @app.route('/catalogo')
 def catalogo():
-    category = request.args.get('categoria', '')
-    search   = request.args.get('q', '')
-    tag      = request.args.get('tag', '')
+    category  = request.args.get('categoria', '')
+    search    = request.args.get('q', '')
+    tag       = request.args.get('tag', '')
+    sort      = request.args.get('sort', 'name_asc')
+    in_stock  = request.args.get('in_stock') in ('1', 'true', 'on', 'yes')
+    min_price = _parse_price_arg(request.args.get('min_price'))
+    max_price = _parse_price_arg(request.args.get('max_price'))
 
-    products = _filter_products(category=category, search=search, tag=tag)
+    products = _filter_products(
+        category=category, search=search, tag=tag, sort=sort,
+        in_stock=in_stock, min_price=min_price, max_price=max_price,
+    )
 
     categories = query_db("SELECT DISTINCT category FROM products WHERE active=1 ORDER BY category")
 
@@ -2066,19 +2101,34 @@ def catalogo():
             _present.add(t)
     available_tags = [t for t in TAG_LABELS.keys() if t in _present]
 
+    # Bounds para el price slider
+    _bounds = query_db("SELECT MIN(price) AS lo, MAX(price) AS hi FROM products WHERE active=1", one=True)
+    price_min = float(_bounds['lo']) if _bounds and _bounds['lo'] is not None else 0.0
+    price_max = float(_bounds['hi']) if _bounds and _bounds['hi'] is not None else 500.0
+
     return render_template('catalogo.html', products=products, categories=categories,
                            current_category=category, search=search,
-                           current_tag=tag, available_tags=available_tags)
+                           current_tag=tag, available_tags=available_tags,
+                           current_sort=sort, current_in_stock=in_stock,
+                           current_min_price=min_price, current_max_price=max_price,
+                           price_min_bound=price_min, price_max_bound=price_max)
 
 
 @app.route('/api/productos')
 def api_productos():
     """AJAX endpoint — returns filtered products as JSON for catalog search."""
-    category = request.args.get('categoria', '')
-    search   = request.args.get('q', '')
-    tag      = request.args.get('tag', '')
+    category  = request.args.get('categoria', '')
+    search    = request.args.get('q', '')
+    tag       = request.args.get('tag', '')
+    sort      = request.args.get('sort', 'name_asc')
+    in_stock  = request.args.get('in_stock') in ('1', 'true', 'on', 'yes')
+    min_price = _parse_price_arg(request.args.get('min_price'))
+    max_price = _parse_price_arg(request.args.get('max_price'))
 
-    products = _filter_products(category=category, search=search, tag=tag)
+    products = _filter_products(
+        category=category, search=search, tag=tag, sort=sort,
+        in_stock=in_stock, min_price=min_price, max_price=max_price,
+    )
 
     SKU_IMAGE_MAP = {
         'JDP-IGF1': 'vial_igf1_lr3.jpeg', 'JDP-KPV': 'vial_kpv.jpeg',

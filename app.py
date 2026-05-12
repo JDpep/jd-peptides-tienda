@@ -103,6 +103,29 @@ if _is_prod and _SECRET_SOURCE != 'env':
           'CLAVE ALEATORIA DE 64 HEX (python -c "import secrets; print(secrets.token_hex(32))").')
 
 app.secret_key = _SECRET_KEY
+
+
+# ----- Boot diagnostics — imprime cuáles env vars están seteadas (sin valores)
+# Sirve para verificar configuración en Vercel/Railway sin filtrar secrets.
+def _env_status(name, mask_value=False):
+    v = os.environ.get(name, '')
+    if not v:
+        return 'NOT SET'
+    if mask_value:
+        return f'set ({len(v)} chars)'
+    return 'set'
+
+
+print('[INIT] === JD Peptides config snapshot ===')
+print(f'[INIT]   prod mode          : {_is_prod}')
+print(f'[INIT]   SECRET_KEY         : {_SECRET_SOURCE}')
+print(f'[INIT]   ADMIN_USERNAME     : {_env_status("ADMIN_USERNAME")}')
+print(f'[INIT]   ADMIN_PASSWORD     : {_env_status("ADMIN_PASSWORD", mask_value=True)}')
+print(f'[INIT]   WHATSAPP_NUMBER    : {_env_status("WHATSAPP_NUMBER")}')
+print(f'[INIT]   RESEND_API_KEY     : {_env_status("RESEND_API_KEY", mask_value=True)}')
+print(f'[INIT]   ANTHROPIC_API_KEY  : {_env_status("ANTHROPIC_API_KEY", mask_value=True)}')
+print(f'[INIT]   DATABASE_URL       : {_env_status("DATABASE_URL")}')
+print(f'[INIT] ====================================')
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 60 * 60 * 24 * 30  # 30 days
 

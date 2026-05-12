@@ -30,13 +30,18 @@
     <div class="marquee-track">
       {# Mismo set de mensajes duplicado dos veces para loop sin gap visible #}
       {% set _announcements = [
-        '99%+ pureza verificada por HPLC',
-        'Empaque profesional con control de temperatura',
-        'For Research Use Only',
-        'Envío gratis a México sobre $200 USD',
-        'Pago: Stripe, transferencia o cripto',
-        'Análisis (CoA) de terceros por cada lote',
-        'Síntesis en México — trazabilidad por lote',
+        'Grado investigación • Control de calidad por lote',
+        'Trazabilidad y consistencia en cada lote',
+        'Documentación disponible (CoA por lote)',
+        'Estándares de laboratorio • Calidad verificable',
+        'Empaque seguro y manejo cuidadoso',
+        'Procesos enfocados en pureza e identidad',
+        'Información clara y recursos educativos',
+        'Centro de información: guías y FAQs',
+        'Catálogo actualizado regularmente',
+        'Soporte y atención al cliente',
+        'Transparencia en procesos y documentación',
+        'For research use only • Not for human consumption',
       ] %}
       {% for _ in range(2) %}
         {% for msg in _announcements %}

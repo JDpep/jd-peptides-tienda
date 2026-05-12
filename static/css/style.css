@@ -3255,6 +3255,10 @@ details summary::-webkit-details-marker { display: none; }
   padding: 1rem;
   animation: qvOverlayIn 0.25s ease;
 }
+/* `display: flex` arriba anula al atributo HTML `hidden` (display:none
+   implícito). Sin esto el modal queda visible desde el page-load con
+   loading spinner vacío. */
+.qv-overlay[hidden] { display: none !important; }
 @keyframes qvOverlayIn { from { opacity: 0; } to { opacity: 1; } }
 .qv-modal {
   background: var(--bg2);

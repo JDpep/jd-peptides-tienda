@@ -179,6 +179,27 @@
     </div>
   </footer>
 
+  <!-- Mobile bottom tab bar (sticky, thumb-friendly) -->
+  <nav class="mobile-tabbar" id="mobileTabbar" aria-label="Navegación principal">
+    <a href="{{ url_for('index') }}"   class="{% if request.endpoint == 'index' %}active{% endif %}" aria-label="Inicio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7H10v7H6a2 2 0 0 1-2-2v-9z"/></svg>
+      Inicio
+    </a>
+    <a href="{{ url_for('catalogo') }}" class="{% if request.endpoint in ('catalogo','producto','producto_by_id') %}active{% endif %}" aria-label="Catálogo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Catálogo
+    </a>
+    <a href="{{ url_for('tracking') }}" class="{% if request.endpoint == 'tracking' %}active{% endif %}" aria-label="Rastrear pedido">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Rastrear
+    </a>
+    <a href="{{ url_for('carrito') }}" class="{% if request.endpoint in ('carrito','checkout') %}active{% endif %}" aria-label="Carrito">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+      {% if cart_count() > 0 %}<span class="tab-badge">{{ cart_count() }}</span>{% endif %}
+      Carrito
+    </a>
+  </nav>
+
   <!-- WhatsApp floating button -->
   {% if whatsapp_number %}
   <a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener" class="whatsapp-btn" title="Contactar por WhatsApp" aria-label="Contactar por WhatsApp">

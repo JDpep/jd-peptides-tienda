@@ -567,6 +567,26 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------------------------------------------------------
+  // Mobile tab bar — auto-hide on scroll down, show on scroll up
+  // ---------------------------------------------------------
+  const tabbar = document.getElementById('mobileTabbar');
+  if (tabbar) {
+    let lastY = window.scrollY;
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const goingDown = y > lastY && y > 80;
+        tabbar.classList.toggle('hidden', goingDown);
+        lastY = y;
+        ticking = false;
+      });
+    }, { passive: true });
+  }
+
+  // ---------------------------------------------------------
   // Premium polish — cursor-tracked gold glow + vial tilt
   // Skipped automatically if user prefers reduced motion.
   // ---------------------------------------------------------

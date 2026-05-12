@@ -2597,3 +2597,121 @@ details summary::-webkit-details-marker { display: none; }
   .order-tracker-label { font-size: 0.66rem; }
   .order-tracker-dot { width: 28px; height: 28px; font-size: 0.72rem; }
 }
+
+/* =========================================================
+   MOBILE UX REFRESH (≤ 768px)
+   ========================================================= */
+
+/* — Touch targets ≥ 44px (iOS HIG) — */
+@media (max-width: 768px) {
+  .btn, .btn-sm, .pill, .nav-dropdown-item,
+  .add-to-cart-btn, .toggle-btn, .remove-btn {
+    min-height: 44px;
+  }
+  .btn-sm { padding: 0.55rem 0.9rem; font-size: 0.82rem; }
+
+  /* — Hero más compacto — */
+  .hero { padding: 3.5rem 0 3rem; }
+  .hero h1 { font-size: clamp(1.7rem, 7vw, 2.4rem) !important; line-height: 1.1; }
+  .hero p  { font-size: 0.95rem; margin-bottom: 1.5rem; }
+  .hero-cta { flex-direction: column; gap: 0.6rem; }
+  .hero-cta .btn { width: 100%; max-width: 320px; margin: 0 auto; }
+
+  /* — Filter pills: scroll horizontal con snap — */
+  .category-pills {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scroll-padding: 1rem;
+    padding: 0.5rem 1rem 0.85rem;
+    margin-left: -1rem; margin-right: -1rem;
+    scrollbar-width: none;
+    mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  }
+  .category-pills::-webkit-scrollbar { display: none; }
+  .category-pills .pill {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
+
+  /* — Page strip más compacto — */
+  .page-strip h1 { font-size: 1.4rem; }
+  .page-strip p { font-size: 0.85rem; }
+
+  /* — Forms con campos más alturas — */
+  .form-control, .admin-input {
+    min-height: 44px;
+    font-size: 16px;  /* evita zoom automático en iOS */
+  }
+
+  /* — Cart summary sticky bottom en /carrito y /checkout — */
+  .order-summary {
+    position: sticky;
+    bottom: 80px; /* deja espacio para el bottom nav */
+    z-index: 5;
+  }
+
+  /* — Espacio para que el bottom nav no tape el footer — */
+  body { padding-bottom: 64px; }
+  .whatsapp-btn { bottom: 80px; }  /* sube el FAB para no chocar */
+}
+
+/* =========================================================
+   STICKY BOTTOM NAV — mobile thumb reach
+   ========================================================= */
+.mobile-tabbar {
+  display: none;
+}
+@media (max-width: 768px) {
+  .mobile-tabbar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 90;
+    background: rgba(8,8,8,0.92);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
+    padding: 0.35rem 0 calc(0.35rem + env(safe-area-inset-bottom, 0));
+    box-shadow: 0 -4px 22px rgba(0,0,0,0.55);
+  }
+  .mobile-tabbar a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.18rem;
+    padding: 0.4rem 0.2rem;
+    color: var(--text3);
+    text-decoration: none;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: color var(--transition);
+    position: relative;
+  }
+  .mobile-tabbar a svg { width: 22px; height: 22px; transition: transform var(--transition); }
+  .mobile-tabbar a.active { color: var(--gold); }
+  .mobile-tabbar a.active svg { transform: translateY(-2px); }
+  .mobile-tabbar a:hover { color: var(--text); }
+  .mobile-tabbar .tab-badge {
+    position: absolute;
+    top: 2px; right: calc(50% - 18px);
+    background: var(--gold);
+    color: #0d0d0d;
+    font-size: 0.62rem;
+    font-weight: 800;
+    min-width: 16px; height: 16px;
+    border-radius: 999px;
+    padding: 0 4px;
+    display: flex; align-items: center; justify-content: center;
+  }
+}
+
+/* Hide-on-scroll behavior toggled by JS */
+.mobile-tabbar.hidden { transform: translateY(110%); transition: transform 0.3s ease; }
+.mobile-tabbar { transition: transform 0.3s ease; }

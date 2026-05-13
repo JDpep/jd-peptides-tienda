@@ -1,27 +1,25 @@
+
 # Database — never commit the live DB, Railway needs a volume
+# Local agent state
+# OS
+# Python
+# Uploaded docs and user media (persistent volume on Railway)
+# Vercel
+*.egg-info/
+*.py[cod]
+*.pyo
+.DS_Store
+.claude/
+.env
+.env.local
+.venv/
+.vercel
+.vercel/
+Thumbs.db
+__pycache__/
+backups/
 database/*.db
 database/*.db-shm
 database/*.db-wal
-
-# Uploaded docs and user media (persistent volume on Railway)
 database/docs/
-
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-.env
 venv/
-.venv/
-*.egg-info/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Local agent state
-.claude/
-
-# Vercel
-.vercel/
-.vercel

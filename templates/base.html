@@ -33,6 +33,17 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block extra_css %}{% endblock %}
 
+  {%- if ga_measurement_id %}
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_measurement_id }}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', {{ ga_measurement_id|tojson }}, { anonymize_ip: true });
+  </script>
+  {%- endif %}
+
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",

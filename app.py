@@ -45,7 +45,7 @@ import threading
 import time
 import urllib.request
 import urllib.error
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from functools import wraps
 from flask import (Flask, render_template, request, redirect, url_for,
                    session, flash, jsonify, g, send_from_directory,
@@ -54,7 +54,35 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_compress import Compress
 
+# ----- Sentry error monitoring (optional) ----------------------------------
+# Si SENTRY_DSN está configurado, captura excepciones no manejadas en
+# producción. Si la variable no existe o sentry-sdk no está instalado, es
+# completamente no-op — no afecta el funcionamiento de la app.
+_SENTRY_DSN = os.environ.get('SENTRY_DSN', '').strip()
+if _SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        sentry_sdk.init(
+            dsn=_SENTRY_DSN,
+            integrations=[FlaskIntegration()],
+            # Performance monitoring — 10% sampling (ajustable en prod)
+            traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.1')),
+            # PII: queremos las direcciones IP pero NO bodies de formularios
+            send_default_pii=False,
+            environment=os.environ.get('VERCEL_ENV', os.environ.get('FLASK_ENV', 'production')),
+            release=os.environ.get('VERCEL_GIT_COMMIT_SHA', '')[:12] or None,
+        )
+        print(f'[INIT] Sentry inicializado (env={os.environ.get("VERCEL_ENV", "?")})')
+    except Exception as _e:
+        print(f'[INIT] Sentry no inicializado ({type(_e).__name__}: {_e}) — continuando sin monitor de errores')
+
 app = Flask(__name__)
+
+# ----- Analytics (Google Analytics 4 — opcional) ---------------------------
+# Inyecta gtag.js solo si GA_MEASUREMENT_ID está definida (formato G-XXXXXXX).
+# Sin la variable, no se carga ningún script de tracking.
+GA_MEASUREMENT_ID = os.environ.get('GA_MEASUREMENT_ID', '').strip()
 
 # ----- Secret key resolution ------------------------------------------------
 # Priority order:
@@ -3696,6 +3724,148 @@ def admin_emails():
     )
 
 
+@app.route('/admin/reportes')
+@admin_required
+def admin_reportes():
+    """Dashboard de reportes: ventas, productos top, categorías, status, clientes.
+    Usa SQL agregado sobre orders + order_items; cache: ninguno (queries baratas)."""
+    # ----- Ventana temporal (default: 30 días) -----
+    days = 30
+    try:
+        days = max(1, min(365, int(request.args.get('days', 30))))
+    except (TypeError, ValueError):
+        pass
+    cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+
+    # ----- KPIs principales -----
+    base_orders = query_db(
+        "SELECT COUNT(*) AS n, COALESCE(SUM(total), 0) AS revenue "
+        "FROM orders WHERE created_at >= ? AND status NOT IN ('cancelado')",
+        (cutoff,), one=True
+    ) or {'n': 0, 'revenue': 0}
+
+    prev_cutoff = (datetime.now() - timedelta(days=days * 2)).isoformat()
+    prev_orders = query_db(
+        "SELECT COUNT(*) AS n, COALESCE(SUM(total), 0) AS revenue "
+        "FROM orders WHERE created_at >= ? AND created_at < ? AND status NOT IN ('cancelado')",
+        (prev_cutoff, cutoff), one=True
+    ) or {'n': 0, 'revenue': 0}
+
+    def _pct_change(curr, prev):
+        if not prev:
+            return None
+        return ((curr - prev) / prev) * 100.0
+
+    kpis = {
+        'orders_n':      base_orders['n'],
+        'revenue':       base_orders['revenue'] or 0.0,
+        'aov':           (base_orders['revenue'] / base_orders['n']) if base_orders['n'] else 0.0,
+        'orders_delta':  _pct_change(base_orders['n'], prev_orders['n']),
+        'revenue_delta': _pct_change(base_orders['revenue'] or 0, prev_orders['revenue'] or 0),
+    }
+
+    # ----- Status breakdown -----
+    status_rows = query_db(
+        "SELECT status, COUNT(*) AS n FROM orders "
+        "WHERE created_at >= ? GROUP BY status",
+        (cutoff,)
+    )
+    status_map = {r['status']: r['n'] for r in (status_rows or [])}
+
+    # ----- Top productos por unidades -----
+    top_units = query_db(
+        "SELECT p.id, p.sku, p.name, p.category, "
+        "SUM(oi.quantity) AS units, SUM(oi.subtotal) AS revenue "
+        "FROM order_items oi "
+        "JOIN orders o   ON o.id = oi.order_id "
+        "JOIN products p ON p.id = oi.product_id "
+        "WHERE o.created_at >= ? AND o.status NOT IN ('cancelado') "
+        "GROUP BY p.id, p.sku, p.name, p.category "
+        "ORDER BY units DESC LIMIT 10",
+        (cutoff,)
+    ) or []
+
+    # ----- Top productos por revenue -----
+    top_revenue = query_db(
+        "SELECT p.id, p.sku, p.name, p.category, "
+        "SUM(oi.quantity) AS units, SUM(oi.subtotal) AS revenue "
+        "FROM order_items oi "
+        "JOIN orders o   ON o.id = oi.order_id "
+        "JOIN products p ON p.id = oi.product_id "
+        "WHERE o.created_at >= ? AND o.status NOT IN ('cancelado') "
+        "GROUP BY p.id, p.sku, p.name, p.category "
+        "ORDER BY revenue DESC LIMIT 10",
+        (cutoff,)
+    ) or []
+
+    # ----- Ventas por categoría -----
+    by_cat = query_db(
+        "SELECT p.category, "
+        "SUM(oi.quantity) AS units, "
+        "SUM(oi.subtotal) AS revenue "
+        "FROM order_items oi "
+        "JOIN orders o   ON o.id = oi.order_id "
+        "JOIN products p ON p.id = oi.product_id "
+        "WHERE o.created_at >= ? AND o.status NOT IN ('cancelado') "
+        "GROUP BY p.category "
+        "ORDER BY revenue DESC",
+        (cutoff,)
+    ) or []
+
+    # ----- Serie diaria de ventas (últimos N días) -----
+    daily_rows = query_db(
+        "SELECT substr(created_at, 1, 10) AS day, "
+        "COUNT(*) AS n, COALESCE(SUM(total), 0) AS revenue "
+        "FROM orders WHERE created_at >= ? AND status NOT IN ('cancelado') "
+        "GROUP BY substr(created_at, 1, 10) ORDER BY day",
+        (cutoff,)
+    ) or []
+    daily = {r['day']: {'n': r['n'], 'revenue': r['revenue'] or 0} for r in daily_rows}
+    series = []
+    max_rev = 0
+    for i in range(days):
+        d = (datetime.now() - timedelta(days=days - 1 - i)).strftime('%Y-%m-%d')
+        rev = daily.get(d, {}).get('revenue', 0)
+        n   = daily.get(d, {}).get('n', 0)
+        series.append({'day': d, 'revenue': rev, 'n': n})
+        max_rev = max(max_rev, rev)
+
+    # ----- Pagos: distribución por método -----
+    payments = query_db(
+        "SELECT payment_method, COUNT(*) AS n, COALESCE(SUM(total), 0) AS revenue "
+        "FROM orders WHERE created_at >= ? AND status NOT IN ('cancelado') "
+        "GROUP BY payment_method ORDER BY revenue DESC",
+        (cutoff,)
+    ) or []
+
+    # ----- Stock bajo (snapshot — no depende de la ventana) -----
+    low_stock = query_db(
+        "SELECT id, sku, name, category, stock, low_stock_alert "
+        "FROM products WHERE active=1 AND stock <= low_stock_alert "
+        "ORDER BY stock ASC LIMIT 10"
+    ) or []
+
+    # ----- Clientes top -----
+    top_customers = query_db(
+        "SELECT customer_email, customer_name, "
+        "COUNT(*) AS orders_n, SUM(total) AS revenue "
+        "FROM orders WHERE created_at >= ? AND status NOT IN ('cancelado') "
+        "GROUP BY customer_email, customer_name "
+        "ORDER BY revenue DESC LIMIT 10",
+        (cutoff,)
+    ) or []
+
+    return render_template(
+        'admin/reportes.html',
+        days=days, cutoff=cutoff,
+        kpis=kpis, status_map=status_map,
+        top_units=top_units, top_revenue=top_revenue,
+        by_cat=by_cat, series=series, max_rev=max_rev,
+        payments=payments, low_stock=low_stock,
+        top_customers=top_customers,
+    )
+
+
 _EMAIL_TYPE_LABELS = {
     'order_new_customer': 'Confirmación de orden (cliente)',
     'order_new_admin':    'Nueva orden (admin)',
@@ -4869,6 +5039,7 @@ def inject_globals():
         'whatsapp_number': WHATSAPP_NUMBER,
         'contact_email':   CONTACT_EMAIL,
         'contact_location': CONTACT_LOCATION,
+        'ga_measurement_id': GA_MEASUREMENT_ID,
     }
 
 

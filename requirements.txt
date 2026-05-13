@@ -5,3 +5,4 @@ flask-compress
 openpyxl
 pdfplumber
 psycopg2-binary
+sentry-sdk[flask]

@@ -96,6 +96,13 @@
         Docs Proveedor
         <span style="margin-left:auto;background:rgba(201,162,39,0.2);color:var(--gold);font-size:0.65rem;padding:1px 6px;border-radius:4px;font-weight:700">IA</span>
       </a>
+      <a href="{{ url_for('admin_reportes') }}"
+         class="admin-nav-link {% if request.endpoint == 'admin_reportes' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 17l4-4 3 3 5-6"/></svg>
+        </span>
+        Reportes
+      </a>
       <a href="{{ url_for('admin_emails') }}"
          class="admin-nav-link {% if request.endpoint == 'admin_emails' %}active{% endif %}">
         <span class="nav-icon">

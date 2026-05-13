@@ -3231,7 +3231,7 @@ def api_productos():
 @app.route('/api/carrito/actualizar', methods=['POST'])
 def api_actualizar_carrito():
     """AJAX cart update — update single item quantity without page reload."""
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     pid = str(data.get('product_id', ''))
     qty = safe_int(data.get('quantity', 1), 1)
     cart = get_cart()
@@ -3289,7 +3289,9 @@ def producto(slug):
 
 @app.route('/carrito/agregar', methods=['POST'])
 def agregar_carrito():
-    data = request.get_json() or request.form
+    # silent=True evita 415 cuando el cliente envía form-urlencoded en vez
+    # de JSON; cae limpiamente al fallback request.form.
+    data = request.get_json(silent=True) or request.form
     pid = str(data.get('product_id', ''))
     qty = safe_int(data.get('quantity', 1), 1)
     if qty < 1:

@@ -1442,6 +1442,126 @@ PRODUCTS_SEED = [
         'low_stock_alert': 20,
         'image_path': 'jdp_vial_bac.png',
     },
+    {
+        'sku': 'JDP-IGF1',
+        'name': 'IGF-1 LR3',
+        'category': 'Performance',
+        'dose': '1 mg',
+        'price': 89.99,
+        'description': 'IGF-1 LR3 (Long R3 Insulin-like Growth Factor 1) es una variante recombinante de 83 aminoácidos del IGF-1 humano con una sustitución en la posición 3 (Glu→Arg) y una extensión de 13 aminoácidos. Estas modificaciones le confieren una vida media plasmática extendida (≈20 h vs. 12-15 min del IGF-1 nativo) y reducen su unión a las proteínas IGFBP, aumentando su biodisponibilidad libre.',
+        'benefits': 'Vida media extendida (~20 horas) vs. IGF-1 nativo|Estimula la síntesis proteica y la hipertrofia muscular|Mejora la sensibilidad a la insulina en tejido muscular|Promueve la regeneración tisular y la diferenciación celular|Inducción de hiperplasia (división de células satélite)|Investigación en metabolismo y composición corporal',
+        'stock': 18,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_igf1.png',
+    },
+    {
+        'sku': 'JDP-IPA',
+        'name': 'Ipamorelin',
+        'category': 'Performance',
+        'dose': '5 mg',
+        'price': 69.99,
+        'description': 'Ipamorelin es un pentapéptido sintético agonista selectivo del receptor de grelina (GHS-R1a) y mimético de la grelina. A diferencia de otros secretagogos, presenta un perfil de liberación de GH altamente selectivo sin elevar significativamente cortisol, prolactina o aldosterona, lo que lo convierte en uno de los GHS más estudiados por su pureza farmacológica.',
+        'benefits': 'Liberación pulsátil y selectiva de hormona de crecimiento (GH)|Sin elevación significativa de cortisol ni prolactina|Mejora la calidad del sueño profundo (REM/SWS)|Favorece la recuperación muscular y la regeneración tisular|Apoya la composición corporal (más masa magra, menos grasa)|Sinérgico con análogos de GHRH (CJC-1295, Sermorelin)',
+        'stock': 22,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_ipa.png',
+    },
+    {
+        'sku': 'JDP-RT5',
+        'name': 'RT5',
+        'category': 'Pérdida de Peso',
+        'dose': '5 mg',
+        'price': 139.99,
+        'description': 'RT5 — Retatrutide 5 mg. Agonista triple de los receptores GIP, GLP-1 y Glucagón actualmente en ensayos clínicos de Fase 3. Dosis de entrada para protocolos de investigación de pérdida de peso y manejo metabólico.',
+        'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas|Dosis 5 mg para inicio de protocolos de investigación',
+        'stock': 25,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_rt5.png',
+    },
+    {
+        'sku': 'JDP-CJC-IPA',
+        'name': 'CJC-1295 + Ipamorelin',
+        'category': 'Performance',
+        'dose': '10 mg',
+        'price': 89.99,
+        'description': 'Blend de CJC-1295 (sin DAC) + Ipamorelin a relación 1:1. Combina un análogo de GHRH (CJC-1295) con un agonista selectivo del receptor de grelina (Ipamorelin) para amplificar la liberación pulsátil de hormona de crecimiento por dos vías independientes y sinérgicas. Es uno de los blends más estudiados por su selectividad y la ausencia de elevación de cortisol/prolactina.',
+        'benefits': 'Sinergia de doble vía: GHRH + secretagogo de grelina|Liberación de GH amplificada vs. monoterapias|Mejora la recuperación, regeneración tisular y reparación|Apoya la composición corporal (masa magra ↑ / grasa ↓)|Mejora la calidad del sueño profundo|Perfil farmacológico limpio sin efectos hormonales colaterales',
+        'stock': 24,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_cjc_ipa.png',
+    },
+    {
+        'sku': 'JDP-CJC-NODAC',
+        'name': 'CJC-1295 (no DAC)',
+        'category': 'Performance',
+        'dose': '5 mg',
+        'price': 74.99,
+        'description': 'CJC-1295 sin DAC (también llamado Mod GRF 1-29) es un análogo sintético de la GHRH humana (1-29) con cuatro sustituciones de aminoácidos que aumentan su estabilidad y potencia. Sin la fracción DAC, presenta una vida media corta (~30 min) que produce pulsos fisiológicos de GH similares a los patrones nocturnos endógenos.',
+        'benefits': 'Análogo de GHRH con vida media corta y pulsos fisiológicos|Estimula la liberación pulsátil natural de GH|Excelente sinergia con secretagogos (Ipamorelin, GHRP)|Mejora la calidad del sueño profundo y la recuperación|Apoya la regeneración tisular y composición corporal|Perfil de seguridad favorable en investigación preclínica',
+        'stock': 24,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_cjc_nodac.png',
+    },
+    {
+        'sku': 'JDP-HGHFR',
+        'name': 'HGH Fragment 176-191',
+        'category': 'Pérdida de Peso',
+        'dose': '5 mg',
+        'price': 79.99,
+        'description': 'HGH Fragment 176-191 es un péptido análogo a la región C-terminal de la hormona de crecimiento humana, diseñado específicamente para conservar los efectos lipolíticos de la GH sin la actividad anabólica ni la inducción de hiperglucemia. Es uno de los péptidos más estudiados para protocolos de investigación enfocados exclusivamente en la oxidación de grasa.',
+        'benefits': 'Acción lipolítica selectiva sin efectos anabólicos|Estimula la oxidación de grasa (β-oxidación)|No eleva la glucemia ni induce resistencia a la insulina|No afecta la liberación de IGF-1 ni de GH endógena|Investigado en obesidad y composición corporal|Vida media corta — pulsos lipolíticos focalizados',
+        'stock': 22,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_hghfr.png',
+    },
+    {
+        'sku': 'JDP-CGL',
+        'name': 'Cagrilintide',
+        'category': 'Pérdida de Peso',
+        'dose': '10 mg',
+        'price': 119.99,
+        'description': 'Cagrilintide es un análogo sintético de la amilina humana de larga duración, desarrollado por Novo Nordisk y actualmente en ensayos clínicos de Fase 3 en combinación con semaglutida (CagriSema). La amilina es co-secretada con la insulina por las células beta y regula la saciedad, el vaciamiento gástrico y la glucosa postprandial.',
+        'benefits': 'Análogo de amilina con vida media extendida (~6 días)|Reduce el apetito por mecanismo complementario al GLP-1|Enlentece el vaciamiento gástrico y prolonga la saciedad|Sinergia con agonistas de GLP-1 (CagriSema)|Reducción significativa del peso corporal en ensayos clínicos|Mejora del control glucémico postprandial',
+        'stock': 18,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_cgl.png',
+    },
+    {
+        'sku': 'JDP-PT141',
+        'name': 'PT-141',
+        'category': 'Bienestar',
+        'dose': '10 mg',
+        'price': 69.99,
+        'description': 'PT-141 (Bremelanotide) es un análogo sintético de la α-MSH y agonista no selectivo de los receptores de melanocortina (MC1R, MC3R, MC4R), aprobado por la FDA como Vyleesi® para el trastorno del deseo sexual hipoactivo en mujeres premenopáusicas. Actúa a nivel del sistema nervioso central, a diferencia de los inhibidores de la PDE5 que actúan a nivel vascular periférico.',
+        'benefits': 'Mecanismo central — actúa a nivel hipotalámico (vs. PDE5)|Aumenta el deseo y la respuesta sexual en ambos sexos|Efectos independientes del estado vascular y la testosterona|Vida media de ≈2-7 horas — flexibilidad de protocolos|Investigación en disfunción sexual orgánica y psicogénica|Aprobación FDA como Vyleesi® (mujeres premenopáusicas)',
+        'stock': 20,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_pt141.png',
+    },
+    {
+        'sku': 'JDP-AOD',
+        'name': 'AOD-9604',
+        'category': 'Pérdida de Peso',
+        'dose': '5 mg',
+        'price': 84.99,
+        'description': 'AOD-9604 es un análogo modificado del fragmento C-terminal de la hormona de crecimiento humana (residuos 176-191) con una tirosina añadida en el extremo N-terminal para mejorar su estabilidad. Mantiene la actividad lipolítica selectiva sin los efectos hiperglucemiantes ni anabólicos de la GH completa, y cuenta con clasificación GRAS de la FDA.',
+        'benefits': 'Lipolisis selectiva en adipocitos sin elevación de glucosa|No interfiere con la insulina ni la sensibilidad insulínica|Sin actividad anabólica — no afecta IGF-1 ni GH endógena|Investigado en obesidad, esteatosis hepática y osteoartritis|Clasificación GRAS de la FDA (uso oral en alimentos)|Estabilidad mejorada vs. el fragmento 176-191 nativo',
+        'stock': 22,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_aod.png',
+    },
+    {
+        'sku': 'JDP-HGH',
+        'name': 'Somatropina HGH',
+        'category': 'Performance',
+        'dose': '24 IU',
+        'price': 249.99,
+        'description': 'Somatropina (HGH recombinante) es la hormona de crecimiento humana de 191 aminoácidos producida por DNA recombinante en E. coli, idéntica a la GH endógena secretada por la pituitaria anterior. Es el patrón oro de los estudios de investigación sobre composición corporal, regeneración tisular y modulación del eje somatotrópico. Presentación 24 IU (≈ 8 mg) por vial.',
+        'benefits': 'Hormona de crecimiento recombinante 191 a.a. (idéntica a endógena)|Estimula la síntesis hepática de IGF-1 sistémico|Aumenta masa magra y reduce masa grasa simultáneamente|Mejora la regeneración tisular y la cicatrización|Efectos sobre densidad ósea, piel y cabello|Patrón oro de la investigación somatotrópica',
+        'stock': 12,
+        'low_stock_alert': 3,
+        'image_path': 'jdp_vial_hgh.png',
+    },
 ]
 
 
@@ -2168,6 +2288,119 @@ def init_db():
             db.commit()
         except Exception as _e:
             print(f'[INIT] migration v12 remaining vials skipped: {_e}')
+
+    # Migration v13 (2026-05-13): expansión de catálogo según inventario real
+    # JD Peptides. Reactiva IGF-1 LR3 y Ipamorelin (con vials oficiales nuevos)
+    # e inserta 8 productos adicionales: RT5, CJC+IPA, CJC sin DAC, HGH
+    # Fragment 176-191, Cagrilintide, PT-141, AOD-9604 y Somatropina HGH 24 IU.
+    # Idempotente: usa stock_movements como gate y solo inserta SKUs ausentes.
+    _mig_v13_tag = 'migration:v13:inventory_expansion_20260513'
+    already_v13 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v13_tag,)
+    ).fetchone()
+    if not already_v13:
+        try:
+            # 1) Reactivar SKUs previamente desactivados (v10) con sus vials oficiales nuevos.
+            _reactivations = {
+                'JDP-IGF1': 'jdp_vial_igf1.png',
+                'JDP-IPA':  'jdp_vial_ipa.png',
+            }
+            for _sku, _img in _reactivations.items():
+                _exists = db.execute("SELECT id FROM products WHERE sku=?", (_sku,)).fetchone()
+                if _exists:
+                    db.execute("UPDATE products SET active=1, image_path=? WHERE sku=?", (_img, _sku))
+                    _pid = _exists['id'] if hasattr(_exists, '__getitem__') else _exists[0]
+                    db.execute("UPDATE product_images SET sort_order = sort_order + 1 WHERE product_id=?", (_pid,))
+                    db.execute(
+                        "INSERT INTO product_images (product_id, filename, sort_order) VALUES (?,?,0)",
+                        (_pid, _img)
+                    )
+
+            # 2) INSERT 8 productos nuevos (idempotente — solo si SKU no existe).
+            _new_products_v13 = [
+                # (sku, name, category, dose, price, stock, low_alert, image, tags, description, benefits)
+                ('JDP-RT5', 'RT5', 'Pérdida de Peso', '5 mg', 139.99, 25, 5,
+                 'jdp_vial_rt5.png',
+                 'metabolismo|perdida-de-peso',
+                 'RT5 — Retatrutide 5 mg. Agonista triple de los receptores GIP, GLP-1 y Glucagón actualmente en ensayos clínicos de Fase 3. Dosis de entrada para protocolos de investigación de pérdida de peso y manejo metabólico.',
+                 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas|Dosis 5 mg para inicio de protocolos de investigación'),
+
+                ('JDP-CJC-IPA', 'CJC-1295 + Ipamorelin', 'Performance', '10 mg', 89.99, 24, 5,
+                 'jdp_vial_cjc_ipa.png',
+                 'hormonal|performance|recuperacion',
+                 'Blend de CJC-1295 (sin DAC) + Ipamorelin a relación 1:1. Combina un análogo de GHRH (CJC-1295) con un agonista selectivo del receptor de grelina (Ipamorelin) para amplificar la liberación pulsátil de hormona de crecimiento por dos vías independientes y sinérgicas. Es uno de los blends más estudiados por su selectividad y la ausencia de elevación de cortisol/prolactina.',
+                 'Sinergia de doble vía: GHRH + secretagogo de grelina|Liberación de GH amplificada vs. monoterapias|Mejora la recuperación, regeneración tisular y reparación|Apoya la composición corporal (masa magra ↑ / grasa ↓)|Mejora la calidad del sueño profundo|Perfil farmacológico limpio sin efectos hormonales colaterales'),
+
+                ('JDP-CJC-NODAC', 'CJC-1295 (no DAC)', 'Performance', '5 mg', 74.99, 24, 5,
+                 'jdp_vial_cjc_nodac.png',
+                 'hormonal|performance',
+                 'CJC-1295 sin DAC (también llamado Mod GRF 1-29) es un análogo sintético de la GHRH humana (1-29) con cuatro sustituciones de aminoácidos que aumentan su estabilidad y potencia. Sin la fracción DAC, presenta una vida media corta (~30 min) que produce pulsos fisiológicos de GH similares a los patrones nocturnos endógenos.',
+                 'Análogo de GHRH con vida media corta y pulsos fisiológicos|Estimula la liberación pulsátil natural de GH|Excelente sinergia con secretagogos (Ipamorelin, GHRP)|Mejora la calidad del sueño profundo y la recuperación|Apoya la regeneración tisular y composición corporal|Perfil de seguridad favorable en investigación preclínica'),
+
+                ('JDP-HGHFR', 'HGH Fragment 176-191', 'Pérdida de Peso', '5 mg', 79.99, 22, 5,
+                 'jdp_vial_hghfr.png',
+                 'metabolismo|perdida-de-peso',
+                 'HGH Fragment 176-191 es un péptido análogo a la región C-terminal de la hormona de crecimiento humana, diseñado específicamente para conservar los efectos lipolíticos de la GH sin la actividad anabólica ni la inducción de hiperglucemia. Es uno de los péptidos más estudiados para protocolos de investigación enfocados exclusivamente en la oxidación de grasa.',
+                 'Acción lipolítica selectiva sin efectos anabólicos|Estimula la oxidación de grasa (β-oxidación)|No eleva la glucemia ni induce resistencia a la insulina|No afecta la liberación de IGF-1 ni de GH endógena|Investigado en obesidad y composición corporal|Vida media corta — pulsos lipolíticos focalizados'),
+
+                ('JDP-CGL', 'Cagrilintide', 'Pérdida de Peso', '10 mg', 119.99, 18, 5,
+                 'jdp_vial_cgl.png',
+                 'metabolismo|perdida-de-peso',
+                 'Cagrilintide es un análogo sintético de la amilina humana de larga duración, desarrollado por Novo Nordisk y actualmente en ensayos clínicos de Fase 3 en combinación con semaglutida (CagriSema). La amilina es co-secretada con la insulina por las células beta y regula la saciedad, el vaciamiento gástrico y la glucosa postprandial.',
+                 'Análogo de amilina con vida media extendida (~6 días)|Reduce el apetito por mecanismo complementario al GLP-1|Enlentece el vaciamiento gástrico y prolonga la saciedad|Sinergia con agonistas de GLP-1 (CagriSema)|Reducción significativa del peso corporal en ensayos clínicos|Mejora del control glucémico postprandial'),
+
+                ('JDP-PT141', 'PT-141', 'Bienestar', '10 mg', 69.99, 20, 5,
+                 'jdp_vial_pt141.png',
+                 'bienestar|hormonal',
+                 'PT-141 (Bremelanotide) es un análogo sintético de la α-MSH y agonista no selectivo de los receptores de melanocortina (MC1R, MC3R, MC4R), aprobado por la FDA como Vyleesi® para el trastorno del deseo sexual hipoactivo en mujeres premenopáusicas. Actúa a nivel del sistema nervioso central, a diferencia de los inhibidores de la PDE5 que actúan a nivel vascular periférico.',
+                 'Mecanismo central — actúa a nivel hipotalámico (vs. PDE5)|Aumenta el deseo y la respuesta sexual en ambos sexos|Efectos independientes del estado vascular y la testosterona|Vida media de ≈2-7 horas — flexibilidad de protocolos|Investigación en disfunción sexual orgánica y psicogénica|Aprobación FDA como Vyleesi® (mujeres premenopáusicas)'),
+
+                ('JDP-AOD', 'AOD-9604', 'Pérdida de Peso', '5 mg', 84.99, 22, 5,
+                 'jdp_vial_aod.png',
+                 'metabolismo|perdida-de-peso',
+                 'AOD-9604 es un análogo modificado del fragmento C-terminal de la hormona de crecimiento humana (residuos 176-191) con una tirosina añadida en el extremo N-terminal para mejorar su estabilidad. Mantiene la actividad lipolítica selectiva sin los efectos hiperglucemiantes ni anabólicos de la GH completa, y cuenta con clasificación GRAS de la FDA.',
+                 'Lipolisis selectiva en adipocitos sin elevación de glucosa|No interfiere con la insulina ni la sensibilidad insulínica|Sin actividad anabólica — no afecta IGF-1 ni GH endógena|Investigado en obesidad, esteatosis hepática y osteoartritis|Clasificación GRAS de la FDA (uso oral en alimentos)|Estabilidad mejorada vs. el fragmento 176-191 nativo'),
+
+                ('JDP-HGH', 'Somatropina HGH', 'Performance', '24 IU', 249.99, 12, 3,
+                 'jdp_vial_hgh.png',
+                 'hormonal|performance|anti-aging',
+                 'Somatropina (HGH recombinante) es la hormona de crecimiento humana de 191 aminoácidos producida por DNA recombinante en E. coli, idéntica a la GH endógena secretada por la pituitaria anterior. Es el patrón oro de los estudios de investigación sobre composición corporal, regeneración tisular y modulación del eje somatotrópico. Presentación 24 IU (≈ 8 mg) por vial.',
+                 'Hormona de crecimiento recombinante 191 a.a. (idéntica a endógena)|Estimula la síntesis hepática de IGF-1 sistémico|Aumenta masa magra y reduce masa grasa simultáneamente|Mejora la regeneración tisular y la cicatrización|Efectos sobre densidad ósea, piel y cabello|Patrón oro de la investigación somatotrópica'),
+            ]
+            for (sku, name, category, dose, price, stock, low, img, tags, desc, bens) in _new_products_v13:
+                if db.execute("SELECT id FROM products WHERE sku=?", (sku,)).fetchone():
+                    # Si por algún motivo ya existe, actualiza imagen y reactiva.
+                    db.execute("UPDATE products SET active=1, image_path=? WHERE sku=?", (img, sku))
+                    continue
+                _base = _make_slug(name) or _make_slug(sku) or 'producto'
+                _slug = _base
+                if db.execute("SELECT 1 FROM products WHERE slug=?", (_slug,)).fetchone():
+                    _slug = f"{_base}-{_make_slug(sku)}"
+                db.execute(
+                    """INSERT INTO products
+                       (sku, name, category, dose, price, stock, low_stock_alert,
+                        description, benefits, active, image_path, slug, tags, weight_grams)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)""",
+                    (sku, name, category, dose, price, stock, low, desc, bens, img, _slug, tags, 50)
+                )
+                _new_pid = db.execute("SELECT id FROM products WHERE sku=?", (sku,)).fetchone()
+                if _new_pid:
+                    _pid = _new_pid['id'] if hasattr(_new_pid, '__getitem__') else _new_pid[0]
+                    db.execute(
+                        "INSERT INTO product_images (product_id, filename, sort_order) VALUES (?,?,0)",
+                        (_pid, img)
+                    )
+
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v13_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v13 inventory expansion skipped: {_e}')
 
 
 # ---------------------------------------------------------------------------

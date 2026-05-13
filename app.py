@@ -418,8 +418,20 @@ if UPLOAD_FOLDER != _static_img and os.path.isdir(_static_img):
 # Docs: https://resend.com/docs  |  Free tier: 3,000 emails/month
 # ---------------------------------------------------------------------------
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
-EMAIL_FROM     = os.environ.get('EMAIL_FROM', 'JD Peptides <noreply@jdpeptides.com>')
-EMAIL_NOTIFY   = ['aamiga2006@gmail.com', 'jdpeptides@gmail.com']
+EMAIL_FROM     = os.environ.get('EMAIL_FROM', 'JD Peptides <noreply@jdpeptides.mx>')
+
+# Destinatarios para emails internos (alertas stock, OCs, errores).
+# El owner siempre ve copia. Configurable via env EMAIL_NOTIFY (csv).
+_admin_notify_env = (os.environ.get('EMAIL_NOTIFY', '') or '').strip()
+if _admin_notify_env:
+    EMAIL_NOTIFY = [e.strip() for e in _admin_notify_env.split(',') if e.strip()]
+else:
+    EMAIL_NOTIFY = ['jdpeptides@gmail.com']
+
+# Copia oculta automática en TODOS los emails al cliente (confirmaciones de
+# orden, cambios de estado, etc). Permite al owner auditar la comunicación
+# sin que el cliente lo vea en su to/cc. Configurable via env EMAIL_BCC.
+EMAIL_BCC = (os.environ.get('EMAIL_BCC', 'jdpeptides@gmail.com') or '').strip()
 
 # ---------------------------------------------------------------------------
 # Contact configuration — set WHATSAPP_NUMBER in env (E.164 without '+', e.g. 5215551234567)
@@ -650,7 +662,7 @@ def send_status_email(order, new_status, new_payment):
         subject = f'💸 Reembolso procesado — {order["order_number"]}'
     else:
         subject = subject_map.get(new_status, f'Actualización de tu pedido — {order["order_number"]}')
-    _send_email_bg(order['customer_email'], subject, html)
+    _send_email_bg(order['customer_email'], subject, html, bcc=EMAIL_BCC or None)
     print(f"[Email] Estado encolado (bg) a {_mask_email(order['customer_email'])} ({new_status or new_payment})")
 
 
@@ -671,17 +683,22 @@ def _mask_email(addr):
         return '***'
 
 
-def _send_email(to, subject, html):
-    """Envía un email via Resend API (HTTP — funciona en Railway)."""
+def _send_email(to, subject, html, bcc=None, reply_to=None):
+    """Envía un email via Resend API. `bcc` puede ser str o list."""
     if not RESEND_API_KEY:
         print("[Email] RESEND_API_KEY no configurada — email omitido")
         return False
-    payload = json.dumps({
+    body = {
         "from": EMAIL_FROM,
         "to": [to] if isinstance(to, str) else to,
         "subject": subject,
         "html": html,
-    }).encode()
+    }
+    if bcc:
+        body["bcc"] = [bcc] if isinstance(bcc, str) else bcc
+    if reply_to:
+        body["reply_to"] = reply_to
+    payload = json.dumps(body).encode()
     req = urllib.request.Request(
         "https://api.resend.com/emails",
         data=payload,
@@ -689,7 +706,8 @@ def _send_email(to, subject, html):
     )
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
-            print(f"[Email] Enviado a {_mask_email(to)} — {resp.status}")
+            _bcc_log = f' (bcc {_mask_email(bcc)})' if bcc else ''
+            print(f"[Email] Enviado a {_mask_email(to)}{_bcc_log} — {resp.status}")
             return True
     except urllib.error.HTTPError as e:
         # body may include the raw email address — log status only
@@ -699,9 +717,9 @@ def _send_email(to, subject, html):
     return False
 
 
-def _send_email_bg(to, subject, html):
+def _send_email_bg(to, subject, html, bcc=None, reply_to=None):
     """Envía email en background — no bloquea la respuesta HTTP."""
-    t = threading.Thread(target=_send_email, args=(to, subject, html), daemon=True)
+    t = threading.Thread(target=_send_email, args=(to, subject, html, bcc, reply_to), daemon=True)
     t.start()
 
 
@@ -713,8 +731,9 @@ def _do_send_emails(order, items):
     customer_html = _customer_html(order, items)
     _send_email_bg(order['customer_email'],
                    f'✅ Confirmación de tu pedido — {order["order_number"]}',
-                   customer_html)
-    print(f"[Email] Encolado (bg) — admins {[_mask_email(a) for a in EMAIL_NOTIFY]} + cliente {_mask_email(order['customer_email'])}")
+                   customer_html,
+                   bcc=EMAIL_BCC or None)
+    print(f"[Email] Encolado (bg) — admins {[_mask_email(a) for a in EMAIL_NOTIFY]} + cliente {_mask_email(order['customer_email'])} (bcc {_mask_email(EMAIL_BCC) if EMAIL_BCC else 'none'})")
 
 
 _EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')

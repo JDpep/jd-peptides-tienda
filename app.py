@@ -1289,7 +1289,7 @@ PRODUCTS_SEED = [
         'benefits': 'Formulación de investigación de alta concentración|Presentación 80 mg para protocolos extendidos|Análisis (CoA) de terceros disponible por lote|Síntesis con estándares de laboratorio|For research use only',
         'stock': 20,
         'low_stock_alert': 5,
-        'image_path': 'vial_klow80.png',
+        'image_path': 'jdp_vial_klow80.png',
     },
     {
         'sku': 'JDP-KPV',
@@ -1313,7 +1313,7 @@ PRODUCTS_SEED = [
         'benefits': 'Incrementa la sensibilidad a la insulina y la captación de glucosa|Optimiza el metabolismo energético mitocondrial|Favorece la oxidación de ácidos grasos (betaoxidación)|Efectos moleculares similares al ejercicio físico|Apoya la regulación del peso y la composición corporal|Investigado en longevidad, síndrome metabólico y anti-envejecimiento',
         'stock': 20,
         'low_stock_alert': 5,
-        'image_path': 'cat_motsc_vial.jpeg',
+        'image_path': 'jdp_vial_motsc.png',
     },
     {
         'sku': 'JDP-BPC157',
@@ -1361,7 +1361,7 @@ PRODUCTS_SEED = [
         'benefits': 'Mejora la calidad y profundidad del sueño (ondas delta)|Facilita la conciliación del sueño y reduce el insomnio|Regula los ritmos circadianos y la temperatura corporal|Reduce el estrés oxidativo a nivel cerebral|Efecto ansiolítico y adaptogénico en modelos de estrés|Modulación del eje neuroendocrino hipotalámico',
         'stock': 22,
         'low_stock_alert': 5,
-        'image_path': 'cat_dsip_vial.png',
+        'image_path': 'jdp_vial_dsip.png',
     },
     {
         'sku': 'JDP-SEMAX',
@@ -1373,7 +1373,7 @@ PRODUCTS_SEED = [
         'benefits': 'Mejora la memoria, concentración, aprendizaje y procesamiento cognitivo|Eleva los niveles de BDNF y NGF en tejido cerebral|Neuroprotección ante isquemia, daño oxidativo y excitotoxicidad|Efectos ansiolíticos y adaptogénicos respaldados en modelos animales|Favorece la recuperación neurológica post-lesión e ictus|Alta biodisponibilidad por vía intranasal en investigación',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'vial_semax.png',
+        'image_path': 'jdp_vial_semax.png',
     },
     {
         'sku': 'JDP-TESA',
@@ -2112,6 +2112,43 @@ def init_db():
             db.commit()
         except Exception as _e:
             print(f'[INIT] migration v11 rt vials skipped: {_e}')
+
+    # Migration v12 (2026-05-12): portadas oficiales JD Peptides para los 4
+    # productos que quedaban genéricos (MOTS-C, DSIP, SEMAX, KLOW80).
+    # Con esto los 14 productos activos del catálogo final tienen mockup
+    # consistente con branding JD Peptides + bandera US + RUO.
+    _mig_v12_tag = 'migration:v12:remaining_official_vials_20260512'
+    already_v12 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v12_tag,)
+    ).fetchone()
+    if not already_v12:
+        try:
+            _final_updates = {
+                'JDP-MOTSC':  'jdp_vial_motsc.png',
+                'JDP-DSIP':   'jdp_vial_dsip.png',
+                'JDP-SEMAX':  'jdp_vial_semax.png',
+                'JDP-KLOW80': 'jdp_vial_klow80.png',
+            }
+            for _sku, _img in _final_updates.items():
+                db.execute("UPDATE products SET image_path=? WHERE sku=?", (_img, _sku))
+                _prod = db.execute("SELECT id FROM products WHERE sku=?", (_sku,)).fetchone()
+                if _prod:
+                    _pid = _prod['id'] if hasattr(_prod, '__getitem__') else _prod[0]
+                    db.execute("UPDATE product_images SET sort_order = sort_order + 1 WHERE product_id=?", (_pid,))
+                    db.execute(
+                        "INSERT INTO product_images (product_id, filename, sort_order) VALUES (?,?,0)",
+                        (_pid, _img)
+                    )
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v12_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v12 remaining vials skipped: {_e}')
 
 
 # ---------------------------------------------------------------------------

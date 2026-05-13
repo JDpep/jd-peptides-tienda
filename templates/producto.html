@@ -11,7 +11,7 @@
 <meta property="og:url"         content="{{ request.url }}">
 <meta property="og:image"       content="{{ url_for('static', filename='img/' + _og_img, _external=True) }}">
 <meta property="product:price:amount"   content="{{ '%.2f'|format(product['price']) }}">
-<meta property="product:price:currency" content="USD">
+<meta property="product:price:currency" content="MXN">
 <meta name="twitter:card"       content="summary_large_image">
 {% endblock %}
 
@@ -127,7 +127,7 @@
         </div>
 
         <div class="product-detail-dose-price">
-          <span class="product-detail-price">${{ "%.2f"|format(product['price']) }} <span class="price-currency">USD</span></span>
+          <span class="product-detail-price">${{ "%.2f"|format(product['price']) }} <span class="price-currency">MXN</span></span>
           <span class="product-detail-dose-tag">{{ product['dose'] }}</span>
         </div>
 
@@ -154,6 +154,16 @@
             </ul>
           </div>
         {% endif %}
+
+        <div class="ruo-disclaimer" role="note" aria-label="Aviso de uso de investigación">
+          <strong>⚠ For Research Use Only (RUO)</strong>
+          <p>
+            Este producto se vende exclusivamente para uso en investigación científica
+            <em>in vitro</em>. <strong>No es un medicamento ni un suplemento</strong>; no está
+            destinado al consumo humano, ni para diagnosticar, tratar, curar o prevenir
+            enfermedad alguna. Su compra implica la aceptación de estos términos.
+          </p>
+        </div>
 
         <!-- Add to cart -->
         <div>
@@ -234,7 +244,7 @@
               <div class="product-body">
                 <h3 class="product-name">{{ p['name'] }}</h3>
                 <p class="product-dose">{{ p['dose'] }}</p>
-                <div class="product-price">${{ "%.2f"|format(p['price']) }} <span class="price-currency">USD</span></div>
+                <div class="product-price">${{ "%.2f"|format(p['price']) }} <span class="price-currency">MXN</span></div>
               </div>
               <div class="product-footer">
                 <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver más</a>

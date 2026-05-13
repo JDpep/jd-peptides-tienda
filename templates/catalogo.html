@@ -94,7 +94,7 @@
           <div class="catalog-filter-group">
             <span class="catalog-filter-label">
               Rango de precio
-              <span class="catalog-filter-hint" id="priceRangeLabel">USD</span>
+              <span class="catalog-filter-hint" id="priceRangeLabel">MXN</span>
             </span>
             <div class="catalog-price-range">
               <input type="number" name="min_price" id="minPrice" class="form-control" placeholder="Mín"
@@ -106,7 +106,7 @@
                      value="{{ current_max_price if current_max_price is not none else '' }}">
             </div>
             <div class="catalog-price-bounds">
-              ${{ "%.0f"|format(price_min_bound) }} – ${{ "%.0f"|format(price_max_bound) }} USD
+              ${{ "%.0f"|format(price_min_bound) }} – ${{ "%.0f"|format(price_max_bound) }} MXN
             </div>
           </div>
 
@@ -215,9 +215,9 @@
                     {% if benefits %}
                       <p style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">{{ benefits[0] }}</p>
                     {% endif %}
-                    <div class="product-price" style="color:var(--gold)">${{ "%.2f"|format(p['price']) }} <span class="price-currency">USD</span></div>
+                    <div class="product-price" style="color:var(--gold)">${{ "%.2f"|format(p['price']) }} <span class="price-currency">MXN</span></div>
                     {% set _low = p['low_stock_alert'] if p['low_stock_alert'] is not none else 5 %}
-                    <div style="margin-top:0.5rem">
+                    <div style="margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center">
                       {% if p['stock'] > _low %}
                         <span class="stock-badge ok">En stock</span>
                       {% elif p['stock'] > 0 %}
@@ -225,6 +225,7 @@
                       {% else %}
                         <span class="stock-badge out">Agotado</span>
                       {% endif %}
+                      <span class="ruo-badge" title="For research use only — no apto para consumo humano">RUO · Solo investigación</span>
                     </div>
                   </div>
                   <div class="product-footer">

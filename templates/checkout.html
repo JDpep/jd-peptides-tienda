@@ -131,12 +131,12 @@
               {% if shipping == 0 %}
                 <span class="free-shipping">Gratis</span>
               {% else %}
-                <span>${{ "%.2f"|format(shipping) }} <span class="price-currency">USD</span></span>
+                <span>${{ "%.2f"|format(shipping) }} <span class="price-currency">MXN</span></span>
               {% endif %}
             </div>
             <div class="summary-row total">
               <span>Total</span>
-              <span>${{ "%.2f"|format(total) }} <span class="price-currency">USD</span></span>
+              <span>${{ "%.2f"|format(total) }} <span class="price-currency">MXN</span></span>
             </div>
             <div style="margin-top:1.25rem">
               <button type="submit" class="btn btn-gold btn-block btn-lg">

@@ -949,7 +949,7 @@ def parse_doc_with_claude(doc_text, existing_products):
 {{
   "supplier": "nombre del proveedor o Desconocido",
   "document_date": "YYYY-MM-DD o null",
-  "currency": "USD",
+  "currency": "MXN",
   "products": [
     {{
       "name": "nombre del producto",
@@ -1279,7 +1279,7 @@ PRODUCTS_SEED = [
         'name': 'RT20',
         'category': 'Pérdida de Peso',
         'dose': '20 mg',
-        'price': 199.99,
+        'price': 5500.00,
         'description': 'RT20 — Retatrutide 20 mg. Agonista triple de los receptores GIP, GLP-1 y Glucagón actualmente en ensayos clínicos de Fase 3. Su mecanismo combina la reducción del apetito, el aumento del gasto energético y la mejora de la sensibilidad insulínica.',
         'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas|Dosis 20 mg para investigación de protocolos de mayor intensidad',
         'stock': 25,
@@ -1291,7 +1291,7 @@ PRODUCTS_SEED = [
         'name': 'RT10',
         'category': 'Pérdida de Peso',
         'dose': '10 mg',
-        'price': 169.99,
+        'price': 4000.00,
         'description': 'RT10 — Retatrutide 10 mg. Agonista triple de los receptores GIP, GLP-1 y Glucagón actualmente en ensayos clínicos de Fase 3. Dosis intermedia para protocolos de investigación de pérdida de peso.',
         'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas',
         'stock': 25,
@@ -1300,22 +1300,22 @@ PRODUCTS_SEED = [
     },
     {
         'sku': 'JDP-KLOW80',
-        'name': 'KLOW80',
-        'category': 'Pérdida de Peso',
+        'name': 'BBKG80',
+        'category': 'Recuperación',
         'dose': '80 mg',
-        'price': 89.99,
-        'description': 'KLOW80 — formulación de investigación para protocolos de manejo metabólico y composición corporal. Presentación 80 mg para uso exclusivo en investigación in vitro.',
-        'benefits': 'Formulación de investigación de alta concentración|Presentación 80 mg para protocolos extendidos|Análisis (CoA) de terceros disponible por lote|Síntesis con estándares de laboratorio|For research use only',
+        'price': 5000.00,
+        'description': 'BBKG80 — blend de investigación con cuatro péptidos: GHK-Cu 50 mg + TB-500 10 mg + BPC-157 10 mg + KPV 10 mg (total 80 mg por vial). Combina las propiedades regeneradoras y de reparación tisular del GHK-Cu y el TB-500 con la protección de mucosas y antiinflamación del BPC-157 y el KPV, en un solo vial para protocolos integrales de recuperación.',
+        'benefits': 'Cuatro péptidos sinérgicos en un solo vial (CU+TB+BC+KPV)|Reparación tisular y regeneración de tendones, ligamentos y músculo|Protección y reparación de mucosa gástrica e intestinal (BPC+KPV)|Estimulación de la angiogénesis y la síntesis de colágeno|Antiinflamación local y sistémica de amplio espectro|Protocolos integrales sin necesidad de múltiples reconstituciones',
         'stock': 20,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_klow80.png',
+        'image_path': 'jdp_vial_bbkg80.png',
     },
     {
         'sku': 'JDP-KPV',
         'name': 'KPV',
         'category': 'Recuperación',
         'dose': '10 mg',
-        'price': 59.99,
+        'price': 3000.00,
         'description': 'KPV es un tripéptido antiinflamatorio (Lys-Pro-Val) derivado del extremo C-terminal de la alfa-melanocortina. Su pequeño tamaño molecular le permite atravesar membranas biológicas con facilidad, siendo objeto de intensa investigación para condiciones inflamatorias intestinales, cutáneas y sistémicas en modelos animales.',
         'benefits': 'Potente acción antiinflamatoria sistémica y local|Protege y repara la mucosa intestinal dañada|Modula la respuesta inmune sin causar inmunosupresión|Alivia la inflamación en modelos de enfermedad intestinal|Favorece la integridad de la barrera epitelial|Investigado en dermatitis, colitis y síndrome de intestino permeable',
         'stock': 30,
@@ -1327,7 +1327,7 @@ PRODUCTS_SEED = [
         'name': 'MOTS-C',
         'category': 'Performance',
         'dose': '10 mg',
-        'price': 79.99,
+        'price': 3000.00,
         'description': 'MOTS-C es un péptido bioactivo de origen mitocondrial codificado en el ADN mitocondrial humano, que actúa como regulador maestro del metabolismo energético. Ha generado gran interés científico por su capacidad de mimetizar los efectos del ejercicio a nivel celular, su rol en la homeostasis de la glucosa y su potencial en el envejecimiento saludable.',
         'benefits': 'Incrementa la sensibilidad a la insulina y la captación de glucosa|Optimiza el metabolismo energético mitocondrial|Favorece la oxidación de ácidos grasos (betaoxidación)|Efectos moleculares similares al ejercicio físico|Apoya la regulación del peso y la composición corporal|Investigado en longevidad, síndrome metabólico y anti-envejecimiento',
         'stock': 20,
@@ -1339,7 +1339,7 @@ PRODUCTS_SEED = [
         'name': 'BPC-157',
         'category': 'Recuperación',
         'dose': '10 mg',
-        'price': 69.99,
+        'price': 3000.00,
         'description': 'BPC-157 (Body Protection Compound-157) es un pentadecapéptido estable derivado de una proteína de protección gástrica humana, con más de tres décadas de investigación preclínica. Destaca por su extraordinaria versatilidad para proteger y regenerar mucosa digestiva, músculo, tendón, ligamento y tejido nervioso.',
         'benefits': 'Regenera y protege la mucosa gástrica e intestinal|Acelera la curación de tendones, ligamentos y músculo|Efecto antiinflamatorio potente en tejidos lesionados|Promueve la angiogénesis y vascularización|Modulación del sistema nervioso central y periférico|Amplio perfil de seguridad documentado en estudios preclínicos',
         'stock': 35,
@@ -1351,7 +1351,7 @@ PRODUCTS_SEED = [
         'name': 'TB-500',
         'category': 'Recuperación',
         'dose': '10 mg',
-        'price': 74.99,
+        'price': 3000.00,
         'description': 'TB-500 es un péptido sintético de 43 aminoácidos derivado de la Timosina Beta-4, una proteína ubicua en prácticamente todos los tejidos humanos. Se investiga por su capacidad de modular la polimerización de actina y promover la migración celular, con efectos regenerativos en músculo, tendón, articulaciones y tejido cardiovascular.',
         'benefits': 'Acelera la recuperación de lesiones musculoesqueléticas|Promueve la regeneración tendinosa y ligamentosa|Estimula la angiogénesis y formación de nuevos vasos|Favorece la cicatrización de heridas y úlceras crónicas|Reduce la inflamación y la fibrosis en tejidos dañados|Mejora la flexibilidad articular y el rango de movimiento',
         'stock': 28,
@@ -1363,7 +1363,7 @@ PRODUCTS_SEED = [
         'name': 'GHK-Cu',
         'category': 'Anti-aging',
         'dose': '100 mg',
-        'price': 54.99,
+        'price': 2500.00,
         'description': 'GHK-Cu (Glicil-L-histidil-L-lisina cobre) es un tripéptido de cobre que ocurre naturalmente en el plasma humano, cuya concentración disminuye con la edad. Investigado por su capacidad de activar más de 4,000 genes relacionados con la reparación tisular, el rejuvenecimiento dérmico y la reducción del estrés oxidativo.',
         'benefits': 'Estimula la síntesis de colágeno, elastina y glucosaminoglicanos|Potente efecto anti-envejecimiento en piel y tejidos|Promueve el crecimiento, densidad y engrosamiento del cabello|Acelera la cicatrización de heridas, quemaduras y úlceras|Reduce la inflamación y el daño oxidativo celular|Activa genes de reparación del ADN y procesos regenerativos',
         'stock': 40,
@@ -1375,7 +1375,7 @@ PRODUCTS_SEED = [
         'name': 'DSIP',
         'category': 'Bienestar',
         'dose': '5 mg',
-        'price': 64.99,
+        'price': 2500.00,
         'description': 'DSIP (Delta Sleep-Inducing Peptide) es un neuropéptido nonapéptido descubierto en 1974, investigado por su capacidad de inducir el sueño de ondas lentas (delta), reducir el estrés oxidativo y modular múltiples funciones neuroendocrinas. Es uno de los péptidos con mayor evidencia experimental en regulación del ciclo sueño-vigilia.',
         'benefits': 'Mejora la calidad y profundidad del sueño (ondas delta)|Facilita la conciliación del sueño y reduce el insomnio|Regula los ritmos circadianos y la temperatura corporal|Reduce el estrés oxidativo a nivel cerebral|Efecto ansiolítico y adaptogénico en modelos de estrés|Modulación del eje neuroendocrino hipotalámico',
         'stock': 22,
@@ -1386,20 +1386,20 @@ PRODUCTS_SEED = [
         'sku': 'JDP-SEMAX',
         'name': 'Semax',
         'category': 'Bienestar',
-        'dose': '5 mg',
-        'price': 59.99,
+        'dose': '10 mg',
+        'price': 2500.00,
         'description': 'Semax es un heptapéptido sintético análogo de la ACTH(4-7), desarrollado en el Instituto de Biología Molecular de Moscú y ampliamente estudiado como nootrópico, neuroprotector y neuroestimulante. Aumenta significativamente la expresión del BDNF y el NGF, siendo investigado en ictus, déficit cognitivo y trastornos de atención.',
         'benefits': 'Mejora la memoria, concentración, aprendizaje y procesamiento cognitivo|Eleva los niveles de BDNF y NGF en tejido cerebral|Neuroprotección ante isquemia, daño oxidativo y excitotoxicidad|Efectos ansiolíticos y adaptogénicos respaldados en modelos animales|Favorece la recuperación neurológica post-lesión e ictus|Alta biodisponibilidad por vía intranasal en investigación',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_semax.png',
+        'image_path': 'jdp_vial_semax_10.png',
     },
     {
         'sku': 'JDP-TESA',
         'name': 'Tesamorelin',
         'category': 'Pérdida de Peso',
         'dose': '10 mg',
-        'price': 89.99,
+        'price': 3000.00,
         'description': 'Tesamorelin es un análogo sintético estabilizado de la hormona liberadora de hormona de crecimiento (GHRH), aprobado por la FDA para la lipodistrofia asociada al VIH. Es el único GHRH análogo con aprobación regulatoria, investigado además por sus efectos neuroprotectores, la mejora de la función cognitiva y la reducción de grasa visceral en población general.',
         'benefits': 'Reduce selectivamente la grasa visceral abdominal|Estimula la producción endógena y pulsátil de GH|Mejora la composición corporal sin retención de líquidos|Apoya la función cognitiva y la neuroplasticidad|Efectos metabólicos favorables en resistencia a la insulina|Perfil de seguridad validado en ensayos clínicos aleatorizados',
         'stock': 3,
@@ -1410,20 +1410,20 @@ PRODUCTS_SEED = [
         'sku': 'JDP-NAD',
         'name': 'NAD+',
         'category': 'Anti-aging',
-        'dose': '500 mg',
-        'price': 89.99,
-        'description': 'NAD+ (Nicotinamida Adenina Dinucleótido) es una coenzima fundamental implicada en más de 500 reacciones enzimáticas, incluyendo la respiración mitocondrial, la reparación del ADN y la activación de sirtuinas. Sus niveles disminuyen hasta un 50% con la edad; su restauración se investiga activamente en longevidad, función cognitiva y salud metabólica.',
-        'benefits': 'Potencia la producción de energía celular (ATP) a nivel mitocondrial|Activa sirtuinas (SIRT1-7) relacionadas con la longevidad|Mejora la función, biogénesis y eficiencia mitocondrial|Soporte cognitivo, neuroprotección y claridad mental|Favorece la reparación del ADN y la estabilidad genómica|Reduce marcadores de inflamación crónica de bajo grado',
+        'dose': '1000 mg',
+        'price': 3500.00,
+        'description': 'NAD+ (Nicotinamida Adenina Dinucleótido) es una coenzima fundamental implicada en más de 500 reacciones enzimáticas, incluyendo la respiración mitocondrial, la reparación del ADN y la activación de sirtuinas. Sus niveles disminuyen hasta un 50% con la edad; su restauración se investiga activamente en longevidad, función cognitiva y salud metabólica. Presentación de alta concentración 1000 mg por vial.',
+        'benefits': 'Potencia la producción de energía celular (ATP) a nivel mitocondrial|Activa sirtuinas (SIRT1-7) relacionadas con la longevidad|Mejora la función, biogénesis y eficiencia mitocondrial|Soporte cognitivo, neuroprotección y claridad mental|Favorece la reparación del ADN y la estabilidad genómica|Reduce marcadores de inflamación crónica de bajo grado|Presentación 1000 mg para protocolos de investigación extendidos',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_nad.png',
+        'image_path': 'jdp_vial_nad_1000.png',
     },
     {
         'sku': 'JDP-CP',
         'name': 'C-Péptido',
         'category': 'Bienestar',
         'dose': '10 mg',
-        'price': 69.99,
+        'price': 3000.00,
         'description': 'El C-Péptido es un polipéptido de 31 aminoácidos co-secretado equimolarmente con la insulina por las células beta del páncreas. Posee actividad biológica propia e independiente de la insulina, siendo investigado por sus efectos protectores en neuropatía diabética, nefropatía, disfunción endotelial y regeneración vascular en modelos de diabetes.',
         'benefits': 'Protección y mejora de la función de células beta pancreáticas|Reduce las complicaciones neuropáticas y renales de la diabetes|Propiedades antiinflamatorias y vasoprotectoras en endotelio|Protección cardiovascular en contextos de insulinopenia|Biomarcador funcional de la secreción endógena de insulina|Investigado en neuropatía periférica y microangiopatía diabética',
         'stock': 25,
@@ -1432,22 +1432,22 @@ PRODUCTS_SEED = [
     },
     {
         'sku': 'JDP-BAC',
-        'name': 'BAC Water',
+        'name': 'BACH Water',
         'category': 'Accesorios',
         'dose': '10 ml',
-        'price': 14.99,
-        'description': 'Agua bacteriostática (BAC Water) es una solución estéril de agua para inyecciones con 0.9% de alcohol bencílico como agente antimicrobiano. Es el estándar de la industria para la reconstitución y dilución de péptidos liofilizados, garantizando la estabilidad de la preparación y la esterilidad multidosis del vial.',
+        'price': 300.00,
+        'description': 'Agua bacteriostática (BACH Water) es una solución estéril de agua para inyecciones con 0.9% de alcohol bencílico como agente antimicrobiano. Es el estándar de la industria para la reconstitución y dilución de péptidos liofilizados, garantizando la estabilidad de la preparación y la esterilidad multidosis del vial.',
         'benefits': 'Solvente estéril para reconstitución de péptidos liofilizados|Alcohol bencílico 0.9% como agente bacteriostático de amplio espectro|Permite múltiples extracciones con aguja manteniendo la esterilidad|pH neutro compatible con péptidos sensibles|Calidad USP para uso en investigación|Prolonga la vida útil del vial reconstituido',
         'stock': 100,
         'low_stock_alert': 20,
-        'image_path': 'jdp_vial_bac.png',
+        'image_path': 'jdp_vial_bach.png',
     },
     {
         'sku': 'JDP-IGF1',
         'name': 'IGF-1 LR3',
         'category': 'Performance',
         'dose': '1 mg',
-        'price': 89.99,
+        'price': 3000.00,
         'description': 'IGF-1 LR3 (Long R3 Insulin-like Growth Factor 1) es una variante recombinante de 83 aminoácidos del IGF-1 humano con una sustitución en la posición 3 (Glu→Arg) y una extensión de 13 aminoácidos. Estas modificaciones le confieren una vida media plasmática extendida (≈20 h vs. 12-15 min del IGF-1 nativo) y reducen su unión a las proteínas IGFBP, aumentando su biodisponibilidad libre.',
         'benefits': 'Vida media extendida (~20 horas) vs. IGF-1 nativo|Estimula la síntesis proteica y la hipertrofia muscular|Mejora la sensibilidad a la insulina en tejido muscular|Promueve la regeneración tisular y la diferenciación celular|Inducción de hiperplasia (división de células satélite)|Investigación en metabolismo y composición corporal',
         'stock': 18,
@@ -1459,7 +1459,7 @@ PRODUCTS_SEED = [
         'name': 'Ipamorelin',
         'category': 'Performance',
         'dose': '5 mg',
-        'price': 69.99,
+        'price': 3000.00,
         'description': 'Ipamorelin es un pentapéptido sintético agonista selectivo del receptor de grelina (GHS-R1a) y mimético de la grelina. A diferencia de otros secretagogos, presenta un perfil de liberación de GH altamente selectivo sin elevar significativamente cortisol, prolactina o aldosterona, lo que lo convierte en uno de los GHS más estudiados por su pureza farmacológica.',
         'benefits': 'Liberación pulsátil y selectiva de hormona de crecimiento (GH)|Sin elevación significativa de cortisol ni prolactina|Mejora la calidad del sueño profundo (REM/SWS)|Favorece la recuperación muscular y la regeneración tisular|Apoya la composición corporal (más masa magra, menos grasa)|Sinérgico con análogos de GHRH (CJC-1295, Sermorelin)',
         'stock': 22,
@@ -1471,7 +1471,7 @@ PRODUCTS_SEED = [
         'name': 'RT5',
         'category': 'Pérdida de Peso',
         'dose': '5 mg',
-        'price': 139.99,
+        'price': 3000.00,
         'description': 'RT5 — Retatrutide 5 mg. Agonista triple de los receptores GIP, GLP-1 y Glucagón actualmente en ensayos clínicos de Fase 3. Dosis de entrada para protocolos de investigación de pérdida de peso y manejo metabólico.',
         'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas|Dosis 5 mg para inicio de protocolos de investigación',
         'stock': 25,
@@ -1483,7 +1483,7 @@ PRODUCTS_SEED = [
         'name': 'CJC-1295 + Ipamorelin',
         'category': 'Performance',
         'dose': '10 mg',
-        'price': 89.99,
+        'price': 4500.00,
         'description': 'Blend de CJC-1295 (sin DAC) + Ipamorelin a relación 1:1. Combina un análogo de GHRH (CJC-1295) con un agonista selectivo del receptor de grelina (Ipamorelin) para amplificar la liberación pulsátil de hormona de crecimiento por dos vías independientes y sinérgicas. Es uno de los blends más estudiados por su selectividad y la ausencia de elevación de cortisol/prolactina.',
         'benefits': 'Sinergia de doble vía: GHRH + secretagogo de grelina|Liberación de GH amplificada vs. monoterapias|Mejora la recuperación, regeneración tisular y reparación|Apoya la composición corporal (masa magra ↑ / grasa ↓)|Mejora la calidad del sueño profundo|Perfil farmacológico limpio sin efectos hormonales colaterales',
         'stock': 24,
@@ -1495,7 +1495,7 @@ PRODUCTS_SEED = [
         'name': 'CJC-1295 (no DAC)',
         'category': 'Performance',
         'dose': '5 mg',
-        'price': 74.99,
+        'price': 3000.00,
         'description': 'CJC-1295 sin DAC (también llamado Mod GRF 1-29) es un análogo sintético de la GHRH humana (1-29) con cuatro sustituciones de aminoácidos que aumentan su estabilidad y potencia. Sin la fracción DAC, presenta una vida media corta (~30 min) que produce pulsos fisiológicos de GH similares a los patrones nocturnos endógenos.',
         'benefits': 'Análogo de GHRH con vida media corta y pulsos fisiológicos|Estimula la liberación pulsátil natural de GH|Excelente sinergia con secretagogos (Ipamorelin, GHRP)|Mejora la calidad del sueño profundo y la recuperación|Apoya la regeneración tisular y composición corporal|Perfil de seguridad favorable en investigación preclínica',
         'stock': 24,
@@ -1507,7 +1507,7 @@ PRODUCTS_SEED = [
         'name': 'HGH Fragment 176-191',
         'category': 'Pérdida de Peso',
         'dose': '5 mg',
-        'price': 79.99,
+        'price': 2500.00,
         'description': 'HGH Fragment 176-191 es un péptido análogo a la región C-terminal de la hormona de crecimiento humana, diseñado específicamente para conservar los efectos lipolíticos de la GH sin la actividad anabólica ni la inducción de hiperglucemia. Es uno de los péptidos más estudiados para protocolos de investigación enfocados exclusivamente en la oxidación de grasa.',
         'benefits': 'Acción lipolítica selectiva sin efectos anabólicos|Estimula la oxidación de grasa (β-oxidación)|No eleva la glucemia ni induce resistencia a la insulina|No afecta la liberación de IGF-1 ni de GH endógena|Investigado en obesidad y composición corporal|Vida media corta — pulsos lipolíticos focalizados',
         'stock': 22,
@@ -1519,7 +1519,7 @@ PRODUCTS_SEED = [
         'name': 'Cagrilintide',
         'category': 'Pérdida de Peso',
         'dose': '10 mg',
-        'price': 119.99,
+        'price': 3500.00,
         'description': 'Cagrilintide es un análogo sintético de la amilina humana de larga duración, desarrollado por Novo Nordisk y actualmente en ensayos clínicos de Fase 3 en combinación con semaglutida (CagriSema). La amilina es co-secretada con la insulina por las células beta y regula la saciedad, el vaciamiento gástrico y la glucosa postprandial.',
         'benefits': 'Análogo de amilina con vida media extendida (~6 días)|Reduce el apetito por mecanismo complementario al GLP-1|Enlentece el vaciamiento gástrico y prolonga la saciedad|Sinergia con agonistas de GLP-1 (CagriSema)|Reducción significativa del peso corporal en ensayos clínicos|Mejora del control glucémico postprandial',
         'stock': 18,
@@ -1531,7 +1531,7 @@ PRODUCTS_SEED = [
         'name': 'PT-141',
         'category': 'Bienestar',
         'dose': '10 mg',
-        'price': 69.99,
+        'price': 2500.00,
         'description': 'PT-141 (Bremelanotide) es un análogo sintético de la α-MSH y agonista no selectivo de los receptores de melanocortina (MC1R, MC3R, MC4R), aprobado por la FDA como Vyleesi® para el trastorno del deseo sexual hipoactivo en mujeres premenopáusicas. Actúa a nivel del sistema nervioso central, a diferencia de los inhibidores de la PDE5 que actúan a nivel vascular periférico.',
         'benefits': 'Mecanismo central — actúa a nivel hipotalámico (vs. PDE5)|Aumenta el deseo y la respuesta sexual en ambos sexos|Efectos independientes del estado vascular y la testosterona|Vida media de ≈2-7 horas — flexibilidad de protocolos|Investigación en disfunción sexual orgánica y psicogénica|Aprobación FDA como Vyleesi® (mujeres premenopáusicas)',
         'stock': 20,
@@ -1543,7 +1543,7 @@ PRODUCTS_SEED = [
         'name': 'AOD-9604',
         'category': 'Pérdida de Peso',
         'dose': '5 mg',
-        'price': 84.99,
+        'price': 3000.00,
         'description': 'AOD-9604 es un análogo modificado del fragmento C-terminal de la hormona de crecimiento humana (residuos 176-191) con una tirosina añadida en el extremo N-terminal para mejorar su estabilidad. Mantiene la actividad lipolítica selectiva sin los efectos hiperglucemiantes ni anabólicos de la GH completa, y cuenta con clasificación GRAS de la FDA.',
         'benefits': 'Lipolisis selectiva en adipocitos sin elevación de glucosa|No interfiere con la insulina ni la sensibilidad insulínica|Sin actividad anabólica — no afecta IGF-1 ni GH endógena|Investigado en obesidad, esteatosis hepática y osteoartritis|Clasificación GRAS de la FDA (uso oral en alimentos)|Estabilidad mejorada vs. el fragmento 176-191 nativo',
         'stock': 22,
@@ -1555,12 +1555,96 @@ PRODUCTS_SEED = [
         'name': 'Somatropina HGH',
         'category': 'Performance',
         'dose': '24 IU',
-        'price': 249.99,
+        'price': 6000.00,
         'description': 'Somatropina (HGH recombinante) es la hormona de crecimiento humana de 191 aminoácidos producida por DNA recombinante en E. coli, idéntica a la GH endógena secretada por la pituitaria anterior. Es el patrón oro de los estudios de investigación sobre composición corporal, regeneración tisular y modulación del eje somatotrópico. Presentación 24 IU (≈ 8 mg) por vial.',
         'benefits': 'Hormona de crecimiento recombinante 191 a.a. (idéntica a endógena)|Estimula la síntesis hepática de IGF-1 sistémico|Aumenta masa magra y reduce masa grasa simultáneamente|Mejora la regeneración tisular y la cicatrización|Efectos sobre densidad ósea, piel y cabello|Patrón oro de la investigación somatotrópica',
         'stock': 12,
         'low_stock_alert': 3,
         'image_path': 'jdp_vial_hgh.png',
+    },
+    {
+        'sku': 'JDP-ACETIC',
+        'name': 'Acetic Water',
+        'category': 'Accesorios',
+        'dose': '10 ml',
+        'price': 300.00,
+        'description': 'Agua acética (Acetic Water) — solución estéril de ácido acético al 0.6% en agua para inyecciones, utilizada como solvente de reconstitución para péptidos sensibles a soluciones neutras (como CJC-1295, GHRH análogos y otros péptidos hidrofóbicos). El pH ligeramente ácido (≈3.5-4.5) mejora la solubilidad y estabilidad de péptidos lipofílicos.',
+        'benefits': 'Solvente ácido para péptidos sensibles a pH neutro|Recomendada para CJC-1295, GHRH y péptidos hidrofóbicos|Mejora la solubilización de péptidos lipofílicos|Estabiliza péptidos con grupos amino libres|pH 3.5-4.5 calibrado para investigación|Calidad USP para uso en laboratorio',
+        'stock': 100,
+        'low_stock_alert': 20,
+        'image_path': 'jdp_vial_acetic.png',
+    },
+    {
+        'sku': 'JDP-SELANK',
+        'name': 'Selank',
+        'category': 'Bienestar',
+        'dose': '10 mg',
+        'price': 2500.00,
+        'description': 'Selank es un heptapéptido sintético análogo del fragmento corto de la tuftsina endógena, desarrollado en el Instituto de Biología Molecular de la Academia Rusa de Ciencias junto con Semax. Investigado como ansiolítico, nootrópico e inmunomodulador, ofrece efectos ansiolíticos comparables a las benzodiacepinas pero sin sedación, dependencia ni deterioro cognitivo.',
+        'benefits': 'Efecto ansiolítico sin sedación ni dependencia (vs. benzodiacepinas)|Modula los sistemas GABAérgico y serotoninérgico|Mejora la memoria, la concentración y el procesamiento mental|Inmunomodulación — modula citoquinas pro y antiinflamatorias|Reduce el estrés, la ansiedad situacional y la fatiga mental|Alta biodisponibilidad por vía intranasal en investigación',
+        'stock': 22,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_selank.png',
+    },
+    {
+        'sku': 'JDP-BBG70',
+        'name': 'BBG70',
+        'category': 'Recuperación',
+        'dose': '70 mg',
+        'price': 4500.00,
+        'description': 'BBG70 — blend de investigación con tres péptidos enfocados en regeneración músculo-esquelética y tisular: BPC-157 10 mg + GHK-Cu 50 mg + TB-500 10 mg (total 70 mg por vial). Combina la protección y reparación de tejidos del BPC-157, la activación de genes regenerativos del GHK-Cu y la promoción de la migración celular del TB-500 en un solo vial.',
+        'benefits': 'Tres péptidos sinérgicos en un solo vial (BPC+CU+TB)|Aceleración integral de la recuperación de lesiones músculo-esqueléticas|Promueve la angiogénesis y la formación de nuevos vasos|Estimula la síntesis de colágeno, elastina y matriz extracelular|Protección y reparación de mucosa gástrica e intestinal|Protocolo de recuperación intensivo sin múltiples reconstituciones',
+        'stock': 20,
+        'low_stock_alert': 5,
+        'image_path': 'jdp_vial_bbg70.png',
+    },
+    {
+        'sku': 'JDP-TA1',
+        'name': 'Thymosin Alpha-1',
+        'category': 'Bienestar',
+        'dose': '10 mg',
+        'price': 3000.00,
+        'description': 'Thymosin Alpha-1 (Talfa-1) es un péptido natural de 28 aminoácidos producido por la glándula tímica, aprobado en más de 35 países como inmunomodulador (Zadaxin®). Actúa principalmente como agonista del TLR9, restaurando la maduración y la diferenciación de linfocitos T, regulando la respuesta inmune en infecciones crónicas, inmunosenescencia y enfermedades autoinmunes.',
+        'benefits': 'Inmunomodulador con aprobación regulatoria internacional (Zadaxin®)|Restaura la función de linfocitos T en inmunodeficiencias|Coadyuvante en infecciones virales crónicas (hepatitis B/C, herpes)|Modula enfermedades autoinmunes y la inmunosenescencia|Mejora la respuesta vacunal en poblaciones inmunocomprometidas|Perfil de seguridad documentado en décadas de uso clínico',
+        'stock': 22,
+        'low_stock_alert': 5,
+        'image_path': '',
+    },
+    {
+        'sku': 'JDP-CJC-DAC',
+        'name': 'CJC-1295 con DAC',
+        'category': 'Performance',
+        'dose': '5 mg',
+        'price': 2500.00,
+        'description': 'CJC-1295 con DAC (Drug Affinity Complex) es un análogo sintético de la GHRH humana (1-29) modificado con una cadena de unión irreversible a la albúmina sérica, lo que extiende su vida media plasmática a 6-8 días. Esto produce una elevación sostenida (no pulsátil) de los niveles de GH e IGF-1 durante días con una sola dosis, a diferencia de la versión sin DAC.',
+        'benefits': 'Vida media de 6-8 días — administración semanal en investigación|Elevación sostenida de GH e IGF-1 (efecto "bleed")|Análogo de GHRH con potencia y estabilidad aumentadas|Ideal para protocolos de investigación de largo plazo|Sinergia con secretagogos (Ipamorelin, GHRP) para pulsos|Estimula la regeneración tisular, masa magra y recuperación',
+        'stock': 22,
+        'low_stock_alert': 5,
+        'image_path': '',
+    },
+    {
+        'sku': 'JDP-SLUPP',
+        'name': 'SLU-PP-322',
+        'category': 'Pérdida de Peso',
+        'dose': '5 mg',
+        'price': 2500.00,
+        'description': 'SLU-PP-322 es un agonista sintético selectivo de los receptores ERRα/β/γ (Estrogen-Related Receptors), una clase de receptores nucleares clave en la regulación del metabolismo oxidativo y la biogénesis mitocondrial. Investigado como "exercise mimetic" — mimetiza adaptaciones moleculares del ejercicio aeróbico sin actividad física, estimulando la oxidación de ácidos grasos y la termogénesis.',
+        'benefits': 'Agonista selectivo de ERRα/β/γ — "exercise mimetic" experimental|Aumenta significativamente el gasto energético basal|Estimula la oxidación de grasa y la termogénesis|Mejora la capacidad oxidativa y la biogénesis mitocondrial|Reducción de masa grasa en modelos preclínicos|Mecanismo independiente del GLP-1 y de la grelina',
+        'stock': 20,
+        'low_stock_alert': 5,
+        'image_path': '',
+    },
+    {
+        'sku': 'JDP-5AMINO',
+        'name': '5-Amino-1MQ',
+        'category': 'Pérdida de Peso',
+        'dose': '5 mg',
+        'price': 2500.00,
+        'description': '5-Amino-1MQ (5-amino-1-metilquinolinio) es un inhibidor selectivo de la enzima nicotinamida N-metiltransferasa (NNMT), una enzima sobreexpresada en obesidad, diabetes tipo 2 y envejecimiento. Al inhibir NNMT, restaura los niveles de NAD+ y SAM, mejorando el metabolismo energético, reduciendo el depósito de grasa y favoreciendo la oxidación de ácidos grasos.',
+        'benefits': 'Inhibidor selectivo de NNMT — restaura NAD+ y SAM celulares|Reducción de masa grasa sin pérdida de masa magra|Mejora la sensibilidad a la insulina y el control glucémico|Activa la biogénesis y la función mitocondrial|Mecanismo metabólico complementario a GLP-1/GIP|Investigado en obesidad, diabetes T2 y envejecimiento metabólico',
+        'stock': 20,
+        'low_stock_alert': 5,
+        'image_path': '',
     },
 ]
 
@@ -2402,6 +2486,225 @@ def init_db():
         except Exception as _e:
             print(f'[INIT] migration v13 inventory expansion skipped: {_e}')
 
+    # Migration v14 (2026-05-13): segunda ronda de inventario.
+    # - NAD: dose 500mg → 1000mg, image jdp_vial_nad_1000.png, price 89.99 → 119.99
+    # - Semax: dose 5mg → 10mg, image jdp_vial_semax_10.png
+    # - BAC: name "BAC Water" → "BACH Water", image jdp_vial_bach.png
+    # - KLOW80 → BBKG80: rename + describe blend (CU50+TB10+BC10+KPV10), image jdp_vial_bbkg80.png
+    # - INSERT 3 productos nuevos: Acetic Water, Selank, BBG70 (BPC+CU+TB blend)
+    # Idempotente: gate por stock_movements.reason
+    _mig_v14_tag = 'migration:v14:inventory_round2_20260513'
+    already_v14 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v14_tag,)
+    ).fetchone()
+    if not already_v14:
+        try:
+            # 1) UPDATEs in-place
+            db.execute(
+                "UPDATE products SET dose=?, price=?, image_path=? WHERE sku=?",
+                ('1000 mg', 119.99, 'jdp_vial_nad_1000.png', 'JDP-NAD')
+            )
+            db.execute(
+                "UPDATE products SET dose=?, image_path=? WHERE sku=?",
+                ('10 mg', 'jdp_vial_semax_10.png', 'JDP-SEMAX')
+            )
+            db.execute(
+                "UPDATE products SET name=?, image_path=? WHERE sku=?",
+                ('BACH Water', 'jdp_vial_bach.png', 'JDP-BAC')
+            )
+            db.execute(
+                "UPDATE products SET name=?, category=?, image_path=?, "
+                "description=?, benefits=? WHERE sku=?",
+                (
+                    'BBKG80',
+                    'Recuperación',
+                    'jdp_vial_bbkg80.png',
+                    'BBKG80 — blend de investigación con cuatro péptidos: GHK-Cu 50 mg + TB-500 10 mg + BPC-157 10 mg + KPV 10 mg (total 80 mg por vial). Combina las propiedades regeneradoras y de reparación tisular del GHK-Cu y el TB-500 con la protección de mucosas y antiinflamación del BPC-157 y el KPV, en un solo vial para protocolos integrales de recuperación.',
+                    'Cuatro péptidos sinérgicos en un solo vial (CU+TB+BC+KPV)|Reparación tisular y regeneración de tendones, ligamentos y músculo|Protección y reparación de mucosa gástrica e intestinal (BPC+KPV)|Estimulación de la angiogénesis y la síntesis de colágeno|Antiinflamación local y sistémica de amplio espectro|Protocolos integrales sin necesidad de múltiples reconstituciones',
+                    'JDP-KLOW80',
+                )
+            )
+
+            # 1b) Refrescar product_images con la nueva portada para cada UPDATE
+            for _sku, _img in (
+                ('JDP-NAD',    'jdp_vial_nad_1000.png'),
+                ('JDP-SEMAX',  'jdp_vial_semax_10.png'),
+                ('JDP-BAC',    'jdp_vial_bach.png'),
+                ('JDP-KLOW80', 'jdp_vial_bbkg80.png'),
+            ):
+                _prod = db.execute("SELECT id FROM products WHERE sku=?", (_sku,)).fetchone()
+                if _prod:
+                    _pid = _prod['id'] if hasattr(_prod, '__getitem__') else _prod[0]
+                    db.execute("UPDATE product_images SET sort_order = sort_order + 1 WHERE product_id=?", (_pid,))
+                    db.execute(
+                        "INSERT INTO product_images (product_id, filename, sort_order) VALUES (?,?,0)",
+                        (_pid, _img)
+                    )
+
+            # 2) INSERT 3 productos nuevos
+            _new_products_v14 = [
+                ('JDP-ACETIC', 'Acetic Water', 'Accesorios', '10 ml', 14.99, 100, 20,
+                 'jdp_vial_acetic.png',
+                 'accesorios|reconstitucion',
+                 'Agua acética (Acetic Water) — solución estéril de ácido acético al 0.6% en agua para inyecciones, utilizada como solvente de reconstitución para péptidos sensibles a soluciones neutras (como CJC-1295, GHRH análogos y otros péptidos hidrofóbicos). El pH ligeramente ácido (≈3.5-4.5) mejora la solubilidad y estabilidad de péptidos lipofílicos.',
+                 'Solvente ácido para péptidos sensibles a pH neutro|Recomendada para CJC-1295, GHRH y péptidos hidrofóbicos|Mejora la solubilización de péptidos lipofílicos|Estabiliza péptidos con grupos amino libres|pH 3.5-4.5 calibrado para investigación|Calidad USP para uso en laboratorio'),
+
+                ('JDP-SELANK', 'Selank', 'Bienestar', '10 mg', 69.99, 22, 5,
+                 'jdp_vial_selank.png',
+                 'bienestar|anti-estres|cognitivo',
+                 'Selank es un heptapéptido sintético análogo del fragmento corto de la tuftsina endógena, desarrollado en el Instituto de Biología Molecular de la Academia Rusa de Ciencias junto con Semax. Investigado como ansiolítico, nootrópico e inmunomodulador, ofrece efectos ansiolíticos comparables a las benzodiacepinas pero sin sedación, dependencia ni deterioro cognitivo.',
+                 'Efecto ansiolítico sin sedación ni dependencia (vs. benzodiacepinas)|Modula los sistemas GABAérgico y serotoninérgico|Mejora la memoria, la concentración y el procesamiento mental|Inmunomodulación — modula citoquinas pro y antiinflamatorias|Reduce el estrés, la ansiedad situacional y la fatiga mental|Alta biodisponibilidad por vía intranasal en investigación'),
+
+                ('JDP-BBG70', 'BBG70', 'Recuperación', '70 mg', 89.99, 20, 5,
+                 'jdp_vial_bbg70.png',
+                 'recuperacion|regeneracion',
+                 'BBG70 — blend de investigación con tres péptidos enfocados en regeneración músculo-esquelética y tisular: BPC-157 10 mg + GHK-Cu 50 mg + TB-500 10 mg (total 70 mg por vial). Combina la protección y reparación de tejidos del BPC-157, la activación de genes regenerativos del GHK-Cu y la promoción de la migración celular del TB-500 en un solo vial.',
+                 'Tres péptidos sinérgicos en un solo vial (BPC+CU+TB)|Aceleración integral de la recuperación de lesiones músculo-esqueléticas|Promueve la angiogénesis y la formación de nuevos vasos|Estimula la síntesis de colágeno, elastina y matriz extracelular|Protección y reparación de mucosa gástrica e intestinal|Protocolo de recuperación intensivo sin múltiples reconstituciones'),
+            ]
+            for (sku, name, category, dose, price, stock, low, img, tags, desc, bens) in _new_products_v14:
+                if db.execute("SELECT id FROM products WHERE sku=?", (sku,)).fetchone():
+                    db.execute("UPDATE products SET active=1, image_path=? WHERE sku=?", (img, sku))
+                    continue
+                _base = _make_slug(name) or _make_slug(sku) or 'producto'
+                _slug = _base
+                if db.execute("SELECT 1 FROM products WHERE slug=?", (_slug,)).fetchone():
+                    _slug = f"{_base}-{_make_slug(sku)}"
+                db.execute(
+                    """INSERT INTO products
+                       (sku, name, category, dose, price, stock, low_stock_alert,
+                        description, benefits, active, image_path, slug, tags, weight_grams)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)""",
+                    (sku, name, category, dose, price, stock, low, desc, bens, img, _slug, tags, 50)
+                )
+                _new_pid = db.execute("SELECT id FROM products WHERE sku=?", (sku,)).fetchone()
+                if _new_pid:
+                    _pid = _new_pid['id'] if hasattr(_new_pid, '__getitem__') else _new_pid[0]
+                    db.execute(
+                        "INSERT INTO product_images (product_id, filename, sort_order) VALUES (?,?,0)",
+                        (_pid, img)
+                    )
+
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v14_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v14 inventory round2 skipped: {_e}')
+
+    # Migration v15 (2026-05-13): conversión de moneda USD → MXN.
+    # Aplica la lista oficial de precios Feb 2026 (PDF JD Peptides). Reactiva
+    # JDP-TA1 (Thymosin Alpha-1) y agrega 3 productos del PDF que no estaban
+    # en el catálogo: CJC-1295 DAC, SLU-PP-322 y 5-Amino-1MQ.
+    # Idempotente: gate por stock_movements.reason.
+    _mig_v15_tag = 'migration:v15:mxn_pricing_feb2026_20260513'
+    already_v15 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v15_tag,)
+    ).fetchone()
+    if not already_v15:
+        try:
+            # 1) UPDATE de precios — lista oficial Feb 2026 (MXN).
+            _mxn_prices = {
+                'JDP-RT5':       3000.00,
+                'JDP-RT10':      4000.00,
+                'JDP-RT20':      5500.00,
+                'JDP-TB500':     3000.00,
+                'JDP-BPC157':    3000.00,
+                'JDP-MOTSC':     3000.00,
+                'JDP-DSIP':      2500.00,
+                'JDP-IGF1':      3000.00,
+                'JDP-KPV':       3000.00,
+                'JDP-GHKCU':     2500.00,
+                'JDP-CJC-NODAC': 3000.00,
+                'JDP-IPA':       3000.00,
+                'JDP-AOD':       3000.00,
+                'JDP-TESA':      3000.00,
+                'JDP-CJC-IPA':   4500.00,
+                'JDP-HGHFR':     2500.00,
+                'JDP-CGL':       3500.00,
+                'JDP-PT141':     2500.00,
+                'JDP-HGH':       6000.00,
+                'JDP-NAD':       3500.00,
+                'JDP-CP':        3000.00,
+                'JDP-SEMAX':     2500.00,
+                'JDP-SELANK':    2500.00,
+                'JDP-KLOW80':    5000.00,
+                'JDP-BBG70':     4500.00,
+                'JDP-BAC':        300.00,
+                'JDP-ACETIC':     300.00,
+            }
+            for _sku, _price in _mxn_prices.items():
+                db.execute("UPDATE products SET price=? WHERE sku=?", (_price, _sku))
+
+            # 2) Reactivar JDP-TA1 (Thymosin Alpha-1) con datos actualizados.
+            _ta1 = db.execute("SELECT id FROM products WHERE sku='JDP-TA1'").fetchone()
+            if _ta1:
+                db.execute(
+                    "UPDATE products SET active=1, price=?, dose=?, category=?, "
+                    "description=?, benefits=? WHERE sku='JDP-TA1'",
+                    (
+                        3000.00,
+                        '10 mg',
+                        'Bienestar',
+                        'Thymosin Alpha-1 (Talfa-1) es un péptido natural de 28 aminoácidos producido por la glándula tímica, aprobado en más de 35 países como inmunomodulador (Zadaxin®). Actúa principalmente como agonista del TLR9, restaurando la maduración y la diferenciación de linfocitos T, regulando la respuesta inmune en infecciones crónicas, inmunosenescencia y enfermedades autoinmunes.',
+                        'Inmunomodulador con aprobación regulatoria internacional (Zadaxin®)|Restaura la función de linfocitos T en inmunodeficiencias|Coadyuvante en infecciones virales crónicas (hepatitis B/C, herpes)|Modula enfermedades autoinmunes y la inmunosenescencia|Mejora la respuesta vacunal en poblaciones inmunocomprometidas|Perfil de seguridad documentado en décadas de uso clínico',
+                    )
+                )
+
+            # 3) INSERT 3 productos del PDF que faltan (sin foto oficial todavía).
+            _new_products_v15 = [
+                ('JDP-CJC-DAC', 'CJC-1295 con DAC', 'Performance', '5 mg', 2500.00, 22, 5,
+                 '',
+                 'hormonal|performance',
+                 'CJC-1295 con DAC (Drug Affinity Complex) es un análogo sintético de la GHRH humana (1-29) modificado con una cadena de unión irreversible a la albúmina sérica, lo que extiende su vida media plasmática a 6-8 días. Esto produce una elevación sostenida (no pulsátil) de los niveles de GH e IGF-1 durante días con una sola dosis, a diferencia de la versión sin DAC.',
+                 'Vida media de 6-8 días — administración semanal en investigación|Elevación sostenida de GH e IGF-1 (efecto "bleed")|Análogo de GHRH con potencia y estabilidad aumentadas|Ideal para protocolos de investigación de largo plazo|Sinergia con secretagogos (Ipamorelin, GHRP) para pulsos|Estimula la regeneración tisular, masa magra y recuperación'),
+
+                ('JDP-SLUPP', 'SLU-PP-322', 'Pérdida de Peso', '5 mg', 2500.00, 20, 5,
+                 '',
+                 'metabolismo|perdida-de-peso',
+                 'SLU-PP-322 es un agonista sintético selectivo de los receptores ERRα/β/γ (Estrogen-Related Receptors), una clase de receptores nucleares clave en la regulación del metabolismo oxidativo y la biogénesis mitocondrial. Investigado como "exercise mimetic" — mimetiza adaptaciones moleculares del ejercicio aeróbico sin actividad física, estimulando la oxidación de ácidos grasos y la termogénesis.',
+                 'Agonista selectivo de ERRα/β/γ — "exercise mimetic" experimental|Aumenta significativamente el gasto energético basal|Estimula la oxidación de grasa y la termogénesis|Mejora la capacidad oxidativa y la biogénesis mitocondrial|Reducción de masa grasa en modelos preclínicos|Mecanismo independiente del GLP-1 y de la grelina'),
+
+                ('JDP-5AMINO', '5-Amino-1MQ', 'Pérdida de Peso', '5 mg', 2500.00, 20, 5,
+                 '',
+                 'metabolismo|perdida-de-peso',
+                 '5-Amino-1MQ (5-amino-1-metilquinolinio) es un inhibidor selectivo de la enzima nicotinamida N-metiltransferasa (NNMT), una enzima sobreexpresada en obesidad, diabetes tipo 2 y envejecimiento. Al inhibir NNMT, restaura los niveles de NAD+ y SAM, mejorando el metabolismo energético, reduciendo el depósito de grasa y favoreciendo la oxidación de ácidos grasos.',
+                 'Inhibidor selectivo de NNMT — restaura NAD+ y SAM celulares|Reducción de masa grasa sin pérdida de masa magra|Mejora la sensibilidad a la insulina y el control glucémico|Activa la biogénesis y la función mitocondrial|Mecanismo metabólico complementario a GLP-1/GIP|Investigado en obesidad, diabetes T2 y envejecimiento metabólico'),
+            ]
+            for (sku, name, category, dose, price, stock, low, img, tags, desc, bens) in _new_products_v15:
+                if db.execute("SELECT id FROM products WHERE sku=?", (sku,)).fetchone():
+                    db.execute(
+                        "UPDATE products SET active=1, price=?, dose=?, category=?, "
+                        "description=?, benefits=? WHERE sku=?",
+                        (price, dose, category, desc, bens, sku)
+                    )
+                    continue
+                _base = _make_slug(name) or _make_slug(sku) or 'producto'
+                _slug = _base
+                if db.execute("SELECT 1 FROM products WHERE slug=?", (_slug,)).fetchone():
+                    _slug = f"{_base}-{_make_slug(sku)}"
+                db.execute(
+                    """INSERT INTO products
+                       (sku, name, category, dose, price, stock, low_stock_alert,
+                        description, benefits, active, image_path, slug, tags, weight_grams)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)""",
+                    (sku, name, category, dose, price, stock, low, desc, bens, img, _slug, tags, 50)
+                )
+
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v15_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v15 MXN pricing skipped: {_e}')
+
 
 # ---------------------------------------------------------------------------
 # Auth decorator
@@ -2466,17 +2769,17 @@ def cart_total():
 
 
 # ----- Shipping calculation -------------------------------------------------
-# Tabla por rangos de peso (gramos → costo USD). Edita aquí para reflejar tus
+# Tabla por rangos de peso (gramos → costo MXN). Edita aquí para reflejar tus
 # tarifas reales con DHL/Estafeta/FedEx. Envío gratis si subtotal >= umbral.
 DEFAULT_ITEM_WEIGHT_G = 50  # gramos por vial (fallback si producto sin peso)
 SHIPPING_TIERS = [
-    (  100,  5.00),  # hasta 100g  ≈ 1-2 viales
-    (  500,  8.00),  # hasta 500g  ≈ 3-10 viales
-    ( 1000, 12.00),  # hasta 1 kg
-    ( 2000, 18.00),  # hasta 2 kg
-    (99999, 25.00),  # más de 2 kg
+    (  100,  150.00),  # hasta 100g  ≈ 1-2 viales
+    (  500,  200.00),  # hasta 500g  ≈ 3-10 viales
+    ( 1000,  280.00),  # hasta 1 kg
+    ( 2000,  380.00),  # hasta 2 kg
+    (99999,  500.00),  # más de 2 kg
 ]
-FREE_SHIPPING_MIN_USD = 200.0
+FREE_SHIPPING_MIN_MXN = 5000.0
 
 
 def cart_total_weight():
@@ -2487,13 +2790,13 @@ def cart_total_weight():
 
 
 def compute_shipping(subtotal=None, weight_g=None):
-    """Devuelve el costo de envío en USD para el carrito actual.
-    Gratis si subtotal >= FREE_SHIPPING_MIN_USD; si no, tier por peso total."""
+    """Devuelve el costo de envío en MXN para el carrito actual.
+    Gratis si subtotal >= FREE_SHIPPING_MIN_MXN; si no, tier por peso total."""
     if subtotal is None:
         subtotal = cart_total()
     if weight_g is None:
         weight_g = cart_total_weight()
-    if subtotal >= FREE_SHIPPING_MIN_USD:
+    if subtotal >= FREE_SHIPPING_MIN_MXN:
         return 0.0
     for threshold, price in SHIPPING_TIERS:
         if weight_g <= threshold:
@@ -2504,7 +2807,9 @@ def compute_shipping(subtotal=None, weight_g=None):
 app.jinja_env.globals['cart_count'] = cart_count
 app.jinja_env.globals['cart_total_weight'] = cart_total_weight
 app.jinja_env.globals['compute_shipping']  = compute_shipping
-app.jinja_env.globals['FREE_SHIPPING_MIN_USD'] = FREE_SHIPPING_MIN_USD
+app.jinja_env.globals['FREE_SHIPPING_MIN_MXN'] = FREE_SHIPPING_MIN_MXN
+# Backwards-compat alias para templates legacy.
+app.jinja_env.globals['FREE_SHIPPING_MIN_USD'] = FREE_SHIPPING_MIN_MXN
 
 
 # ----- Cross-reference tags --------------------------------------------------

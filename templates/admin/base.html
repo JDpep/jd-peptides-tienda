@@ -96,6 +96,13 @@
         Docs Proveedor
         <span style="margin-left:auto;background:rgba(201,162,39,0.2);color:var(--gold);font-size:0.65rem;padding:1px 6px;border-radius:4px;font-weight:700">IA</span>
       </a>
+      <a href="{{ url_for('admin_emails') }}"
+         class="admin-nav-link {% if request.endpoint == 'admin_emails' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </span>
+        Correos
+      </a>
       {% if session.get('admin_user') == 'Alb.peptide10' %}
       <a href="{{ url_for('admin_usuarios') }}"
          class="admin-nav-link {% if request.endpoint == 'admin_usuarios' %}active{% endif %}">

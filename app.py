@@ -662,7 +662,10 @@ def send_status_email(order, new_status, new_payment):
         subject = f'💸 Reembolso procesado — {order["order_number"]}'
     else:
         subject = subject_map.get(new_status, f'Actualización de tu pedido — {order["order_number"]}')
-    _send_email_bg(order['customer_email'], subject, html, bcc=EMAIL_BCC or None)
+    _send_email_bg(order['customer_email'], subject, html,
+                   bcc=EMAIL_BCC or None,
+                   email_type='order_status',
+                   order_id=order.get('id'))
     print(f"[Email] Estado encolado (bg) a {_mask_email(order['customer_email'])} ({new_status or new_payment})")
 
 
@@ -683,10 +686,46 @@ def _mask_email(addr):
         return '***'
 
 
-def _send_email(to, subject, html, bcc=None, reply_to=None):
-    """Envía un email via Resend API. `bcc` puede ser str o list."""
+def _log_email(to_addr, subject, status, *, email_type=None, error_msg=None,
+               bcc=None, reply_to=None, order_id=None, resend_id=None):
+    """Registra un intento de envío en email_log (auditoría admin).
+    Best-effort: si la DB falla, no rompe el envío. Llamada típicamente desde
+    el thread de _send_email_bg, donde no hay app_context — envuélvelo."""
+    # to_addr / bcc pueden ser str o list — normaliza a CSV legible.
+    _to  = ','.join(to_addr) if isinstance(to_addr, (list, tuple)) else (to_addr or '')
+    _bcc = ','.join(bcc)     if isinstance(bcc, (list, tuple))     else (bcc or '')
+    def _do():
+        execute_db(
+            """INSERT INTO email_log
+               (to_addr, subject, email_type, status, error_msg, bcc, reply_to, order_id, resend_id)
+               VALUES (?,?,?,?,?,?,?,?,?)""",
+            (_to, subject or '', email_type or '', status, error_msg or '',
+             _bcc, reply_to or '', order_id, resend_id or '')
+        )
+    try:
+        # Si ya hay app_context (camino síncrono desde un request), usarlo;
+        # de lo contrario crear uno (camino threading desde _send_email_bg).
+        try:
+            from flask import has_app_context
+        except ImportError:
+            has_app_context = lambda: False
+        if has_app_context():
+            _do()
+        else:
+            with app.app_context():
+                _do()
+    except Exception as _e:
+        print(f"[Email] log persist failed: {type(_e).__name__}: {_e}")
+
+
+def _send_email(to, subject, html, bcc=None, reply_to=None, email_type=None, order_id=None):
+    """Envía un email via Resend API. `bcc` puede ser str o list.
+    Registra el resultado en email_log (status: ok / failed / skipped)."""
     if not RESEND_API_KEY:
         print("[Email] RESEND_API_KEY no configurada — email omitido")
+        _log_email(to, subject, 'skipped',
+                   email_type=email_type, error_msg='RESEND_API_KEY no configurada',
+                   bcc=bcc, reply_to=reply_to, order_id=order_id)
         return False
     body = {
         "from": EMAIL_FROM,
@@ -707,19 +746,44 @@ def _send_email(to, subject, html, bcc=None, reply_to=None):
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             _bcc_log = f' (bcc {_mask_email(bcc)})' if bcc else ''
-            print(f"[Email] Enviado a {_mask_email(to)}{_bcc_log} — {resp.status}")
+            _raw = resp.read().decode('utf-8', errors='replace') if resp.length else ''
+            _resend_id = ''
+            try:
+                _resend_id = json.loads(_raw).get('id') or ''
+            except Exception:
+                pass
+            print(f"[Email] Enviado a {_mask_email(to)}{_bcc_log} — {resp.status} id={_resend_id or '—'}")
+            _log_email(to, subject, 'ok',
+                       email_type=email_type, bcc=bcc, reply_to=reply_to,
+                       order_id=order_id, resend_id=_resend_id)
             return True
     except urllib.error.HTTPError as e:
         # body may include the raw email address — log status only
+        try:
+            _detail = e.read().decode('utf-8', errors='replace')[:280]
+        except Exception:
+            _detail = ''
         print(f"[Email] Resend HTTP {e.code} para {_mask_email(to)}")
+        _log_email(to, subject, 'failed',
+                   email_type=email_type,
+                   error_msg=f'HTTP {e.code}: {_detail}'[:500],
+                   bcc=bcc, reply_to=reply_to, order_id=order_id)
     except Exception as e:
         print(f"[Email] Error envío a {_mask_email(to)}: {type(e).__name__}")
+        _log_email(to, subject, 'failed',
+                   email_type=email_type,
+                   error_msg=f'{type(e).__name__}: {str(e)[:300]}',
+                   bcc=bcc, reply_to=reply_to, order_id=order_id)
     return False
 
 
-def _send_email_bg(to, subject, html, bcc=None, reply_to=None):
+def _send_email_bg(to, subject, html, bcc=None, reply_to=None, email_type=None, order_id=None):
     """Envía email en background — no bloquea la respuesta HTTP."""
-    t = threading.Thread(target=_send_email, args=(to, subject, html, bcc, reply_to), daemon=True)
+    t = threading.Thread(
+        target=_send_email,
+        args=(to, subject, html, bcc, reply_to, email_type, order_id),
+        daemon=True,
+    )
     t.start()
 
 
@@ -727,12 +791,14 @@ def _do_send_emails(order, items):
     admin_html = _admin_html(order, items)
     subject_admin = f'⚡ Nueva Orden JD Peptides — {order["order_number"]}'
     for recipient in EMAIL_NOTIFY:
-        _send_email_bg(recipient, subject_admin, admin_html)
+        _send_email_bg(recipient, subject_admin, admin_html,
+                       email_type='order_new_admin', order_id=order.get('id'))
     customer_html = _customer_html(order, items)
     _send_email_bg(order['customer_email'],
                    f'✅ Confirmación de tu pedido — {order["order_number"]}',
                    customer_html,
-                   bcc=EMAIL_BCC or None)
+                   bcc=EMAIL_BCC or None,
+                   email_type='order_new_customer', order_id=order.get('id'))
     print(f"[Email] Encolado (bg) — admins {[_mask_email(a) for a in EMAIL_NOTIFY]} + cliente {_mask_email(order['customer_email'])} (bcc {_mask_email(EMAIL_BCC) if EMAIL_BCC else 'none'})")
 
 
@@ -798,7 +864,7 @@ def send_low_stock_alert(product):
 
     subject = f'⚠️ Stock bajo: {product["name"]} ({product["stock"]} uds) — JD Peptides'
     for recipient in EMAIL_NOTIFY:
-        _send_email_bg(recipient, subject, html)
+        _send_email_bg(recipient, subject, html, email_type='low_stock')
     print(f"[Email] Alerta stock bajo encolada (bg): {product['name']}")
 
 
@@ -848,7 +914,7 @@ def send_po_received_email(po, items):
 
     subject = f'✅ OC Recibida: {po["po_number"]} — {po["supplier"]}'
     for recipient in EMAIL_NOTIFY:
-        _send_email_bg(recipient, subject, html)
+        _send_email_bg(recipient, subject, html, email_type='po_received')
     print(f"[Email] Notificación OC encolada (bg): {po['po_number']}")
 
 
@@ -1271,6 +1337,20 @@ CREATE TABLE IF NOT EXISTS supplier_documents (
     created_at TEXT DEFAULT (datetime('now')),
     processed_at TEXT
 );
+
+CREATE TABLE IF NOT EXISTS email_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    to_addr TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    email_type TEXT,
+    status TEXT NOT NULL,
+    error_msg TEXT,
+    bcc TEXT,
+    reply_to TEXT,
+    order_id INTEGER,
+    resend_id TEXT,
+    sent_at TEXT DEFAULT (datetime('now'))
+);
 """
 
 PRODUCTS_SEED = [
@@ -1660,6 +1740,9 @@ CREATE INDEX IF NOT EXISTS idx_stock_mov_product  ON stock_movements(product_id)
 CREATE INDEX IF NOT EXISTS idx_stock_mov_created  ON stock_movements(created_at);
 CREATE INDEX IF NOT EXISTS idx_po_status          ON purchase_orders(status);
 CREATE INDEX IF NOT EXISTS idx_po_items_po        ON purchase_order_items(po_id);
+CREATE INDEX IF NOT EXISTS idx_email_log_sent     ON email_log(sent_at);
+CREATE INDEX IF NOT EXISTS idx_email_log_status   ON email_log(status);
+CREATE INDEX IF NOT EXISTS idx_email_log_type     ON email_log(email_type);
 """
 
 def init_db():
@@ -3451,17 +3534,91 @@ def admin_login():
 @app.route('/admin/test-email')
 @admin_required
 def admin_test_email():
-    """Prueba SMTP sincrónico y muestra el error exacto."""
+    """Envía un email de prueba síncrono via Resend para diagnóstico."""
     if not RESEND_API_KEY:
-        flash('❌ RESEND_API_KEY no configurada en las variables de entorno de Railway.', 'error')
+        flash('❌ RESEND_API_KEY no configurada en las variables de entorno de Vercel.', 'error')
         return redirect(url_for('admin_dashboard'))
     ok = _send_email(EMAIL_NOTIFY[0], '✅ Test email JD Peptides',
-                     '<p style="font-family:Arial">Email de prueba desde JD Peptides funcionando ✅</p>')
+                     '<p style="font-family:Arial">Email de prueba desde JD Peptides funcionando ✅</p>',
+                     email_type='admin_test')
     if ok:
         flash(f'✅ Email enviado a {EMAIL_NOTIFY[0]} — revisa tu bandeja (y spam).', 'success')
     else:
-        flash('❌ Error enviando — revisa que RESEND_API_KEY y EMAIL_FROM sean correctos en Railway.', 'error')
+        flash('❌ Error enviando — revisa que RESEND_API_KEY y EMAIL_FROM sean correctos en Vercel.', 'error')
     return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/emails')
+@admin_required
+def admin_emails():
+    """Auditoría de correos enviados — historial filtrable.
+    Filtros via query string: ?status=ok|failed|skipped  ?type=order_new_customer|...  ?q=texto"""
+    status = (request.args.get('status') or '').strip().lower()
+    etype  = (request.args.get('type')   or '').strip()
+    q      = (request.args.get('q')      or '').strip()
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+    except (TypeError, ValueError):
+        page = 1
+    per_page = 50
+
+    where = []
+    params = []
+    if status in ('ok', 'failed', 'skipped'):
+        where.append('status = ?')
+        params.append(status)
+    if etype:
+        where.append('email_type = ?')
+        params.append(etype)
+    if q:
+        where.append('(to_addr LIKE ? OR subject LIKE ?)')
+        like = f'%{q}%'
+        params.extend([like, like])
+
+    sql_where = (' WHERE ' + ' AND '.join(where)) if where else ''
+    rows = query_db(
+        f"SELECT * FROM email_log{sql_where} ORDER BY sent_at DESC LIMIT ? OFFSET ?",
+        params + [per_page, (page - 1) * per_page]
+    )
+    total = query_db(f"SELECT COUNT(*) AS c FROM email_log{sql_where}", params, one=True)
+    total_n = total['c'] if total else 0
+
+    stats = {
+        'ok':      query_db("SELECT COUNT(*) AS c FROM email_log WHERE status='ok'", one=True)['c'],
+        'failed':  query_db("SELECT COUNT(*) AS c FROM email_log WHERE status='failed'", one=True)['c'],
+        'skipped': query_db("SELECT COUNT(*) AS c FROM email_log WHERE status='skipped'", one=True)['c'],
+        'total':   query_db("SELECT COUNT(*) AS c FROM email_log", one=True)['c'],
+    }
+
+    types_rows = query_db(
+        "SELECT DISTINCT email_type FROM email_log WHERE email_type<>'' ORDER BY email_type"
+    )
+    types = [t['email_type'] for t in types_rows]
+
+    return render_template(
+        'admin/emails.html',
+        rows=rows, stats=stats, types=types,
+        status=status, etype=etype, q=q,
+        page=page, per_page=per_page, total=total_n,
+        resend_configured=bool(RESEND_API_KEY),
+        email_from=EMAIL_FROM, email_bcc=EMAIL_BCC,
+        email_notify=EMAIL_NOTIFY,
+    )
+
+
+_EMAIL_TYPE_LABELS = {
+    'order_new_customer': 'Confirmación de orden (cliente)',
+    'order_new_admin':    'Nueva orden (admin)',
+    'order_status':       'Cambio de estado (cliente)',
+    'low_stock':          'Alerta de stock bajo (admin)',
+    'po_received':        'OC recibida (admin)',
+    'contact':            'Formulario de contacto',
+    'admin_test':         'Test manual de email',
+}
+
+@app.template_filter('email_type_label')
+def _email_type_label(t):
+    return _EMAIL_TYPE_LABELS.get(t or '', t or '—')
 
 
 @app.route('/admin/logout')
@@ -4581,13 +4738,15 @@ def contacto():
         nombre  = (request.form.get('name')    or '').strip()
         email   = (request.form.get('email')   or '').strip()
         mensaje = (request.form.get('message') or '').strip()
-        if nombre and email and mensaje:
+        if nombre and email and mensaje and valid_email(email):
             try:
                 _send_email_bg(
                     EMAIL_NOTIFY,
                     f'[JD Peptides] Contacto — {nombre}',
                     f'<p><strong>De:</strong> {nombre} &lt;{email}&gt;</p>'
-                    f'<p style="white-space:pre-wrap">{mensaje}</p>'
+                    f'<p style="white-space:pre-wrap">{mensaje}</p>',
+                    reply_to=email,
+                    email_type='contact',
                 )
             except Exception as e:
                 app.logger.warning(f'contacto email failed: {e}')

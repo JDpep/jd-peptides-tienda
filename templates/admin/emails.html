@@ -1,0 +1,152 @@
+{% extends "admin/base.html" %}
+{% block title %}Correos — Admin JD Peptides{% endblock %}
+{% block page_title %}Auditoría de Correos{% endblock %}
+
+{% block content %}
+
+<!-- Banner de configuración -->
+<div class="admin-card" style="margin-bottom:1rem;border-left:3px solid {% if resend_configured %}#22c55e{% else %}#ef4444{% endif %}">
+  <div style="padding:0.75rem 1rem;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;font-size:0.82rem">
+    <span style="display:flex;align-items:center;gap:0.4rem">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{% if resend_configured %}#22c55e{% else %}#ef4444{% endif %}"></span>
+      <strong style="color:var(--text)">Resend API:</strong>
+      {% if resend_configured %}
+        <span style="color:#22c55e">configurada</span>
+      {% else %}
+        <span style="color:#ef4444">⚠️ RESEND_API_KEY vacía en Vercel — no se envían correos</span>
+      {% endif %}
+    </span>
+    <span><strong style="color:var(--text3)">From:</strong> <code>{{ email_from }}</code></span>
+    <span><strong style="color:var(--text3)">BCC owner:</strong> <code>{{ email_bcc or '—' }}</code></span>
+    <span><strong style="color:var(--text3)">Notify admins:</strong> <code>{{ email_notify|join(', ') }}</code></span>
+    <a href="{{ url_for('admin_test_email') }}" class="btn btn-sm btn-ghost" style="margin-left:auto">📨 Enviar test</a>
+  </div>
+</div>
+
+<!-- Chips de status con contadores -->
+<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem">
+  <a href="{{ url_for('admin_emails') }}"
+     class="pill {% if not status %}active{% endif %}">
+    Todas <span style="opacity:0.65">({{ stats.total }})</span>
+  </a>
+  <a href="{{ url_for('admin_emails', status='ok') }}"
+     class="pill {% if status == 'ok' %}active{% endif %}"
+     style="{% if status != 'ok' %}color:#22c55e{% endif %}">
+    ✅ Enviados <span style="opacity:0.65">({{ stats.ok }})</span>
+  </a>
+  <a href="{{ url_for('admin_emails', status='failed') }}"
+     class="pill {% if status == 'failed' %}active{% endif %}"
+     style="{% if status != 'failed' %}color:#ef4444{% endif %}">
+    ❌ Fallidos <span style="opacity:0.65">({{ stats.failed }})</span>
+  </a>
+  <a href="{{ url_for('admin_emails', status='skipped') }}"
+     class="pill {% if status == 'skipped' %}active{% endif %}"
+     style="{% if status != 'skipped' %}color:#f97316{% endif %}">
+    ⏭ Omitidos <span style="opacity:0.65">({{ stats.skipped }})</span>
+  </a>
+</div>
+
+<!-- Filtros adicionales -->
+<form method="GET" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
+  {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  <select name="type" class="form-control" style="max-width:260px"
+          onchange="this.form.submit()">
+    <option value="">— todos los tipos —</option>
+    {% for t in types %}
+      <option value="{{ t }}" {% if t == etype %}selected{% endif %}>{{ t|email_type_label }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="q" value="{{ q }}" placeholder="Buscar destinatario o asunto…"
+         class="form-control" style="max-width:300px">
+  <button type="submit" class="btn btn-sm">Filtrar</button>
+  {% if status or etype or q %}
+    <a href="{{ url_for('admin_emails') }}" class="btn btn-sm btn-ghost">Limpiar</a>
+  {% endif %}
+</form>
+
+<div class="admin-card">
+  <div class="admin-card-header">
+    <h3>
+      Historial
+      <span style="color:var(--text3);font-weight:400">({{ total }})</span>
+    </h3>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th style="width:140px">Fecha</th>
+          <th style="width:80px">Status</th>
+          <th>Destinatario</th>
+          <th>Asunto</th>
+          <th>Tipo</th>
+          <th>Orden</th>
+          <th style="width:80px">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td style="font-size:0.78rem;color:var(--text3);white-space:nowrap">{{ r['sent_at'][:16] }}</td>
+            <td>
+              {% if r['status'] == 'ok' %}
+                <span class="stock-badge ok">✓ enviado</span>
+              {% elif r['status'] == 'failed' %}
+                <span class="stock-badge out">✗ falló</span>
+              {% else %}
+                <span class="stock-badge low">⏭ omitido</span>
+              {% endif %}
+            </td>
+            <td style="font-size:0.82rem;color:var(--text2)">{{ r['to_addr'] }}</td>
+            <td style="font-size:0.85rem">{{ r['subject'] }}</td>
+            <td style="font-size:0.78rem;color:var(--text3)">{{ r['email_type']|email_type_label }}</td>
+            <td style="font-size:0.78rem">
+              {% if r['order_id'] %}
+                <a href="{{ url_for('admin_orden_detalle', oid=r['order_id']) }}" class="link-gold">#{{ r['order_id'] }}</a>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if r['error_msg'] %}
+                <button type="button" class="btn btn-sm btn-ghost"
+                        onclick="alert({{ r['error_msg']|tojson }})">Ver error</button>
+              {% elif r['resend_id'] %}
+                <span style="font-size:0.7rem;color:var(--text3);font-family:monospace">{{ r['resend_id'][:12] }}…</span>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="7" style="text-align:center;padding:2rem;color:var(--text3)">
+              Sin correos registrados aún.
+              {% if not resend_configured %}
+                <br><br>
+                <strong style="color:#ef4444">RESEND_API_KEY está vacía en Vercel.</strong>
+                Configúrala en
+                <a href="https://vercel.com/aamiga2006-1841s-projects/jd-peptides-tienda/settings/environment-variables"
+                   target="_blank" rel="noopener" class="link-gold">Project Settings → Environment Variables</a>
+                y redeploy para que el sistema comience a enviar.
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total > per_page %}
+    <div style="display:flex;gap:0.5rem;justify-content:center;padding:1rem">
+      {% set pages = (total // per_page) + (1 if total % per_page else 0) %}
+      {% if page > 1 %}
+        <a href="?{% if status %}status={{ status }}&{% endif %}{% if etype %}type={{ etype }}&{% endif %}{% if q %}q={{ q }}&{% endif %}page={{ page - 1 }}"
+           class="btn btn-sm btn-ghost">← Anterior</a>
+      {% endif %}
+      <span style="align-self:center;color:var(--text3);font-size:0.85rem">Página {{ page }} / {{ pages }}</span>
+      {% if page < pages %}
+        <a href="?{% if status %}status={{ status }}&{% endif %}{% if etype %}type={{ etype }}&{% endif %}{% if q %}q={{ q }}&{% endif %}page={{ page + 1 }}"
+           class="btn btn-sm btn-ghost">Siguiente →</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

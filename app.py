@@ -1265,7 +1265,7 @@ PRODUCTS_SEED = [
         'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas|Dosis 20 mg para investigación de protocolos de mayor intensidad',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'vial_rt20.png',
+        'image_path': 'jdp_vial_rt20.png',
     },
     {
         'sku': 'JDP-RT10',
@@ -1277,7 +1277,7 @@ PRODUCTS_SEED = [
         'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'vial_rt10.png',
+        'image_path': 'jdp_vial_rt10.png',
     },
     {
         'sku': 'JDP-KLOW80',
@@ -2077,6 +2077,41 @@ def init_db():
             db.commit()
         except Exception as _e:
             print(f'[INIT] migration v10 final catalog skipped: {_e}')
+
+    # Migration v11 (2026-05-12): portadas oficiales JD Peptides para RT10/RT20.
+    # Reemplaza las imágenes genéricas vial_rt10.png/vial_rt20.png por los
+    # mockups oficiales con label JD Peptides + bandera US + "For research
+    # use only", consistentes con BPC-157, KPV, TB-500, etc.
+    _mig_v11_tag = 'migration:v11:rt_official_vials_20260512'
+    already_v11 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v11_tag,)
+    ).fetchone()
+    if not already_v11:
+        try:
+            _rt_updates = {
+                'JDP-RT20': 'jdp_vial_rt20.png',
+                'JDP-RT10': 'jdp_vial_rt10.png',
+            }
+            for _sku, _img in _rt_updates.items():
+                db.execute("UPDATE products SET image_path=? WHERE sku=?", (_img, _sku))
+                _prod = db.execute("SELECT id FROM products WHERE sku=?", (_sku,)).fetchone()
+                if _prod:
+                    _pid = _prod['id'] if hasattr(_prod, '__getitem__') else _prod[0]
+                    db.execute("UPDATE product_images SET sort_order = sort_order + 1 WHERE product_id=?", (_pid,))
+                    db.execute(
+                        "INSERT INTO product_images (product_id, filename, sort_order) VALUES (?,?,0)",
+                        (_pid, _img)
+                    )
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v11_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v11 rt vials skipped: {_e}')
 
 
 # ---------------------------------------------------------------------------

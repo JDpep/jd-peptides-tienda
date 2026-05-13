@@ -2978,6 +2978,96 @@ def media_file(filename):
 
 
 # ---------------------------------------------------------------------------
+# SEO files — robots.txt, sitemap.xml, favicon
+# ---------------------------------------------------------------------------
+
+# Rutas que NO queremos indexar — proteger contenido sensible y endpoints
+# que no aportan valor SEO (cart, checkout, login, APIs, etc.)
+_ROBOTS_DISALLOW = [
+    '/admin', '/api', '/carrito', '/checkout', '/pedido', '/tracking',
+    '/static/img/qr_', '/qr/', '/contacto',
+]
+
+@app.route('/robots.txt')
+def robots_txt():
+    base = request.url_root.rstrip('/')
+    lines = [
+        'User-agent: *',
+    ]
+    for p in _ROBOTS_DISALLOW:
+        lines.append(f'Disallow: {p}')
+    lines.append('')
+    lines.append(f'Sitemap: {base}/sitemap.xml')
+    body = '\n'.join(lines) + '\n'
+    return body, 200, {'Content-Type': 'text/plain; charset=utf-8',
+                       'Cache-Control': 'public, max-age=86400'}
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    """Sitemap XML con páginas estáticas, categorías y productos activos.
+    Cache 1h en CDN, 1h en navegador."""
+    from xml.sax.saxutils import escape as xml_escape
+    base = request.url_root.rstrip('/')
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    urls = []
+    def _add(loc, priority='0.5', changefreq='weekly', lastmod=today):
+        urls.append({
+            'loc': f'{base}{loc}',
+            'priority': priority,
+            'changefreq': changefreq,
+            'lastmod': lastmod,
+        })
+
+    # Static pages
+    _add('/',           priority='1.0', changefreq='daily')
+    _add('/catalogo',   priority='0.9', changefreq='daily')
+    _add('/nosotros',   priority='0.6', changefreq='monthly')
+    _add('/faq',        priority='0.7', changefreq='monthly')
+    _add('/privacidad', priority='0.3', changefreq='yearly')
+    _add('/terminos',   priority='0.3', changefreq='yearly')
+
+    # Categorías (página /catalogo con filtro)
+    cats = query_db("SELECT DISTINCT category FROM products WHERE active=1 AND category<>''")
+    for c in cats or []:
+        cat = c['category']
+        _add(f'/catalogo?category={cat}', priority='0.8', changefreq='weekly')
+
+    # Productos activos — un URL por SKU (slug)
+    prods = query_db(
+        "SELECT slug, sku, COALESCE(slug, sku) AS path_key "
+        "FROM products WHERE active=1 ORDER BY id"
+    )
+    for p in prods or []:
+        key = p['slug'] or p['sku']
+        if key:
+            _add(f'/producto/{key}', priority='0.8', changefreq='weekly')
+
+    xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+                 '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for u in urls:
+        xml_lines.append('  <url>')
+        xml_lines.append(f'    <loc>{xml_escape(u["loc"])}</loc>')
+        xml_lines.append(f'    <lastmod>{u["lastmod"]}</lastmod>')
+        xml_lines.append(f'    <changefreq>{u["changefreq"]}</changefreq>')
+        xml_lines.append(f'    <priority>{u["priority"]}</priority>')
+        xml_lines.append('  </url>')
+    xml_lines.append('</urlset>')
+
+    return ('\n'.join(xml_lines) + '\n', 200,
+            {'Content-Type': 'application/xml; charset=utf-8',
+             'Cache-Control': 'public, max-age=3600'})
+
+
+@app.route('/favicon.ico')
+def favicon_ico():
+    """Sirve el favicon — varias resoluciones bundle como .ico estándar."""
+    return send_from_directory(_static_img, 'favicon.ico',
+                               mimetype='image/vnd.microsoft.icon')
+
+
+# ---------------------------------------------------------------------------
 # Customer routes
 # ---------------------------------------------------------------------------
 

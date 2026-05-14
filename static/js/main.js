@@ -682,6 +682,80 @@ document.addEventListener('DOMContentLoaded', function () {
   bindQuickViewButtons();
 
   // ---------------------------------------------------------
+  // Wishlist + Comparator — localStorage (sin login)
+  // ---------------------------------------------------------
+  const WISH_KEY = 'jdp_wishlist';
+  const COMP_KEY = 'jdp_comparator';
+
+  function _getList(key) {
+    try { return JSON.parse(localStorage.getItem(key) || '[]'); }
+    catch (e) { return []; }
+  }
+  function _setList(key, list) {
+    try { localStorage.setItem(key, JSON.stringify(list)); } catch (e) {}
+  }
+  function _toggle(key, id, max) {
+    const list = _getList(key);
+    const sid = String(id);
+    const idx = list.findIndex(x => String(x) === sid);
+    if (idx >= 0) {
+      list.splice(idx, 1);
+      _setList(key, list);
+      return false;
+    }
+    if (max && list.length >= max) {
+      alert(`Solo puedes comparar hasta ${max} productos a la vez.`);
+      return _getList(key).some(x => String(x) === sid);
+    }
+    list.push(sid);
+    _setList(key, list);
+    return true;
+  }
+  function _syncButtons() {
+    const wish = _getList(WISH_KEY).map(String);
+    const comp = _getList(COMP_KEY).map(String);
+    document.querySelectorAll('.card-wishlist-btn').forEach(btn => {
+      btn.classList.toggle('is-active', wish.includes(String(btn.dataset.productId)));
+    });
+    document.querySelectorAll('.card-compare-btn').forEach(btn => {
+      btn.classList.toggle('is-active', comp.includes(String(btn.dataset.productId)));
+    });
+  }
+  function bindWishlistAndCompare() {
+    document.querySelectorAll('.card-wishlist-btn').forEach(btn => {
+      if (btn._wBound) return; btn._wBound = true;
+      btn.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const added = _toggle(WISH_KEY, btn.dataset.productId);
+        btn.classList.toggle('is-active', added);
+      });
+    });
+    document.querySelectorAll('.card-compare-btn').forEach(btn => {
+      if (btn._cBound) return; btn._cBound = true;
+      btn.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const added = _toggle(COMP_KEY, btn.dataset.productId, 4);
+        btn.classList.toggle('is-active', added);
+        const list = _getList(COMP_KEY);
+        if (list.length >= 2) {
+          if (confirm(`Ya tienes ${list.length} productos en el comparador. ¿Ver comparación?`)) {
+            window.location.href = '/comparador?ids=' + list.join(',');
+          }
+        }
+      });
+    });
+  }
+  bindWishlistAndCompare();
+  _syncButtons();
+  // Re-bind cuando la grid se re-renderea via AJAX
+  const _origBind = bindQuickViewButtons;
+  bindQuickViewButtons = function() {
+    _origBind();
+    bindWishlistAndCompare();
+    _syncButtons();
+  };
+
+  // ---------------------------------------------------------
   // Smooth scroll for anchor links
   // ---------------------------------------------------------
   document.querySelectorAll('a[href^="#"]').forEach(a => {

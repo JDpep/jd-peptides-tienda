@@ -103,6 +103,13 @@
         </span>
         Reportes
       </a>
+      <a href="{{ url_for('admin_clientes') }}"
+         class="admin-nav-link {% if request.endpoint in ['admin_clientes','admin_cliente_detalle'] %}active{% endif %}">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </span>
+        Clientes
+      </a>
       <a href="{{ url_for('admin_emails') }}"
          class="admin-nav-link {% if request.endpoint == 'admin_emails' %}active{% endif %}">
         <span class="nav-icon">

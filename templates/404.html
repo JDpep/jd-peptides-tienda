@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Página no encontrada — JD Peptides{% endblock %}
+{% block meta_description %}La página que buscas no existe. Explora nuestro catálogo de péptidos de investigación.{% endblock %}
+
+{% block content %}
+<section class="section" style="min-height:60vh;padding:4rem 0">
+  <div class="container" style="max-width:900px;text-align:center">
+
+    <p style="font-size:5rem;font-weight:800;color:var(--gold);margin:0;letter-spacing:-0.04em;line-height:1">404</p>
+    <h1 style="font-size:clamp(1.5rem,3vw,2.2rem);font-weight:800;color:var(--text);margin:0.5rem 0 1rem">
+      No encontramos esa página
+    </h1>
+    <p style="color:var(--text2);font-size:1.05rem;max-width:540px;margin:0 auto 2rem;line-height:1.65">
+      El enlace puede estar roto, el producto fue retirado, o escribiste mal la URL.
+      Te dejamos opciones para que sigas navegando.
+    </p>
+
+    <form action="{{ url_for('catalogo') }}" method="GET" style="max-width:520px;margin:0 auto 2.5rem;display:flex;gap:0.5rem">
+      <input type="text" name="search" placeholder="Buscar péptido por nombre, SKU o uso…"
+             class="form-control" autofocus
+             style="flex:1;padding:0.85rem 1rem;font-size:1rem">
+      <button type="submit" class="btn btn-gold" style="padding:0.85rem 1.6rem">Buscar</button>
+    </form>
+
+    {% if categories %}
+    <div style="margin-bottom:2.5rem">
+      <p style="font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:0.6rem">Explora por categoría</p>
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem;justify-content:center">
+        {% for c in categories %}
+          <a href="{{ url_for('catalogo', category=c) }}" class="pill">{{ c }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if suggested %}
+      <p style="font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:1.2rem">Productos populares</p>
+      <div class="products-grid" style="grid-template-columns:repeat(auto-fit, minmax(220px, 1fr))">
+        {% for p in suggested %}
+          {% set _href = url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) %}
+          <div class="product-card">
+            <a href="{{ _href }}" style="text-decoration:none;display:contents">
+              <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
+                {% if p['image_path'] %}
+                  <img src="{{ url_for('static', filename='img/' + p['image_path']) }}"
+                       alt="{{ p['name'] }}" class="product-card-img" loading="lazy">
+                {% else %}
+                  <div class="product-visual-pattern">
+                    <span class="product-visual-name">{{ p['name'] }}</span>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="product-card-body">
+                <span class="badge badge-cat badge-cat-default">{{ p['category'] }}</span>
+                <h3 class="product-card-title">{{ p['name'] }}</h3>
+                <div class="product-price" style="color:var(--gold)">${{ "{:,.2f}".format(p['price']) }} <span class="price-currency">MXN</span></div>
+              </div>
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div style="margin-top:2.5rem">
+      <a href="{{ url_for('index') }}" class="btn btn-outline">← Volver al inicio</a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

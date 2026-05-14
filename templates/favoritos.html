@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Mis favoritos — JD Peptides{% endblock %}
+{% block meta_description %}Lista de péptidos guardados para consulta posterior.{% endblock %}
+
+{% block content %}
+<section class="section" style="min-height:60vh;padding:3rem 0">
+  <div class="container" style="max-width:1100px">
+    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem">Mi cuenta</p>
+    <h1 style="font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:800;color:var(--text);margin:0 0 1.5rem">
+      Mis <span style="color:var(--gold)">favoritos</span>
+    </h1>
+
+    <div id="wishlist-empty" hidden style="text-align:center;padding:3rem 0;color:var(--text2)">
+      <p style="font-size:1.1rem;margin-bottom:0.5rem">Tu lista de favoritos está vacía.</p>
+      <p style="font-size:0.9rem;color:var(--text3);margin-bottom:1.5rem">Toca el corazón en cualquier producto para guardarlo aquí.</p>
+      <a href="{{ url_for('catalogo') }}" class="btn btn-gold">Explorar catálogo →</a>
+    </div>
+
+    <div id="wishlist-grid" class="products-grid"
+         style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));display:none"></div>
+  </div>
+</section>
+
+<script>
+(function() {
+  const KEY = 'jdp_wishlist';
+  const grid = document.getElementById('wishlist-grid');
+  const empty = document.getElementById('wishlist-empty');
+
+  function getIds() {
+    try { return JSON.parse(localStorage.getItem(KEY) || '[]'); }
+    catch (e) { return []; }
+  }
+  function removeId(id) {
+    const ids = getIds().filter(x => String(x) !== String(id));
+    localStorage.setItem(KEY, JSON.stringify(ids));
+    render();
+  }
+
+  async function render() {
+    const ids = getIds();
+    if (!ids.length) {
+      empty.hidden = false;
+      grid.style.display = 'none';
+      return;
+    }
+    empty.hidden = true;
+    grid.style.display = 'grid';
+    grid.innerHTML = '<p style="color:var(--text3)">Cargando…</p>';
+    try {
+      const r = await fetch('/api/products/by-ids', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ids}),
+      });
+      const data = await r.json();
+      const map = new Map((data.products || []).map(p => [p.id, p]));
+      const html = ids
+        .map(id => map.get(parseInt(id, 10)))
+        .filter(Boolean)
+        .map(p => `
+          <div class="product-card" style="position:relative">
+            <button class="wishlist-remove" data-id="${p.id}"
+                    title="Quitar de favoritos"
+                    style="position:absolute;top:8px;right:8px;z-index:5;background:rgba(0,0,0,0.6);border:none;color:#c9a227;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px">×</button>
+            <a href="/producto/${p.slug || p.id}" style="text-decoration:none;display:contents">
+              <div class="product-visual ${p.image_path ? 'product-visual-has-img' : ''}">
+                ${p.image_path
+                  ? `<img loading="lazy" src="/static/img/${p.image_path}" alt="${p.name}" class="product-card-img">`
+                  : `<div class="product-visual-pattern"><span class="product-visual-name">${p.name}</span></div>`}
+              </div>
+              <div class="product-card-body">
+                <span class="badge badge-cat badge-cat-default">${p.category}</span>
+                <h3 class="product-card-title">${p.name}</h3>
+                <p style="font-size:0.78rem;color:var(--text3);margin:0.3rem 0">${p.dose}</p>
+                <div class="product-price" style="color:var(--gold)">$${p.price.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="price-currency">MXN</span></div>
+              </div>
+            </a>
+          </div>
+        `).join('');
+      grid.innerHTML = html || '<p style="color:var(--text3);text-align:center;padding:2rem">Los productos guardados ya no están disponibles.</p>';
+      grid.querySelectorAll('.wishlist-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          removeId(btn.dataset.id);
+        });
+      });
+    } catch (e) {
+      grid.innerHTML = '<p style="color:var(--text3);text-align:center;padding:2rem">Error cargando favoritos.</p>';
+    }
+  }
+
+  render();
+})();
+</script>
+{% endblock %}

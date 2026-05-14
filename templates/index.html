@@ -217,7 +217,7 @@
                 <span class="badge badge-gold">{{ p['category'] }}</span>
               </div>
               {% if pimg %}
-                <img src="{{ url_for('static', filename='img/' + pimg) }}"
+                <img loading="lazy" decoding="async" src="{{ url_for('static', filename='img/' + pimg) }}"
                      loading="{% if loop.index <= 3 %}eager{% else %}lazy{% endif %}"
                      {% if loop.index <= 3 %}fetchpriority="high"{% endif %}
                      decoding="async"

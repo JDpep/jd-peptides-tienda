@@ -170,6 +170,16 @@
                           title="Vista rápida" aria-label="Vista rápida">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
+                  <button type="button" class="card-action-btn card-wishlist-btn"
+                          data-product-id="{{ p['id'] }}"
+                          title="Agregar a favoritos" aria-label="Agregar a favoritos">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                  </button>
+                  <button type="button" class="card-action-btn card-compare-btn"
+                          data-product-id="{{ p['id'] }}"
+                          title="Comparar" aria-label="Agregar al comparador">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                  </button>
 
                   <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" style="text-decoration:none;display:contents">
                     <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
@@ -178,7 +188,7 @@
                       </div>
                       {% set _pimg = p['image_path'] or img_map.get(p['sku'], '') %}
                       {% if _pimg %}
-                        <img src="{{ url_for('static', filename='img/' + _pimg) }}"
+                        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='img/' + _pimg) }}"
                              alt="Frasco {{ p['name'] }} {{ p['dose'] }} — For Research Use Only"
                              class="product-card-img{% if _pimg.endswith('.jpeg') or _pimg.endswith('.jpg') or '_frasco_' in _pimg %} img-vial-right{% endif %}"
                              loading="{% if loop.index <= 3 %}eager{% else %}lazy{% endif %}"

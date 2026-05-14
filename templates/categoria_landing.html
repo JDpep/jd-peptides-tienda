@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ landing.title }} — JD Peptides{% endblock %}
+{% block meta_description %}{{ landing.meta_desc }}{% endblock %}
+
+{% block jsonld_extra %}
+{# BreadcrumbList + ItemList — Google muestra esto como rich result #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Inicio", "item": {{ url_for('index', _external=True)|tojson }}},
+    {"@type": "ListItem", "position": 2, "name": "Catálogo", "item": {{ url_for('catalogo', _external=True)|tojson }}},
+    {"@type": "ListItem", "position": 3, "name": {{ category|tojson }}}
+  ]
+}
+</script>
+{% if products %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "itemListElement": [
+    {%- for p in products %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "url": {{ url_for('producto', slug=p['slug'], _external=True)|tojson if p['slug'] else url_for('producto_by_id', pid=p['id'], _external=True)|tojson }}
+    }{% if not loop.last %},{% endif %}
+    {%- endfor %}
+  ]
+}
+</script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="section" style="padding:3.5rem 0 1rem">
+  <div class="container">
+    <nav style="font-size:0.85rem;color:var(--text3);margin-bottom:1rem">
+      <a href="{{ url_for('index') }}" style="color:var(--text3);text-decoration:none">Inicio</a>
+      &nbsp;›&nbsp;
+      <a href="{{ url_for('catalogo') }}" style="color:var(--text3);text-decoration:none">Catálogo</a>
+      &nbsp;›&nbsp;
+      <span style="color:var(--gold)">{{ category }}</span>
+    </nav>
+
+    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem">JD Peptides · México</p>
+    <h1 style="font-size:clamp(1.8rem,4vw,3rem);font-weight:800;color:var(--text);line-height:1.15;margin:0 0 0.5rem">
+      {{ landing.h1 }}
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text2);max-width:720px;margin:0 0 1.2rem">{{ landing.subtitle }}</p>
+    <p style="color:var(--text2);max-width:780px;font-size:0.95rem;line-height:1.75;margin:0 0 1.5rem">{{ landing.description }}</p>
+
+    <div style="background:rgba(201,162,39,0.08);border-left:3px solid var(--gold);padding:0.9rem 1.2rem;border-radius:0 6px 6px 0;font-size:0.82rem;color:var(--text2);max-width:780px;margin-bottom:2.5rem">
+      <strong style="color:var(--gold)">FOR RESEARCH USE ONLY</strong> — Todos los productos son exclusivamente para uso en investigación científica <em>in vitro</em>. No están destinados al consumo humano ni veterinario.
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="container">
+    {% if products %}
+      <div class="products-grid" style="grid-template-columns:repeat(auto-fit, minmax(260px, 1fr))">
+        {% for p in products %}
+          {% set _href = url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) %}
+          <div class="product-card">
+            <a href="{{ _href }}" style="text-decoration:none;display:contents">
+              <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
+                {% if p['image_path'] %}
+                  <img src="{{ url_for('static', filename='img/' + p['image_path']) }}"
+                       alt="{{ p['name'] }} {{ p['dose'] }} — {{ landing.title }}" class="product-card-img" loading="lazy">
+                {% else %}
+                  <div class="product-visual-pattern">
+                    <span class="product-visual-name">{{ p['name'] }}</span>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="product-card-body">
+                <span class="badge badge-cat badge-cat-default">{{ p['dose'] }}</span>
+                <h3 class="product-card-title">{{ p['name'] }}</h3>
+                <div class="product-price" style="color:var(--gold)">${{ "{:,.2f}".format(p['price']) }} <span class="price-currency">MXN</span></div>
+              </div>
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="text-align:center;color:var(--text3);padding:3rem 0">Sin productos disponibles en esta categoría.</p>
+    {% endif %}
+
+    <!-- Otras categorías (cross-link interno SEO) -->
+    <div style="margin-top:3.5rem;padding-top:2rem;border-top:1px solid var(--border)">
+      <p style="font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text3);margin-bottom:0.8rem">Explorar otras categorías</p>
+      <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+        {% for cat_name, l in all_categories.items() if cat_name != category %}
+          <a href="{{ url_for('categoria_landing', slug=l.slug) }}" class="pill">{{ cat_name }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

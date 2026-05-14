@@ -1,5 +1,51 @@
 {% extends "base.html" %}
 {% block title %}Preguntas Frecuentes — JD Peptides{% endblock %}
+{% block meta_description %}Resolvemos las dudas más frecuentes sobre péptidos de investigación: pedidos, envíos, métodos de pago, certificados de análisis, almacenamiento y uso responsable.{% endblock %}
+
+{% set faqs = [
+  ("¿Para qué son estos productos?",
+   "Todos los productos de JD Peptides son exclusivamente para uso en investigación científica in vitro. No están destinados al consumo humano ni veterinario."),
+  ("¿Cómo realizo un pedido?",
+   "Navega al catálogo, agrega los productos que necesitas al carrito y procede al checkout. Recibirás un correo de confirmación con los datos de pago."),
+  ("¿Cuáles son los métodos de pago?",
+   "Aceptamos transferencia bancaria SPEI, depósito en efectivo, criptomonedas (BTC/USDT) y otros métodos. Los datos se muestran en el checkout."),
+  ("¿Cuánto tarda el envío?",
+   "Los envíos dentro de México toman entre 2 y 5 días hábiles una vez confirmado el pago. Te notificamos con número de guía cuando tu pedido sale."),
+  ("¿Cómo sé si mi pedido fue confirmado?",
+   "Recibirás un correo electrónico con el resumen de tu pedido. También puedes contactarnos por WhatsApp con tu número de orden."),
+  ("¿Puedo cancelar o modificar mi pedido?",
+   "Contáctanos por WhatsApp lo antes posible. Podemos hacer ajustes mientras el pedido no haya sido preparado para envío."),
+  ("¿Los productos tienen certificado de análisis (CoA)?",
+   "Sí. Cada lote cuenta con documentación de pureza y trazabilidad. Contáctanos para solicitar el CoA de cualquier producto."),
+  ("¿Cómo debo almacenar los péptidos?",
+   "La mayoría de los péptidos deben almacenarse a -20°C en su presentación liofilizada, protegidos de la luz y humedad. Consulta la ficha específica de cada producto."),
+  ("¿Hacen envíos fuera de México?",
+   "Por el momento solo realizamos envíos dentro de la República Mexicana."),
+  ("¿Cómo los contacto?",
+   "Por WhatsApp es la forma más rápida. También puedes escribirnos por correo y te respondemos en menos de 24 horas.")
+] %}
+
+{% block jsonld_extra %}
+{# Schema.org FAQPage — Google muestra acordeón expandible en SERPs #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {%- for q, a in faqs %}
+    {
+      "@type": "Question",
+      "name": {{ q|tojson }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ a|tojson }}
+      }
+    }{% if not loop.last %},{% endif %}
+    {%- endfor %}
+  ]
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div style="background:#fff;min-height:70vh;padding:5rem 0">
@@ -10,29 +56,6 @@
     </h1>
 
     <div style="display:flex;flex-direction:column;gap:0.5rem">
-
-      {% set faqs = [
-        ("¿Para qué son estos productos?",
-         "Todos los productos de JD Peptides son exclusivamente para uso en investigación científica in vitro. No están destinados al consumo humano ni veterinario."),
-        ("¿Cómo realizo un pedido?",
-         "Navega al catálogo, agrega los productos que necesitas al carrito y procede al checkout. Recibirás un correo de confirmación con los datos de pago."),
-        ("¿Cuáles son los métodos de pago?",
-         "Aceptamos transferencia bancaria SPEI. Los datos de cuenta se muestran en la pantalla de confirmación del pedido."),
-        ("¿Cuánto tarda el envío?",
-         "Los envíos dentro de México toman entre 2 y 5 días hábiles una vez confirmado el pago. Te notificamos con número de guía cuando tu pedido sale."),
-        ("¿Cómo sé si mi pedido fue confirmado?",
-         "Recibirás un correo electrónico con el resumen de tu pedido. También puedes contactarnos por WhatsApp con tu número de orden."),
-        ("¿Puedo cancelar o modificar mi pedido?",
-         "Contáctanos por WhatsApp lo antes posible. Podemos hacer ajustes mientras el pedido no haya sido preparado para envío."),
-        ("¿Los productos tienen certificado de análisis (CoA)?",
-         "Sí. Cada lote cuenta con documentación de pureza y trazabilidad. Contáctanos para solicitar el CoA de cualquier producto."),
-        ("¿Cómo debo almacenar los péptidos?",
-         "La mayoría de los péptidos deben almacenarse a -20°C en su presentación liofilizada, protegidos de la luz y humedad. Consulta la ficha específica de cada producto."),
-        ("¿Hacen envíos fuera de México?",
-         "Por el momento solo realizamos envíos dentro de la República Mexicana."),
-        ("¿Cómo los contacto?",
-         "Por WhatsApp es la forma más rápida. También puedes escribirnos por correo y te respondemos en menos de 24 horas.")
-      ] %}
 
       {% for question, answer in faqs %}
       <details style="border:1px solid #e8e0d0;border-radius:10px;overflow:hidden">

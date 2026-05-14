@@ -1,0 +1,60 @@
+{% extends "admin/base.html" %}
+{% block title %}Clientes — Admin JD Peptides{% endblock %}
+{% block page_title %}Clientes{% endblock %}
+
+{% block content %}
+
+<form method="GET" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
+  <input type="text" name="q" value="{{ q or '' }}" class="form-control"
+         placeholder="Buscar por email, nombre o teléfono…" style="max-width:340px">
+  <select name="sort" class="form-control" onchange="this.form.submit()" style="max-width:200px">
+    <option value="revenue" {% if sort=='revenue' %}selected{% endif %}>Mayor LTV</option>
+    <option value="orders"  {% if sort=='orders'  %}selected{% endif %}>Más órdenes</option>
+    <option value="recent"  {% if sort=='recent'  %}selected{% endif %}>Compra más reciente</option>
+    <option value="name"    {% if sort=='name'    %}selected{% endif %}>Nombre A–Z</option>
+  </select>
+  <button type="submit" class="btn btn-sm">Buscar</button>
+  {% if q %}<a href="{{ url_for('admin_clientes') }}" class="btn btn-sm btn-ghost">Limpiar</a>{% endif %}
+  <a href="{{ url_for('admin_clientes_export') }}" class="btn btn-sm btn-ghost" style="margin-left:auto">⬇ Export CSV</a>
+</form>
+
+<div class="admin-card">
+  <div class="admin-card-header"><h3>Clientes <span style="color:var(--text3);font-weight:400">({{ rows|length }})</span></h3></div>
+  <div style="overflow-x:auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Teléfono</th>
+          <th style="text-align:right">Órdenes</th>
+          <th style="text-align:right">LTV</th>
+          <th>Primera compra</th>
+          <th>Última compra</th>
+          <th style="width:90px">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in rows %}
+          <tr>
+            <td>
+              <span class="strong">{{ c['customer_name'] or '—' }}</span><br>
+              <span style="font-size:0.72rem;color:var(--text3)">{{ c['customer_email'] }}</span>
+            </td>
+            <td style="font-size:0.85rem;color:var(--text2)">{{ c['customer_phone'] or '—' }}</td>
+            <td style="text-align:right;font-weight:700">{{ c['orders_n'] }}</td>
+            <td style="text-align:right;color:var(--gold);font-weight:700">${{ "{:,.0f}".format(c['revenue'] or 0) }}</td>
+            <td style="font-size:0.78rem;color:var(--text3);white-space:nowrap">{{ (c['first_order'] or '')[:10] }}</td>
+            <td style="font-size:0.78rem;color:var(--text3);white-space:nowrap">{{ (c['last_order'] or '')[:10] }}</td>
+            <td>
+              <a href="{{ url_for('admin_cliente_detalle', email=c['customer_email']) }}" class="btn btn-sm btn-ghost">Ver →</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text3)">Sin clientes que coincidan.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

@@ -3289,6 +3289,28 @@ details summary::-webkit-details-marker { display: none; }
 .product-quickview-btn:hover { background: var(--gold); color: #0d0d0d; }
 @media (hover: none) { .product-quickview-btn { opacity: 1; transform: none; } }
 
+/* --- Wishlist + Comparador action buttons --- */
+.card-action-btn {
+  position: absolute; z-index: 3;
+  width: 32px; height: 32px;
+  border-radius: 999px;
+  background: rgba(8,8,8,0.65);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(199,154,58,0.35);
+  color: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s ease, color 0.2s ease;
+}
+.card-wishlist-btn { top: 0.55rem; right: 3rem; }
+.card-compare-btn  { top: 0.55rem; right: 5.5rem; }
+.product-card:hover .card-action-btn,
+.card-action-btn:focus-visible { opacity: 1; transform: translateY(0); }
+.card-action-btn:hover { background: var(--gold); color: #0d0d0d; }
+.card-action-btn.is-active { background: var(--gold); color: #0d0d0d; }
+@media (hover: none) { .card-action-btn { opacity: 1; transform: none; } }
+
 .qv-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.7);

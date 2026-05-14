@@ -1,0 +1,71 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ summary.name or email }} — Admin JD Peptides{% endblock %}
+{% block page_title %}Cliente · {{ summary.name or email }}{% endblock %}
+
+{% block content %}
+
+<a href="{{ url_for('admin_clientes') }}" style="color:var(--text3);font-size:0.85rem;text-decoration:none">← Volver a clientes</a>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin:1rem 0 1.5rem">
+  <div class="admin-card" style="padding:1.1rem">
+    <p style="font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin:0">Órdenes</p>
+    <p style="font-size:1.6rem;font-weight:700;color:var(--text);margin:0.3rem 0 0">{{ summary.orders_n or 0 }}</p>
+  </div>
+  <div class="admin-card" style="padding:1.1rem">
+    <p style="font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin:0">LTV</p>
+    <p style="font-size:1.6rem;font-weight:700;color:var(--gold);margin:0.3rem 0 0">${{ "{:,.0f}".format(summary.revenue or 0) }}</p>
+  </div>
+  <div class="admin-card" style="padding:1.1rem">
+    <p style="font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin:0">Primera compra</p>
+    <p style="font-size:1rem;color:var(--text2);margin:0.5rem 0 0">{{ (summary.first_order or '—')[:10] }}</p>
+  </div>
+  <div class="admin-card" style="padding:1.1rem">
+    <p style="font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin:0">Última compra</p>
+    <p style="font-size:1rem;color:var(--text2);margin:0.5rem 0 0">{{ (summary.last_order or '—')[:10] }}</p>
+  </div>
+</div>
+
+<div class="admin-card" style="margin-bottom:1.5rem;padding:1.1rem">
+  <p style="font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin:0 0 0.3rem">Contacto</p>
+  <p style="color:var(--text);margin:0 0 0.2rem"><strong>{{ summary.name or '—' }}</strong></p>
+  <p style="margin:0;font-size:0.88rem">
+    <a href="mailto:{{ email }}" class="link-gold">{{ email }}</a>
+    {% if summary.phone %} · <a href="https://wa.me/{{ summary.phone|replace(' ', '')|replace('+', '') }}" target="_blank" class="link-gold">{{ summary.phone }}</a>{% endif %}
+  </p>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:1rem">
+  <div class="admin-card">
+    <div class="admin-card-header"><h3>Productos más comprados</h3></div>
+    <table class="admin-table">
+      <thead><tr><th>Producto</th><th style="text-align:right">Uds.</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>
+        {% for p in top_products %}
+          <tr>
+            <td><span class="strong">{{ p['name'] }}</span><br><span style="font-size:0.7rem;color:var(--text3)">{{ p['sku'] }}</span></td>
+            <td style="text-align:right">{{ p['units'] }}</td>
+            <td style="text-align:right;color:var(--gold)">${{ "{:,.0f}".format(p['revenue']) }}</td>
+          </tr>
+        {% else %}<tr><td colspan="3" style="text-align:center;padding:1.5rem;color:var(--text3)">—</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="admin-card">
+    <div class="admin-card-header"><h3>Historial de órdenes</h3></div>
+    <table class="admin-table">
+      <thead><tr><th># Orden</th><th>Fecha</th><th>Status</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>
+        {% for o in orders %}
+          <tr>
+            <td class="mono"><a href="{{ url_for('admin_orden_detalle', oid=o['id']) }}" class="link-gold">{{ o['order_number'] }}</a></td>
+            <td style="font-size:0.78rem;color:var(--text3)">{{ o['created_at'][:10] }}</td>
+            <td><span class="stock-badge {% if o['status'] in ['entregado','enviado'] %}ok{% elif o['status']=='cancelado' %}out{% else %}low{% endif %}">{{ o['status'] }}</span></td>
+            <td style="text-align:right;color:var(--gold)">${{ "{:,.0f}".format(o['total']) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

@@ -140,6 +140,20 @@
           <button type="submit" class="btn btn-gold btn-block">Actualizar Estado</button>
         </form>
 
+        <!-- Notas internas (no visibles al cliente) -->
+        <form method="POST" action="{{ url_for('admin_orden_notes', oid=order['id']) }}"
+              style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+          {{ csrf_field() }}
+          <div style="font-size:0.78rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.6rem">
+            📝 Notas internas
+          </div>
+          <p style="font-size:0.7rem;color:var(--text3);margin:0 0 0.5rem">Solo visible para admins. No se envía al cliente.</p>
+          <textarea name="admin_notes" class="admin-input" rows="3"
+                    placeholder="Ej: cliente prefiere envío AM, pidió descuento via WhatsApp…"
+                    style="font-size:0.85rem;line-height:1.5">{{ order['admin_notes'] or '' }}</textarea>
+          <button type="submit" class="btn btn-ghost btn-block btn-sm" style="margin-top:0.5rem">Guardar notas</button>
+        </form>
+
         <!-- Tracking de guía -->
         <form method="POST" action="{{ url_for('admin_set_tracking', oid=order['id']) }}"
               style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">

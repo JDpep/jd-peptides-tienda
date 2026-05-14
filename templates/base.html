@@ -25,7 +25,11 @@
   <link rel="icon"             type="image/png" sizes="16x16"   href="{{ url_for('static', filename='img/favicon-16.png') }}">
   <link rel="apple-touch-icon" sizes="180x180"  href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
   <link rel="shortcut icon"    href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <link rel="manifest"         href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="theme-color"     content="#c9a227">
+  <meta name="apple-mobile-web-app-capable"        content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title"          content="JD Peptides">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,12 +54,24 @@
     "@type": "Organization",
     "name": "JD Peptides",
     "url": "https://www.jdpeptides.mx",
-    "logo": "https://www.jdpeptides.mx/static/img/logo.png",
+    "logo": "https://www.jdpeptides.mx/static/img/logo.jpeg",
     "sameAs": [
       "https://www.instagram.com/jdpeptidesmx/"
-    ]
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer support",
+      "email": "jdpeptides@gmail.com",
+      "areaServed": "MX",
+      "availableLanguage": ["Spanish"]
+    },
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "MX"
+    }
   }
   </script>
+  {% block jsonld_extra %}{% endblock %}
 </head>
 <body>
 
@@ -218,6 +234,9 @@
           <h4>SUPPORT</h4>
           <ul>
             <li><a href="{{ url_for('tracking') }}">Seguimiento de pedido</a></li>
+            <li><a href="{{ url_for('favoritos') }}">Mis favoritos</a></li>
+            <li><a href="{{ url_for('calculadora_dosificacion') }}">Calculadora dosificación</a></li>
+            <li><a href="{{ url_for('comparador') }}">Comparar péptidos</a></li>
             {% if whatsapp_number %}<li><a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener">WhatsApp</a></li>{% endif %}
             <li><a href="https://www.instagram.com/jdpeptidesmx/" target="_blank" rel="noopener">Instagram</a></li>
             <li><a href="mailto:{{ contact_email }}">Email</a></li>
@@ -320,5 +339,46 @@
   <script>window.TAG_LABELS = {{ TAG_LABELS | tojson }};</script>
   <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
   {% block extra_js %}{% endblock %}
+
+  {# Cookie consent banner — LFPDPPP / GDPR style. Solo aparece si el usuario no ha decidido. #}
+  <div id="cookie-consent" hidden role="dialog" aria-label="Aviso de cookies"
+       style="position:fixed;bottom:1rem;left:1rem;right:1rem;max-width:520px;margin:0 auto;z-index:9999;background:#0d0d0d;border:1px solid #c9a227;border-radius:10px;padding:1rem 1.2rem;box-shadow:0 12px 36px rgba(0,0,0,0.5);color:#e8dcc4;font-size:0.85rem;line-height:1.5">
+    <p style="margin:0 0 0.7rem">
+      🍪 Usamos cookies estrictamente necesarias para tu sesión y carrito.
+      También usamos analítica anonimizada para mejorar el sitio.
+      <a href="{{ url_for('privacidad') }}" style="color:#c9a227;text-decoration:underline">Ver política</a>.
+    </p>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      <button onclick="window.__cookieConsent('all')"
+              style="background:#c9a227;color:#0d0d0d;border:none;padding:0.5rem 0.9rem;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.82rem">
+        Aceptar todo
+      </button>
+      <button onclick="window.__cookieConsent('essential')"
+              style="background:transparent;color:#e8dcc4;border:1px solid #555;padding:0.5rem 0.9rem;border-radius:6px;cursor:pointer;font-size:0.82rem">
+        Solo esenciales
+      </button>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var KEY = 'jdp_cookie_consent';
+      var banner = document.getElementById('cookie-consent');
+      if (!banner) return;
+      var stored = (function() { try { return localStorage.getItem(KEY); } catch (e) { return null; } })();
+      window.__cookieConsent = function(level) {
+        try { localStorage.setItem(KEY, level); } catch (e) {}
+        banner.hidden = true;
+        // Si rechazó analytics, deshabilitar GA si está cargado
+        if (level !== 'all' && window.gtag) {
+          window['ga-disable-{{ ga_measurement_id }}'] = true;
+        }
+      };
+      if (!stored) banner.hidden = false;
+      // Si rechazó previamente, bloquear GA antes de que cargue
+      if (stored === 'essential') {
+        window['ga-disable-{{ ga_measurement_id or "G-NONE" }}'] = true;
+      }
+    })();
+  </script>
 </body>
 </html>

@@ -1,0 +1,16 @@
+{
+  "name": "JD Peptides",
+  "short_name": "JD Peptides",
+  "description": "Péptidos de investigación — calidad de laboratorio. For research use only.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0d0d",
+  "theme_color": "#c9a227",
+  "scope": "/",
+  "icons": [
+    { "src": "/static/img/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/static/img/favicon-32.png",       "sizes": "32x32",   "type": "image/png" }
+  ],
+  "categories": ["medical", "shopping", "science"],
+  "lang": "es-MX"
+}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Comparar péptidos — JD Peptides{% endblock %}
+{% block meta_description %}Compara hasta 4 péptidos lado a lado: precio, dosis, categoría y características.{% endblock %}
+
+{% block content %}
+<section class="section" style="padding:3rem 0;min-height:60vh">
+  <div class="container">
+    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem">Herramienta</p>
+    <h1 style="font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:800;color:var(--text);margin:0 0 1.2rem">
+      Comparar <span style="color:var(--gold)">péptidos</span>
+    </h1>
+
+    <div id="comparator-empty" hidden style="text-align:center;padding:3rem 0;color:var(--text2)">
+      <p style="font-size:1.05rem;margin-bottom:1rem">No has seleccionado productos para comparar.</p>
+      <a href="{{ url_for('catalogo') }}" class="btn btn-gold">Ir al catálogo →</a>
+      <p style="font-size:0.78rem;color:var(--text3);margin-top:1.5rem">Tip: agrega productos al comparador con el botón "⇄ Comparar" en cada ficha.</p>
+    </div>
+
+    <div id="comparator-table" style="overflow-x:auto;display:none">
+      <table style="width:100%;border-collapse:collapse;font-size:0.9rem">
+        <thead id="comp-head"></thead>
+        <tbody id="comp-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script>
+(function() {
+  const KEY = 'jdp_comparator';
+  const urlIds = "{{ ids_arg }}".split(',').filter(Boolean);
+  const stored = (function() {
+    try { return JSON.parse(localStorage.getItem(KEY) || '[]'); }
+    catch (e) { return []; }
+  })();
+  let ids = urlIds.length ? urlIds : stored;
+  if (urlIds.length) localStorage.setItem(KEY, JSON.stringify(urlIds));
+
+  const empty = document.getElementById('comparator-empty');
+  const table = document.getElementById('comparator-table');
+
+  if (!ids.length) {
+    empty.hidden = false;
+    return;
+  }
+
+  fetch('/api/products/by-ids', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ids: ids.slice(0, 4)})
+  }).then(r => r.json()).then(data => {
+    const products = data.products || [];
+    if (!products.length) { empty.hidden = false; return; }
+    table.style.display = 'block';
+
+    // Header con productos
+    const head = '<tr><th style="text-align:left;padding:10px;color:var(--text3);font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase">Atributo</th>' +
+      products.map(p => `
+        <th style="padding:10px;border-left:1px solid var(--border);min-width:180px">
+          <a href="/producto/${p.slug || p.id}" style="text-decoration:none">
+            ${p.image_path
+              ? `<img loading="lazy" src="/static/img/${p.image_path}" alt="${p.name}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 0.5rem">`
+              : `<div style="width:80px;height:80px;background:var(--bg3);border-radius:6px;margin:0 auto 0.5rem;display:flex;align-items:center;justify-content:center;color:var(--text3)">—</div>`}
+            <strong style="color:var(--text);display:block">${p.name}</strong>
+            <span style="font-size:0.72rem;color:var(--text3)">${p.sku}</span>
+          </a>
+        </th>`).join('') + '</tr>';
+    document.getElementById('comp-head').innerHTML = head;
+
+    // Filas de atributos
+    const rows = [
+      ['Categoría',     p => p.category],
+      ['Dosis',         p => p.dose],
+      ['Precio',        p => `<strong style="color:var(--gold)">$${p.price.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong> MXN`],
+      ['Stock',         p => p.stock > 0 ? `${p.stock} uds` : '<span style="color:#ef4444">Agotado</span>'],
+      ['SKU',           p => `<code style="font-size:0.78rem;background:var(--bg3);padding:1px 6px;border-radius:3px">${p.sku}</code>`],
+    ];
+    const body = rows.map(([label, fn]) => `
+      <tr style="border-top:1px solid var(--border)">
+        <td style="padding:10px;color:var(--text3);font-size:0.82rem">${label}</td>
+        ${products.map(p => `<td style="padding:10px;border-left:1px solid var(--border)">${fn(p)}</td>`).join('')}
+      </tr>
+    `).join('');
+    document.getElementById('comp-body').innerHTML = body + `
+      <tr style="border-top:1px solid var(--border)">
+        <td style="padding:10px;color:var(--text3);font-size:0.82rem">Acción</td>
+        ${products.map(p => `<td style="padding:10px;border-left:1px solid var(--border)">
+          <a href="/producto/${p.slug || p.id}" class="btn btn-gold btn-sm">Ver ficha →</a>
+        </td>`).join('')}
+      </tr>
+    `;
+  });
+})();
+</script>
+{% endblock %}

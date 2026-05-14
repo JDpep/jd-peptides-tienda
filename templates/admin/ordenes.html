@@ -18,9 +18,29 @@
     </a>
   {% endfor %}
 </div>
-<p style="font-size:0.78rem;color:var(--text3);margin:0 0 1.25rem">
+<p style="font-size:0.78rem;color:var(--text3);margin:0 0 0.8rem">
   💡 Al cambiar el status de un pedido, este se mueve al chip correspondiente — no se borra.
 </p>
+
+<!-- Búsqueda + exports -->
+<form method="GET" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
+  {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+  <input type="text" name="q" value="{{ q or '' }}" class="form-control"
+         placeholder="Buscar por # orden, nombre, email, teléfono o SKU…"
+         style="max-width:380px">
+  <button type="submit" class="btn btn-sm">Buscar</button>
+  {% if q or status_filter %}
+    <a href="{{ url_for('admin_ordenes') }}" class="btn btn-sm btn-ghost">Limpiar</a>
+  {% endif %}
+  <a href="{{ url_for('admin_ordenes_export', status=status_filter, q=q) }}"
+     class="btn btn-sm btn-ghost" style="margin-left:auto">⬇ Export CSV</a>
+</form>
+
+{% if q %}
+  <p style="font-size:0.82rem;color:var(--text2);margin:0 0 1rem">
+    {{ orders|length }} resultados para <strong style="color:var(--gold)">"{{ q }}"</strong>
+  </p>
+{% endif %}
 
 <script>
 var ORD_DATA = [

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Calculadora de Dosificación de Péptidos — JD Peptides{% endblock %}
+{% block meta_description %}Calculadora de reconstitución y dosificación de péptidos: convierte mg + ml a unidades por jeringa de insulina (U-100). Herramienta para investigación.{% endblock %}
+
+{% block content %}
+<section class="section" style="padding:3.5rem 0;min-height:60vh">
+  <div class="container" style="max-width:760px">
+    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem">Herramienta</p>
+    <h1 style="font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:800;color:var(--text);margin:0 0 0.6rem">
+      Calculadora de <span style="color:var(--gold)">dosificación</span>
+    </h1>
+    <p style="color:var(--text2);font-size:1rem;max-width:620px;margin:0 0 1.6rem">
+      Calcula el volumen de extracción de tu vial según la concentración de reconstitución.
+      Útil para protocolos de investigación in vitro.
+    </p>
+
+    <div style="background:rgba(201,162,39,0.06);border-left:3px solid var(--gold);padding:0.85rem 1.1rem;border-radius:0 6px 6px 0;font-size:0.82rem;color:var(--text2);margin-bottom:1.5rem">
+      <strong style="color:var(--gold)">FOR RESEARCH USE ONLY</strong> — Esta herramienta es educativa para uso en investigación científica. No constituye recomendación de uso humano.
+    </div>
+
+    <div class="admin-card" style="padding:1.5rem">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1rem">
+        <div>
+          <label style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:0.3rem">Contenido del vial</label>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <input type="number" id="mg" value="10" min="0.1" step="0.1" class="form-control" style="flex:1">
+            <span style="color:var(--text2)">mg</span>
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:0.3rem">Volumen de reconstitución</label>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <input type="number" id="ml" value="2" min="0.1" step="0.1" class="form-control" style="flex:1">
+            <span style="color:var(--text2)">ml de agua bacteriostática</span>
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:0.3rem">Dosis objetivo</label>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <input type="number" id="dose" value="250" min="0.1" step="0.1" class="form-control" style="flex:1">
+            <select id="dose_unit" class="form-control" style="max-width:90px">
+              <option value="mcg">mcg</option>
+              <option value="mg">mg</option>
+              <option value="ui">UI</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="results" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.2rem;margin-top:1rem">
+        <p style="font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin:0 0 0.6rem">Resultado</p>
+        <div id="result-rows" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem"></div>
+        <p id="result-note" style="font-size:0.78rem;color:var(--text3);margin:1rem 0 0;line-height:1.55"></p>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;padding:1.2rem 1.4rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border)">
+      <h3 style="font-size:0.9rem;color:var(--text);margin:0 0 0.6rem">📚 Glosario rápido</h3>
+      <ul style="font-size:0.85rem;color:var(--text2);line-height:1.7;padding-left:1.2rem;margin:0">
+        <li><strong>mg/ml</strong> — concentración del péptido reconstituido en la solución.</li>
+        <li><strong>Jeringa U-100</strong> — 100 unidades = 1 ml. Cada unidad = 0.01 ml.</li>
+        <li><strong>BACH water</strong> — agua bacteriostática con 0.9% alcohol bencílico para reconstituir péptidos sensibles.</li>
+        <li><strong>Acetic water</strong> — solvente ácido para péptidos hidrofóbicos como CJC-1295.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<script>
+function fmt(n, d) {
+  if (isNaN(n) || !isFinite(n)) return '—';
+  return Number(n).toLocaleString('es-MX', {minimumFractionDigits: d, maximumFractionDigits: d});
+}
+
+function recalc() {
+  const mg = parseFloat(document.getElementById('mg').value) || 0;
+  const ml = parseFloat(document.getElementById('ml').value) || 0;
+  const dose = parseFloat(document.getElementById('dose').value) || 0;
+  const unit = document.getElementById('dose_unit').value;
+  if (mg <= 0 || ml <= 0 || dose <= 0) {
+    document.getElementById('result-rows').innerHTML = '<p style="color:var(--text3)">Completa los 3 campos.</p>';
+    return;
+  }
+
+  const concentration_mg_per_ml = mg / ml;          // mg/ml
+  let dose_mg = dose;
+  if (unit === 'mcg') dose_mg = dose / 1000;
+  // UI lo dejamos sin conversión: se asume que el usuario sabe la equivalencia.
+
+  const ml_to_extract = dose_mg / concentration_mg_per_ml;  // ml
+  const u100_units = ml_to_extract * 100;
+
+  const html = `
+    <div>
+      <p style="font-size:0.74rem;color:var(--text3);margin:0">Concentración</p>
+      <p style="font-size:1.3rem;font-weight:700;color:var(--text);margin:0.2rem 0 0">${fmt(concentration_mg_per_ml, 2)} <span style="font-size:0.85rem;color:var(--text3)">mg/ml</span></p>
+    </div>
+    <div>
+      <p style="font-size:0.74rem;color:var(--text3);margin:0">Volumen a extraer</p>
+      <p style="font-size:1.3rem;font-weight:700;color:var(--gold);margin:0.2rem 0 0">${fmt(ml_to_extract, 3)} <span style="font-size:0.85rem;color:var(--text3)">ml</span></p>
+    </div>
+    <div>
+      <p style="font-size:0.74rem;color:var(--text3);margin:0">Jeringa U-100</p>
+      <p style="font-size:1.3rem;font-weight:700;color:var(--gold);margin:0.2rem 0 0">${fmt(u100_units, 1)} <span style="font-size:0.85rem;color:var(--text3)">unidades</span></p>
+    </div>
+  `;
+  document.getElementById('result-rows').innerHTML = html;
+  document.getElementById('result-note').textContent =
+    `Para extraer ${fmt(dose_mg * 1000, 0)} mcg (${fmt(dose_mg, 3)} mg) de un vial de ${mg} mg reconstituido en ${ml} ml, marca ${fmt(u100_units, 1)} unidades en una jeringa de insulina U-100.`;
+}
+
+['mg', 'ml', 'dose', 'dose_unit'].forEach(id => {
+  document.getElementById(id).addEventListener('input', recalc);
+  document.getElementById(id).addEventListener('change', recalc);
+});
+recalc();
+</script>
+{% endblock %}

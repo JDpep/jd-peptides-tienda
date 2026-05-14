@@ -2,6 +2,22 @@
 {% block title %}{{ product['name'] }} — JD Peptides{% endblock %}
 {% block meta_description %}{{ product['name'] }} ({{ product['dose'] }}) — {{ (product['description'] or 'Péptido de investigación de calidad superior')[:160] }} For research use only.{% endblock %}
 
+{% block jsonld_extra %}
+{# BreadcrumbList — ayuda Google a mostrar la jerarquía en SERPs #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Inicio", "item": {{ url_for('index', _external=True)|tojson }}},
+    {"@type": "ListItem", "position": 2, "name": "Catálogo", "item": {{ url_for('catalogo', _external=True)|tojson }}},
+    {"@type": "ListItem", "position": 3, "name": {{ product['category']|tojson }}, "item": {{ url_for('catalogo', category=product['category'], _external=True)|tojson }}},
+    {"@type": "ListItem", "position": 4, "name": {{ product['name']|tojson }}}
+  ]
+}
+</script>
+{% endblock %}
+
 {% block og %}
 {% set _og_img = product['image_path'] or {'JDP-RT20':'vial_rt20.png','JDP-RT10':'vial_rt10.png','JDP-KLOW80':'vial_klow80.png','JDP-MOTSC':'vial_mots_c.png','JDP-DSIP':'vial_dsip.png','JDP-SEMAX':'vial_semax.png','JDP-NAD':'vial_nad.png','JDP-BPC157':'vial_bpc157.png','JDP-KPV':'vial_kpv.png','JDP-TB500':'vial_tb500.png','JDP-CP':'vial_cp.png','JDP-TESA':'vial_tesamorelin.png','JDP-GHKCU':'vial_ghk_cu.png','JDP-BAC':'vial_bac.png'}.get(product['sku'], 'hero-pattern.svg') %}
 <meta property="og:type"        content="product">

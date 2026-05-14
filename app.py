@@ -2879,6 +2879,27 @@ def init_db():
         except Exception as _e:
             print(f'[INIT] migration v16 tracking skipped: {_e}')
 
+    # Migration v17 (2026-05-13): notas internas admin en orders.
+    _mig_v17_tag = 'migration:v17:admin_notes_20260513'
+    already_v17 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v17_tag,)
+    ).fetchone()
+    if not already_v17:
+        try:
+            _order_cols = [r[1] for r in db.execute("PRAGMA table_info(orders)").fetchall()]
+            if 'admin_notes' not in _order_cols:
+                db.execute("ALTER TABLE orders ADD COLUMN admin_notes TEXT DEFAULT ''")
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v17_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v17 admin_notes skipped: {_e}')
+
 
 # ---------------------------------------------------------------------------
 # Carrier tracking helpers — generate public tracking URL from carrier name
@@ -3187,11 +3208,9 @@ def sitemap_xml():
     _add('/privacidad', priority='0.3', changefreq='yearly')
     _add('/terminos',   priority='0.3', changefreq='yearly')
 
-    # Categorías (página /catalogo con filtro)
-    cats = query_db("SELECT DISTINCT category FROM products WHERE active=1 AND category<>''")
-    for c in cats or []:
-        cat = c['category']
-        _add(f'/catalogo?category={cat}', priority='0.8', changefreq='weekly')
+    # Landings SEO por categoría — preferimos estas URLs limpias en sitemap
+    for cat_name, l in CATEGORY_LANDINGS.items():
+        _add(f"/categoria/{l['slug']}", priority='0.85', changefreq='weekly')
 
     # Productos activos — un URL por SKU (slug)
     prods = query_db(
@@ -3224,6 +3243,166 @@ def favicon_ico():
     """Sirve el favicon — varias resoluciones bundle como .ico estándar."""
     return send_from_directory(_static_img, 'favicon.ico',
                                mimetype='image/vnd.microsoft.icon')
+
+
+# ---------------------------------------------------------------------------
+# Custom 404 — sugiere productos para recuperar tráfico perdido
+# ---------------------------------------------------------------------------
+
+@app.errorhandler(404)
+def custom_404(e):
+    """404 page con búsqueda + categorías + 6 productos populares.
+    Convierte tráfico perdido en oportunidad de discovery."""
+    try:
+        suggested = query_db(
+            "SELECT id, sku, name, slug, category, price, image_path "
+            "FROM products WHERE active=1 AND stock > 0 "
+            "ORDER BY id DESC LIMIT 6"
+        ) or []
+        categories = query_db(
+            "SELECT DISTINCT category FROM products WHERE active=1 "
+            "AND category<>'' ORDER BY category"
+        ) or []
+    except Exception:
+        suggested, categories = [], []
+    return render_template('404.html',
+                           suggested=suggested,
+                           categories=[c['category'] for c in categories]
+                           ), 404
+
+
+# ---------------------------------------------------------------------------
+# Landing pages por categoría con copy SEO específico
+# ---------------------------------------------------------------------------
+
+CATEGORY_LANDINGS = {
+    'Pérdida de Peso': {
+        'slug': 'perdida-de-peso',
+        'title': 'Péptidos para Pérdida de Peso',
+        'h1': 'Péptidos para investigación de pérdida de peso',
+        'subtitle': 'Agonistas GLP-1/GIP/Glucagón, lipolíticos y reguladores metabólicos',
+        'description': 'Catálogo de péptidos para investigación de pérdida de peso: Retatrutide (RT5/RT10/RT20), Tesamorelin, Cagrilintide, AOD-9604, HGH Fragment 176-191, SLU-PP-322 y 5-Amino-1MQ. Todos los productos son for research use only — calidad de laboratorio para protocolos de investigación científica.',
+        'meta_desc': 'Péptidos de investigación para pérdida de peso: Retatrutide, Tesamorelin, Cagrilintide, AOD-9604, HGH Fragment. Calidad de laboratorio. RUO.',
+    },
+    'Performance': {
+        'slug': 'performance',
+        'title': 'Péptidos para Performance',
+        'h1': 'Péptidos para investigación de performance',
+        'subtitle': 'Secretagogos de GH, GHRH análogos e IGF-1 para investigación',
+        'description': 'Catálogo de péptidos para investigación de composición corporal, regeneración tisular y eje somatotrópico: IGF-1 LR3, Ipamorelin, CJC-1295, MOTS-C, Somatropina HGH y blends para protocolos avanzados. For research use only.',
+        'meta_desc': 'Péptidos de performance: IGF-1 LR3, Ipamorelin, CJC-1295, MOTS-C, HGH. Calidad de laboratorio para investigación científica.',
+    },
+    'Recuperación': {
+        'slug': 'recuperacion',
+        'title': 'Péptidos para Recuperación',
+        'h1': 'Péptidos para investigación de regeneración tisular',
+        'subtitle': 'BPC-157, TB-500, KPV y blends regenerativos',
+        'description': 'Péptidos de investigación para regeneración músculo-esquelética, reparación tisular y mucosa intestinal: BPC-157, TB-500, KPV, y blends BBG70 / BBKG80 para protocolos integrales. For research use only.',
+        'meta_desc': 'BPC-157, TB-500, KPV y blends regenerativos. Péptidos de investigación para recuperación y reparación tisular. RUO.',
+    },
+    'Bienestar': {
+        'slug': 'bienestar',
+        'title': 'Péptidos para Bienestar',
+        'h1': 'Péptidos para investigación neurológica y bienestar',
+        'subtitle': 'Nootrópicos, ansiolíticos y moduladores del sueño',
+        'description': 'Péptidos para investigación de función cognitiva, sueño y respuesta al estrés: Semax, Selank, DSIP, PT-141, C-Péptido y Thymosin Alpha-1. Investigación de calidad de laboratorio. For research use only.',
+        'meta_desc': 'Semax, Selank, DSIP, PT-141 y otros péptidos de investigación para bienestar neurológico, sueño y modulación inmune.',
+    },
+    'Anti-aging': {
+        'slug': 'anti-aging',
+        'title': 'Péptidos Anti-aging',
+        'h1': 'Péptidos para investigación de longevidad',
+        'subtitle': 'GHK-Cu y NAD+ para investigación de envejecimiento saludable',
+        'description': 'Péptidos y cofactores para investigación de longevidad, regeneración celular y envejecimiento saludable: GHK-Cu (50/100 mg) y NAD+ 1000 mg. Calidad de laboratorio para protocolos de investigación científica.',
+        'meta_desc': 'GHK-Cu y NAD+ para investigación de longevidad. Péptidos anti-aging calidad de laboratorio. RUO.',
+    },
+    'Accesorios': {
+        'slug': 'accesorios',
+        'title': 'Accesorios — Solventes de reconstitución',
+        'h1': 'Solventes para reconstitución de péptidos',
+        'subtitle': 'BACH water y Acetic water — calidad USP',
+        'description': 'Solventes estériles para reconstitución de péptidos liofilizados: BACH water (bacteriostática, 0.9% alcohol bencílico) y Acetic water (pH 3.5-4.5, ideal para CJC-1295). Calidad USP para uso en laboratorio.',
+        'meta_desc': 'BACH water y Acetic water — solventes USP para reconstituir péptidos liofilizados en investigación.',
+    },
+}
+
+
+@app.route('/favoritos')
+def favoritos():
+    """Página de wishlist — el cliente guarda productos en localStorage,
+    esta vista solo lee los IDs y los hidrata desde la BD vía AJAX.
+    Sin auth requerida."""
+    return render_template('favoritos.html')
+
+
+@app.route('/api/products/by-ids', methods=['POST'])
+def api_products_by_ids():
+    """Devuelve datos de productos por sus IDs — para hidratar wishlist
+    y comparador desde localStorage."""
+    data = request.get_json(silent=True) or {}
+    raw_ids = data.get('ids', [])
+    if not isinstance(raw_ids, list):
+        return jsonify({'products': []}), 400
+    # Limit + sanitize
+    ids = []
+    for x in raw_ids[:50]:
+        try:
+            ids.append(int(x))
+        except (TypeError, ValueError):
+            continue
+    if not ids:
+        return jsonify({'products': []})
+    placeholders = ','.join('?' * len(ids))
+    rows = query_db(
+        f"SELECT id, sku, name, slug, category, dose, price, image_path, "
+        f"stock FROM products WHERE active=1 AND id IN ({placeholders})",
+        ids
+    ) or []
+    return jsonify({'products': [dict(r) for r in rows]})
+
+
+@app.route('/calculadora')
+def calculadora_dosificacion():
+    """Calculadora de dosificación: input mg + ml de reconstitución →
+    unidades por jeringa. Útil herramienta para investigación + SEO."""
+    return render_template('calculadora.html')
+
+
+@app.route('/comparador')
+def comparador():
+    """Comparador de péptidos (lado a lado). IDs vienen via ?ids=1,2,3
+    y se cargan vía API."""
+    products_arg = (request.args.get('ids') or '').strip()
+    return render_template('comparador.html', ids_arg=products_arg)
+
+
+@app.route('/categoria/<slug>')
+def categoria_landing(slug):
+    """Landing SEO por categoría. Redirige a /catalogo con filtro aplicado,
+    pero la ruta tiene meta tags + h1 + descripción específicos."""
+    landing = None
+    canonical_cat = None
+    for cat_name, l in CATEGORY_LANDINGS.items():
+        if l['slug'] == slug:
+            landing = l
+            canonical_cat = cat_name
+            break
+    if not landing:
+        abort(404)
+
+    # Filtrar productos de esa categoría
+    products = query_db(
+        "SELECT * FROM products WHERE active=1 AND category=? ORDER BY id",
+        (canonical_cat,)
+    ) or []
+
+    return render_template(
+        'categoria_landing.html',
+        landing=landing,
+        category=canonical_cat,
+        products=products,
+        all_categories=CATEGORY_LANDINGS,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -4768,25 +4947,234 @@ def admin_ajuste_bulk():
 @admin_required
 def admin_ordenes():
     status_filter = request.args.get('status', '')
-    if status_filter:
-        orders = query_db(
-            "SELECT * FROM orders WHERE status=? ORDER BY created_at DESC",
-            (status_filter,)
-        )
-    else:
-        orders = query_db("SELECT * FROM orders ORDER BY created_at DESC")
+    q             = (request.args.get('q') or '').strip()
 
-    # Counts por status para los chips — ayuda al admin a "encontrar"
-    # órdenes que cambiaron de estado y salieron del filtro actual.
-    _count_rows = query_db(
-        "SELECT status, COUNT(*) AS n FROM orders GROUP BY status"
+    where = []
+    params = []
+    if status_filter:
+        where.append("status = ?")
+        params.append(status_filter)
+    if q:
+        # Busca en número de orden, nombre, email, teléfono y SKUs/productos
+        like = f'%{q}%'
+        where.append("""(
+            order_number LIKE ? OR customer_name LIKE ? OR
+            customer_email LIKE ? OR customer_phone LIKE ? OR
+            id IN (SELECT order_id FROM order_items
+                   WHERE product_sku LIKE ? OR product_name LIKE ?)
+        )""")
+        params.extend([like, like, like, like, like, like])
+
+    sql_where = (' WHERE ' + ' AND '.join(where)) if where else ''
+    orders = query_db(
+        f"SELECT * FROM orders{sql_where} ORDER BY created_at DESC LIMIT 500",
+        params
     )
+
+    _count_rows = query_db("SELECT status, COUNT(*) AS n FROM orders GROUP BY status")
     status_counts = {r['status']: r['n'] for r in _count_rows}
     status_counts['_total'] = sum(status_counts.values())
 
     return render_template('admin/ordenes.html', orders=orders,
                            status_filter=status_filter,
-                           status_counts=status_counts)
+                           status_counts=status_counts,
+                           q=q)
+
+
+@app.route('/admin/ordenes/export.csv')
+@admin_required
+def admin_ordenes_export():
+    """Export CSV de todas las órdenes (filtros opcionales).
+    Formato Excel-compatible (UTF-8 BOM + CRLF)."""
+    status_filter = request.args.get('status', '')
+    q             = (request.args.get('q') or '').strip()
+    where = []
+    params = []
+    if status_filter:
+        where.append("status = ?")
+        params.append(status_filter)
+    if q:
+        like = f'%{q}%'
+        where.append("(order_number LIKE ? OR customer_name LIKE ? OR customer_email LIKE ?)")
+        params.extend([like, like, like])
+    sql_where = (' WHERE ' + ' AND '.join(where)) if where else ''
+    orders = query_db(
+        f"SELECT * FROM orders{sql_where} ORDER BY created_at DESC",
+        params
+    ) or []
+
+    si = io.StringIO()
+    si.write('﻿')  # UTF-8 BOM para Excel
+    writer = csv.writer(si, dialect='excel')
+    writer.writerow([
+        'Orden', 'Fecha', 'Cliente', 'Email', 'Teléfono',
+        'Dirección', 'Ciudad', 'Estado', 'CP',
+        'Subtotal MXN', 'Envío MXN', 'Total MXN',
+        'Método pago', 'Estado pago', 'Estado orden',
+        'Paquetería', 'Guía', 'Notas admin'
+    ])
+    for o in orders:
+        writer.writerow([
+            o['order_number'], o['created_at'][:16],
+            o['customer_name'] or '', o['customer_email'] or '',
+            o['customer_phone'] or '',
+            o['address'] or '', o['city'] or '',
+            o['state'] or '', o['zip_code'] or '',
+            f"{o['subtotal']:.2f}", f"{o['shipping']:.2f}", f"{o['total']:.2f}",
+            o['payment_method'] or '', o['payment_status'] or '', o['status'] or '',
+            o['tracking_carrier'] or '', o['tracking_number'] or '',
+            (o['admin_notes'] or '').replace('\n', ' ')
+        ])
+
+    fname = f"ordenes_jdp_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+    return Response(
+        si.getvalue(),
+        mimetype='text/csv; charset=utf-8',
+        headers={'Content-Disposition': f'attachment; filename="{fname}"'}
+    )
+
+
+@app.route('/admin/ordenes/bulk-status', methods=['POST'])
+@admin_required
+def admin_ordenes_bulk_status():
+    """Cambia el status de varias órdenes a la vez."""
+    ids = request.form.getlist('order_ids')
+    new_status = request.form.get('status', '')
+    if new_status not in ('nuevo', 'procesando', 'enviado', 'entregado', 'cancelado'):
+        flash('Estado inválido.', 'error')
+        return redirect(url_for('admin_ordenes'))
+    n = 0
+    for sid in ids:
+        try:
+            oid = int(sid)
+        except (TypeError, ValueError):
+            continue
+        execute_db("UPDATE orders SET status=? WHERE id=?", (new_status, oid))
+        n += 1
+    flash(f'{n} órden(es) actualizadas a "{new_status}".', 'success')
+    return redirect(request.referrer or url_for('admin_ordenes'))
+
+
+@app.route('/admin/ordenes/<int:oid>/notes', methods=['POST'])
+@admin_required
+def admin_orden_notes(oid):
+    """Guarda notas internas en una orden (no visibles al cliente)."""
+    notes = (request.form.get('admin_notes') or '').strip()[:4000]
+    execute_db("UPDATE orders SET admin_notes=? WHERE id=?", (notes, oid))
+    flash('Notas internas guardadas.', 'success')
+    return redirect(url_for('admin_orden_detalle', oid=oid))
+
+
+# ---------------------------------------------------------------------------
+# /admin/clientes — vista consolidada por customer_email con LTV
+# ---------------------------------------------------------------------------
+
+@app.route('/admin/clientes')
+@admin_required
+def admin_clientes():
+    """Vista de clientes únicos con LTV, # órdenes y último pedido.
+    Útil para segmentación y retargeting."""
+    q = (request.args.get('q') or '').strip()
+    sort = (request.args.get('sort') or 'revenue').lower()
+    sort_sql = {
+        'revenue':   'revenue DESC',
+        'orders':    'orders_n DESC',
+        'recent':    'last_order DESC',
+        'name':      'customer_name ASC',
+    }.get(sort, 'revenue DESC')
+
+    where = "WHERE status NOT IN ('cancelado')"
+    params = []
+    if q:
+        where += " AND (customer_email LIKE ? OR customer_name LIKE ? OR customer_phone LIKE ?)"
+        like = f'%{q}%'
+        params.extend([like, like, like])
+
+    rows = query_db(
+        f"""SELECT
+            LOWER(customer_email) AS customer_email,
+            MAX(customer_name)    AS customer_name,
+            MAX(customer_phone)   AS customer_phone,
+            COUNT(*)              AS orders_n,
+            SUM(total)            AS revenue,
+            MAX(created_at)       AS last_order,
+            MIN(created_at)       AS first_order
+            FROM orders
+            {where}
+            GROUP BY LOWER(customer_email)
+            ORDER BY {sort_sql}
+            LIMIT 500""",
+        params
+    ) or []
+
+    return render_template('admin/clientes.html', rows=rows, q=q, sort=sort)
+
+
+@app.route('/admin/clientes/export.csv')
+@admin_required
+def admin_clientes_export():
+    rows = query_db(
+        """SELECT
+            LOWER(customer_email) AS email,
+            MAX(customer_name)    AS name,
+            MAX(customer_phone)   AS phone,
+            COUNT(*)              AS orders_n,
+            SUM(total)            AS revenue,
+            MAX(created_at)       AS last_order,
+            MIN(created_at)       AS first_order
+            FROM orders
+            WHERE status NOT IN ('cancelado')
+            GROUP BY LOWER(customer_email)
+            ORDER BY revenue DESC"""
+    ) or []
+    si = io.StringIO()
+    si.write('﻿')
+    w = csv.writer(si, dialect='excel')
+    w.writerow(['Email', 'Nombre', 'Teléfono', 'Órdenes', 'LTV MXN',
+                'Última compra', 'Primera compra'])
+    for r in rows:
+        w.writerow([
+            r['email'], r['name'] or '', r['phone'] or '',
+            r['orders_n'], f"{(r['revenue'] or 0):.2f}",
+            (r['last_order'] or '')[:16], (r['first_order'] or '')[:16]
+        ])
+    fname = f"clientes_jdp_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+    return Response(si.getvalue(), mimetype='text/csv; charset=utf-8',
+                    headers={'Content-Disposition': f'attachment; filename="{fname}"'})
+
+
+@app.route('/admin/clientes/<path:email>')
+@admin_required
+def admin_cliente_detalle(email):
+    """Histórico de un cliente: todas sus órdenes, productos comprados,
+    LTV, frecuencia. Útil antes de hacer outreach."""
+    email = email.lower()
+    summary = query_db(
+        """SELECT COUNT(*) AS orders_n, SUM(total) AS revenue,
+           MIN(created_at) AS first_order, MAX(created_at) AS last_order,
+           MAX(customer_name) AS name, MAX(customer_phone) AS phone
+           FROM orders WHERE LOWER(customer_email)=?
+           AND status NOT IN ('cancelado')""",
+        (email,), one=True
+    )
+    orders = query_db(
+        "SELECT * FROM orders WHERE LOWER(customer_email)=? "
+        "ORDER BY created_at DESC LIMIT 100",
+        (email,)
+    ) or []
+    top_products = query_db(
+        """SELECT p.name, p.sku, SUM(oi.quantity) AS units,
+           SUM(oi.subtotal) AS revenue
+           FROM order_items oi
+           JOIN orders o ON o.id = oi.order_id
+           JOIN products p ON p.id = oi.product_id
+           WHERE LOWER(o.customer_email)=? AND o.status NOT IN ('cancelado')
+           GROUP BY p.id ORDER BY units DESC LIMIT 10""",
+        (email,)
+    ) or []
+    return render_template('admin/cliente_detalle.html',
+                           email=email, summary=summary,
+                           orders=orders, top_products=top_products)
 
 
 @app.route('/admin/ordenes/<int:oid>')

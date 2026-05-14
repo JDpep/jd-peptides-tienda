@@ -49,26 +49,30 @@
     </div>
 
     <!-- Status legend -->
-    <div class="reveal" style="margin-top:2rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;--delay:0.2s">
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.85rem;text-align:center">
-        <div style="font-size:1.4rem">📦</div>
-        <strong style="font-size:0.78rem;display:block;margin-top:0.3rem">Nuevo</strong>
-        <span style="font-size:0.7rem;color:var(--text3)">Pedido recibido</span>
+    <div class="reveal tracking-states" style="margin-top:2rem;--delay:0.2s">
+      <div class="tracking-state">
+        <span class="tracking-state-num">01</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/></svg>
+        <strong>Nuevo</strong>
+        <span>Pedido recibido</span>
       </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.85rem;text-align:center">
-        <div style="font-size:1.4rem">⚙️</div>
-        <strong style="font-size:0.78rem;display:block;margin-top:0.3rem">Procesando</strong>
-        <span style="font-size:0.7rem;color:var(--text3)">Preparando</span>
+      <div class="tracking-state">
+        <span class="tracking-state-num">02</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <strong>Procesando</strong>
+        <span>Preparando</span>
       </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.85rem;text-align:center">
-        <div style="font-size:1.4rem">🚚</div>
-        <strong style="font-size:0.78rem;display:block;margin-top:0.3rem">Enviado</strong>
-        <span style="font-size:0.7rem;color:var(--text3)">En camino</span>
+      <div class="tracking-state">
+        <span class="tracking-state-num">03</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <strong>Enviado</strong>
+        <span>En camino</span>
       </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.85rem;text-align:center">
-        <div style="font-size:1.4rem">✅</div>
-        <strong style="font-size:0.78rem;display:block;margin-top:0.3rem">Entregado</strong>
-        <span style="font-size:0.7rem;color:var(--text3)">Recibido</span>
+      <div class="tracking-state tracking-state-done">
+        <span class="tracking-state-num">04</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        <strong>Entregado</strong>
+        <span>Recibido</span>
       </div>
     </div>
   </div>

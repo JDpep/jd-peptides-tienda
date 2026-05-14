@@ -82,8 +82,8 @@
     <!-- Tracking de guía -->
     {% if order['tracking_number'] %}
       {% set _turl = carrier_tracking_url(order['tracking_carrier'], order['tracking_number']) %}
-      <div style="background:rgba(201,162,39,0.08);border-left:3px solid var(--gold);padding:1.2rem 1.4rem;border-radius:0 8px 8px 0;margin:1rem 0">
-        <p style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin:0 0 0.6rem">📦 Envío en curso</p>
+      <div style="background:rgba(201,162,39,0.08);border:1px solid rgba(201,162,39,0.3);padding:1.2rem 1.4rem;border-radius:8px;margin:1rem 0">
+        <p style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin:0 0 0.6rem">Envío en curso</p>
         <p style="margin:0 0 0.4rem;font-size:0.95rem;color:var(--text)"><strong>{{ order['tracking_carrier'] }}</strong></p>
         <p style="margin:0;font-family:monospace;font-size:0.9rem;color:var(--text2)">Guía: <code style="background:var(--bg3);padding:2px 8px;border-radius:4px">{{ order['tracking_number'] }}</code></p>
         {% if _turl %}
@@ -164,8 +164,9 @@
       </p>
     </div>
 
-    <div class="detail-disclaimer" style="margin-bottom:2rem">
-      <strong style="color:var(--gold)">⚠️ For Research Use Only</strong> — Los productos adquiridos son exclusivamente para uso en investigación científica.
+    <div class="detail-disclaimer" style="margin-bottom:2rem;display:flex;gap:0.8rem;align-items:flex-start">
+      <span style="flex:0 0 auto;font-size:0.6rem;font-weight:800;letter-spacing:0.08em;color:var(--gold);background:rgba(201,162,39,0.18);padding:0.25rem 0.45rem;border-radius:3px;line-height:1">RUO</span>
+      <span><strong style="color:var(--text)">For Research Use Only.</strong> Los productos adquiridos son exclusivamente para uso en investigación científica <em>in vitro</em>.</span>
     </div>
 
     <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">

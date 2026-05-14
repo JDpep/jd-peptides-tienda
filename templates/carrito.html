@@ -122,9 +122,9 @@
                   </a>
                 </div>
               {% endif %}
-              <div class="detail-disclaimer" style="margin-top:1rem">
-                <strong style="color:var(--gold)">⚠️ For Research Use Only</strong><br>
-                Al proceder confirmas que los productos son para uso exclusivo de investigación científica.
+              <div class="detail-disclaimer" style="margin-top:1rem;display:flex;gap:0.7rem;align-items:flex-start">
+                <span style="flex:0 0 auto;font-size:0.58rem;font-weight:800;letter-spacing:0.08em;color:var(--gold);background:rgba(201,162,39,0.18);padding:0.22rem 0.4rem;border-radius:3px;line-height:1;margin-top:0.1rem">RUO</span>
+                <span><strong style="color:var(--text)">For Research Use Only.</strong> Al proceder confirmas que los productos son para uso exclusivo de investigación científica <em>in vitro</em>.</span>
               </div>
             </div>
           </div>
@@ -134,12 +134,26 @@
     {% else %}
       <!-- Empty cart -->
       <div class="cart-empty">
-        <div style="font-size:4rem;margin-bottom:1rem">🛒</div>
+        <svg viewBox="0 0 120 120" width="96" height="96" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold);opacity:0.55;margin:0 auto 1.25rem;display:block">
+          <path d="M28 32h74l-8 44a8 8 0 0 1-8 7H44a8 8 0 0 1-8-7L24 20h-10"/>
+          <circle cx="50" cy="98" r="6"/>
+          <circle cx="88" cy="98" r="6"/>
+          <path d="M52 50v18M68 50v18M84 50v18"/>
+        </svg>
         <h3>Tu carrito está vacío</h3>
-        <p style="margin:0.5rem 0 1.5rem;max-width:300px;margin-left:auto;margin-right:auto">
-          Explora nuestro catálogo y agrega los péptidos de investigación que necesitas.
+        <p style="margin:0.5rem auto 1.5rem;max-width:360px;color:var(--text2)">
+          Explora el catálogo y agrega los péptidos de investigación que necesitas.
+          Si tienes dudas técnicas, contáctanos directamente.
         </p>
-        <a href="{{ url_for('catalogo') }}" class="btn btn-gold btn-lg">Ver Catálogo</a>
+        <div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap">
+          <a href="{{ url_for('catalogo') }}" class="btn btn-gold btn-lg">Ver catálogo</a>
+          <a href="{{ url_for('favoritos') }}" class="btn btn-ghost btn-lg">Ver favoritos</a>
+        </div>
+        {% if whatsapp_number %}
+        <p style="margin-top:1.5rem;font-size:0.82rem;color:var(--text3)">
+          ¿Buscas algo específico? <a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener" style="color:var(--gold)">Escríbenos por WhatsApp →</a>
+        </p>
+        {% endif %}
       </div>
     {% endif %}
 

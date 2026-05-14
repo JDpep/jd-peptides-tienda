@@ -10,10 +10,16 @@
       Comparar <span style="color:var(--gold)">péptidos</span>
     </h1>
 
-    <div id="comparator-empty" hidden style="text-align:center;padding:3rem 0;color:var(--text2)">
-      <p style="font-size:1.05rem;margin-bottom:1rem">No has seleccionado productos para comparar.</p>
+    <div id="comparator-empty" hidden style="text-align:center;padding:3.5rem 1rem;color:var(--text2)">
+      <svg viewBox="0 0 120 120" width="84" height="84" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold);opacity:0.55;margin:0 auto 1.25rem;display:block">
+        <polyline points="84 12 104 32 84 52"/>
+        <path d="M16 36V28a8 8 0 0 1 8-8h80"/>
+        <polyline points="36 108 16 88 36 68"/>
+        <path d="M104 84v8a8 8 0 0 1-8 8H16"/>
+      </svg>
+      <h3 style="font-size:1.15rem;color:var(--text);margin-bottom:0.4rem">Aún no tienes productos para comparar</h3>
+      <p style="font-size:0.9rem;color:var(--text3);max-width:380px;margin:0 auto 1.5rem">Agrega hasta 4 péptidos con el botón ⇄ en cada ficha del catálogo para verlos lado a lado.</p>
       <a href="{{ url_for('catalogo') }}" class="btn btn-gold">Ir al catálogo →</a>
-      <p style="font-size:0.78rem;color:var(--text3);margin-top:1.5rem">Tip: agrega productos al comparador con el botón "⇄ Comparar" en cada ficha.</p>
     </div>
 
     <div id="comparator-table" style="overflow-x:auto;display:none">

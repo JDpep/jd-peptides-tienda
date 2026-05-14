@@ -188,13 +188,13 @@
                       </div>
                       {% set _pimg = p['image_path'] or img_map.get(p['sku'], '') %}
                       {% if _pimg %}
-                        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='img/' + _pimg) }}"
-                             alt="Frasco {{ p['name'] }} {{ p['dose'] }} — For Research Use Only"
-                             class="product-card-img{% if _pimg.endswith('.jpeg') or _pimg.endswith('.jpg') or '_frasco_' in _pimg %} img-vial-right{% endif %}"
+                        <img src="{{ url_for('static', filename='img/' + _pimg) }}"
                              loading="{% if loop.index <= 3 %}eager{% else %}lazy{% endif %}"
-                             {% if loop.index <= 3 %}fetchpriority="high"{% endif %}
                              decoding="async"
-                             width="320" height="533">
+                             {% if loop.index <= 3 %}fetchpriority="high"{% endif %}
+                             width="320" height="533"
+                             alt="Frasco {{ p['name'] }} {{ p['dose'] }} — For Research Use Only"
+                             class="product-card-img{% if _pimg.endswith('.jpeg') or _pimg.endswith('.jpg') or '_frasco_' in _pimg %} img-vial-right{% endif %}">
                       {% else %}
                         <div class="product-visual-pattern">
                           <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">

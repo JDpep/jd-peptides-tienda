@@ -70,4 +70,4 @@ def test_organization_jsonld(client):
     """Schema.org Organization con sameAs Instagram."""
     html = client.get('/').get_data(as_text=True)
     assert 'application/ld+json' in html
-    assert 'instagram.com/jdpeptidesmx' in html
+    assert 'instagram.com/jdpeptides.mx' in html

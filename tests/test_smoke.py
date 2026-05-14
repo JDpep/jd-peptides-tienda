@@ -8,7 +8,7 @@ import pytest
 PUBLIC_ROUTES_GET = [
     '/',
     '/catalogo',
-    '/catalogo?category=Performance',
+    '/catalogo?category=Cambio+muscular',
     '/catalogo?search=BPC',
     '/catalogo?sort=price_asc',
     '/catalogo?in_stock=1',

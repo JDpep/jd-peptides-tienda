@@ -1469,7 +1469,7 @@ PRODUCTS_SEED = [
     {
         'sku': 'JDP-MOTSC',
         'name': 'MOTS-C',
-        'category': 'Performance',
+        'category': 'Cambio muscular',
         'dose': '10 mg',
         'price': 3000.00,
         'description': 'MOTS-C es un péptido bioactivo de origen mitocondrial codificado en el ADN mitocondrial humano, que actúa como regulador maestro del metabolismo energético. Ha generado gran interés científico por su capacidad de mimetizar los efectos del ejercicio a nivel celular, su rol en la homeostasis de la glucosa y su potencial en el envejecimiento saludable.',
@@ -1589,7 +1589,7 @@ PRODUCTS_SEED = [
     {
         'sku': 'JDP-IGF1',
         'name': 'IGF-1 LR3',
-        'category': 'Performance',
+        'category': 'Cambio muscular',
         'dose': '1 mg',
         'price': 3000.00,
         'description': 'IGF-1 LR3 (Long R3 Insulin-like Growth Factor 1) es una variante recombinante de 83 aminoácidos del IGF-1 humano con una sustitución en la posición 3 (Glu→Arg) y una extensión de 13 aminoácidos. Estas modificaciones le confieren una vida media plasmática extendida (≈20 h vs. 12-15 min del IGF-1 nativo) y reducen su unión a las proteínas IGFBP, aumentando su biodisponibilidad libre.',
@@ -1601,7 +1601,7 @@ PRODUCTS_SEED = [
     {
         'sku': 'JDP-IPA',
         'name': 'Ipamorelin',
-        'category': 'Performance',
+        'category': 'Cambio muscular',
         'dose': '5 mg',
         'price': 3000.00,
         'description': 'Ipamorelin es un pentapéptido sintético agonista selectivo del receptor de grelina (GHS-R1a) y mimético de la grelina. A diferencia de otros secretagogos, presenta un perfil de liberación de GH altamente selectivo sin elevar significativamente cortisol, prolactina o aldosterona, lo que lo convierte en uno de los GHS más estudiados por su pureza farmacológica.',
@@ -1625,7 +1625,7 @@ PRODUCTS_SEED = [
     {
         'sku': 'JDP-CJC-IPA',
         'name': 'CJC-1295 + Ipamorelin',
-        'category': 'Performance',
+        'category': 'Cambio muscular',
         'dose': '10 mg',
         'price': 4500.00,
         'description': 'Blend de CJC-1295 (sin DAC) + Ipamorelin a relación 1:1. Combina un análogo de GHRH (CJC-1295) con un agonista selectivo del receptor de grelina (Ipamorelin) para amplificar la liberación pulsátil de hormona de crecimiento por dos vías independientes y sinérgicas. Es uno de los blends más estudiados por su selectividad y la ausencia de elevación de cortisol/prolactina.',
@@ -1637,7 +1637,7 @@ PRODUCTS_SEED = [
     {
         'sku': 'JDP-CJC-NODAC',
         'name': 'CJC-1295 (no DAC)',
-        'category': 'Performance',
+        'category': 'Cambio muscular',
         'dose': '5 mg',
         'price': 3000.00,
         'description': 'CJC-1295 sin DAC (también llamado Mod GRF 1-29) es un análogo sintético de la GHRH humana (1-29) con cuatro sustituciones de aminoácidos que aumentan su estabilidad y potencia. Sin la fracción DAC, presenta una vida media corta (~30 min) que produce pulsos fisiológicos de GH similares a los patrones nocturnos endógenos.',
@@ -1697,7 +1697,7 @@ PRODUCTS_SEED = [
     {
         'sku': 'JDP-HGH',
         'name': 'Somatropina HGH',
-        'category': 'Performance',
+        'category': 'Cambio muscular',
         'dose': '24 IU',
         'price': 6000.00,
         'description': 'Somatropina (HGH recombinante) es la hormona de crecimiento humana de 191 aminoácidos producida por DNA recombinante en E. coli, idéntica a la GH endógena secretada por la pituitaria anterior. Es el patrón oro de los estudios de investigación sobre composición corporal, regeneración tisular y modulación del eje somatotrópico. Presentación 24 IU (≈ 8 mg) por vial.',
@@ -1757,7 +1757,7 @@ PRODUCTS_SEED = [
     {
         'sku': 'JDP-CJC-DAC',
         'name': 'CJC-1295 con DAC',
-        'category': 'Performance',
+        'category': 'Cambio muscular',
         'dose': '5 mg',
         'price': 2500.00,
         'description': 'CJC-1295 con DAC (Drug Affinity Complex) es un análogo sintético de la GHRH humana (1-29) modificado con una cadena de unión irreversible a la albúmina sérica, lo que extiende su vida media plasmática a 6-8 días. Esto produce una elevación sostenida (no pulsátil) de los niveles de GH e IGF-1 durante días con una sola dosis, a diferencia de la versión sin DAC.',
@@ -2561,13 +2561,13 @@ def init_db():
                  'RT5 — Retatrutide 5 mg. Agonista triple de los receptores GIP, GLP-1 y Glucagón actualmente en ensayos clínicos de Fase 3. Dosis de entrada para protocolos de investigación de pérdida de peso y manejo metabólico.',
                  'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas|Dosis 5 mg para inicio de protocolos de investigación'),
 
-                ('JDP-CJC-IPA', 'CJC-1295 + Ipamorelin', 'Performance', '10 mg', 89.99, 24, 5,
+                ('JDP-CJC-IPA', 'CJC-1295 + Ipamorelin', 'Cambio muscular', '10 mg', 89.99, 24, 5,
                  'jdp_vial_cjc_ipa.png',
                  'hormonal|performance|recuperacion',
                  'Blend de CJC-1295 (sin DAC) + Ipamorelin a relación 1:1. Combina un análogo de GHRH (CJC-1295) con un agonista selectivo del receptor de grelina (Ipamorelin) para amplificar la liberación pulsátil de hormona de crecimiento por dos vías independientes y sinérgicas. Es uno de los blends más estudiados por su selectividad y la ausencia de elevación de cortisol/prolactina.',
                  'Sinergia de doble vía: GHRH + secretagogo de grelina|Liberación de GH amplificada vs. monoterapias|Mejora la recuperación, regeneración tisular y reparación|Apoya la composición corporal (masa magra ↑ / grasa ↓)|Mejora la calidad del sueño profundo|Perfil farmacológico limpio sin efectos hormonales colaterales'),
 
-                ('JDP-CJC-NODAC', 'CJC-1295 (no DAC)', 'Performance', '5 mg', 74.99, 24, 5,
+                ('JDP-CJC-NODAC', 'CJC-1295 (no DAC)', 'Cambio muscular', '5 mg', 74.99, 24, 5,
                  'jdp_vial_cjc_nodac.png',
                  'hormonal|performance',
                  'CJC-1295 sin DAC (también llamado Mod GRF 1-29) es un análogo sintético de la GHRH humana (1-29) con cuatro sustituciones de aminoácidos que aumentan su estabilidad y potencia. Sin la fracción DAC, presenta una vida media corta (~30 min) que produce pulsos fisiológicos de GH similares a los patrones nocturnos endógenos.',
@@ -2597,7 +2597,7 @@ def init_db():
                  'AOD-9604 es un análogo modificado del fragmento C-terminal de la hormona de crecimiento humana (residuos 176-191) con una tirosina añadida en el extremo N-terminal para mejorar su estabilidad. Mantiene la actividad lipolítica selectiva sin los efectos hiperglucemiantes ni anabólicos de la GH completa, y cuenta con clasificación GRAS de la FDA.',
                  'Lipolisis selectiva en adipocitos sin elevación de glucosa|No interfiere con la insulina ni la sensibilidad insulínica|Sin actividad anabólica — no afecta IGF-1 ni GH endógena|Investigado en obesidad, esteatosis hepática y osteoartritis|Clasificación GRAS de la FDA (uso oral en alimentos)|Estabilidad mejorada vs. el fragmento 176-191 nativo'),
 
-                ('JDP-HGH', 'Somatropina HGH', 'Performance', '24 IU', 249.99, 12, 3,
+                ('JDP-HGH', 'Somatropina HGH', 'Cambio muscular', '24 IU', 249.99, 12, 3,
                  'jdp_vial_hgh.png',
                  'hormonal|performance|anti-aging',
                  'Somatropina (HGH recombinante) es la hormona de crecimiento humana de 191 aminoácidos producida por DNA recombinante en E. coli, idéntica a la GH endógena secretada por la pituitaria anterior. Es el patrón oro de los estudios de investigación sobre composición corporal, regeneración tisular y modulación del eje somatotrópico. Presentación 24 IU (≈ 8 mg) por vial.',
@@ -2808,7 +2808,7 @@ def init_db():
 
             # 3) INSERT 3 productos del PDF que faltan (sin foto oficial todavía).
             _new_products_v15 = [
-                ('JDP-CJC-DAC', 'CJC-1295 con DAC', 'Performance', '5 mg', 2500.00, 22, 5,
+                ('JDP-CJC-DAC', 'CJC-1295 con DAC', 'Cambio muscular', '5 mg', 2500.00, 22, 5,
                  '',
                  'hormonal|performance',
                  'CJC-1295 con DAC (Drug Affinity Complex) es un análogo sintético de la GHRH humana (1-29) modificado con una cadena de unión irreversible a la albúmina sérica, lo que extiende su vida media plasmática a 6-8 días. Esto produce una elevación sostenida (no pulsátil) de los niveles de GH e IGF-1 durante días con una sola dosis, a diferencia de la versión sin DAC.',
@@ -2906,6 +2906,26 @@ def init_db():
             db.commit()
         except Exception as _e:
             print(f'[INIT] migration v17 admin_notes skipped: {_e}')
+
+    # Migration v18 (2026-05-14): renombra categoría "Performance" → "Cambio muscular".
+    _mig_v18_tag = 'migration:v18:rename_performance_20260514'
+    already_v18 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v18_tag,)
+    ).fetchone()
+    if not already_v18:
+        try:
+            db.execute("UPDATE products SET category=? WHERE category=?",
+                       ('Cambio muscular', 'Performance'))
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v18_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v18 rename Performance skipped: {_e}')
 
 
 # ---------------------------------------------------------------------------
@@ -3048,7 +3068,7 @@ app.jinja_env.globals['FREE_SHIPPING_MIN_USD'] = FREE_SHIPPING_MIN_MXN
 TAG_LABELS = {
     'metabolismo':       'Metabolismo',
     'hormonal':          'Hormonal',
-    'performance':       'Performance',
+    'performance':       'Cambio muscular',
     'recuperacion':      'Recuperación',
     'anti-aging':        'Anti-aging',
     'anti-inflamatorio': 'Antiinflamatorio',
@@ -3291,13 +3311,13 @@ CATEGORY_LANDINGS = {
         'description': 'Catálogo de péptidos para investigación de pérdida de peso: Retatrutide (RT5/RT10/RT20), Tesamorelin, Cagrilintide, AOD-9604, HGH Fragment 176-191, SLU-PP-322 y 5-Amino-1MQ. Todos los productos son for research use only — calidad de laboratorio para protocolos de investigación científica.',
         'meta_desc': 'Péptidos de investigación para pérdida de peso: Retatrutide, Tesamorelin, Cagrilintide, AOD-9604, HGH Fragment. Calidad de laboratorio. RUO.',
     },
-    'Performance': {
-        'slug': 'performance',
-        'title': 'Péptidos para Performance',
-        'h1': 'Péptidos para investigación de performance',
-        'subtitle': 'Secretagogos de GH, GHRH análogos e IGF-1 para investigación',
-        'description': 'Catálogo de péptidos para investigación de composición corporal, regeneración tisular y eje somatotrópico: IGF-1 LR3, Ipamorelin, CJC-1295, MOTS-C, Somatropina HGH y blends para protocolos avanzados. For research use only.',
-        'meta_desc': 'Péptidos de performance: IGF-1 LR3, Ipamorelin, CJC-1295, MOTS-C, HGH. Calidad de laboratorio para investigación científica.',
+    'Cambio muscular': {
+        'slug': 'cambio-muscular',
+        'title': 'Péptidos para Cambio Muscular',
+        'h1': 'Péptidos para investigación de cambio muscular',
+        'subtitle': 'Secretagogos de GH, GHRH análogos e IGF-1 para composición corporal',
+        'description': 'Catálogo de péptidos para investigación de composición corporal, hipertrofia y eje somatotrópico: IGF-1 LR3, Ipamorelin, CJC-1295 (con/sin DAC), MOTS-C, Somatropina HGH y blends para protocolos avanzados. For research use only.',
+        'meta_desc': 'Péptidos para cambio muscular: IGF-1 LR3, Ipamorelin, CJC-1295, MOTS-C, HGH. Calidad de laboratorio para investigación científica.',
     },
     'Recuperación': {
         'slug': 'recuperacion',
@@ -3383,10 +3403,19 @@ def comparador():
     return render_template('comparador.html', ids_arg=products_arg)
 
 
+_CATEGORY_SLUG_REDIRECTS = {
+    # Old slug → new slug. Mantiene SEO de URLs publicadas previamente.
+    'performance': 'cambio-muscular',
+}
+
 @app.route('/categoria/<slug>')
 def categoria_landing(slug):
     """Landing SEO por categoría. Redirige a /catalogo con filtro aplicado,
     pero la ruta tiene meta tags + h1 + descripción específicos."""
+    # 301 desde slugs renombrados para conservar SEO.
+    if slug in _CATEGORY_SLUG_REDIRECTS:
+        return redirect(url_for('categoria_landing', slug=_CATEGORY_SLUG_REDIRECTS[slug]), code=301)
+
     landing = None
     canonical_cat = None
     for cat_name, l in CATEGORY_LANDINGS.items():

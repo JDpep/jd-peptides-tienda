@@ -10,7 +10,7 @@ def test_catalog_lists_products(client):
 
 
 def test_catalog_filter_by_category(client):
-    r = client.get('/catalogo?category=Performance')
+    r = client.get('/catalogo?category=Cambio+muscular')
     assert r.status_code == 200
 
 

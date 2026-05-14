@@ -38,7 +38,7 @@
         <label class="admin-label" for="category">Categoría *</label>
         <input type="text" id="category" name="category" class="admin-input"
                value="{{ product['category'] if product else '' }}" required
-               placeholder="ej. Recuperación, Performance, Anti-aging…"
+               placeholder="ej. Recuperación, Cambio muscular, Anti-aging…"
                list="categories-list">
         <datalist id="categories-list">
           {% for cat in categories %}

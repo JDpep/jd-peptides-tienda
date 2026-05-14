@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Factura {{ order['order_number'] }} — JD Peptides</title>
+  <style>
+    @page { size: A4; margin: 18mm; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #111; margin: 0; padding: 22px; background: #fff; max-width: 820px; }
+    .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 3px solid #c9a227; padding-bottom: 16px; margin-bottom: 22px; }
+    .brand { font-size: 26px; font-weight: 800; color: #c9a227; letter-spacing: 2px; margin: 0; }
+    .tag { font-size: 11px; color: #666; letter-spacing: 1.2px; margin-top: 4px; }
+    .invoice-meta { text-align: right; font-size: 13px; line-height: 1.55; }
+    .invoice-meta strong { color: #c9a227; font-size: 16px; }
+    h2 { font-size: 11px; color: #888; letter-spacing: 1.5px; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 6px; margin: 22px 0 12px; }
+    .row { display:flex; gap: 24px; }
+    .col { flex: 1; font-size: 13px; line-height: 1.65; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+    th { background: #f5f5f5; color: #333; text-align: left; padding: 9px 10px; border-bottom: 2px solid #c9a227; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 9px 10px; border-bottom: 1px solid #eee; }
+    .num { text-align: right; }
+    .totals { margin-left: auto; width: 280px; margin-top: 14px; }
+    .totals tr td { border: none; padding: 4px 10px; font-size: 13px; }
+    .totals .total td { font-weight: 800; font-size: 17px; color: #c9a227; border-top: 2px solid #c9a227; padding-top: 8px; }
+    .ruo { background: #fef3c7; border-left: 4px solid #c9a227; padding: 10px 14px; font-size: 11px; margin-top: 18px; color: #78350f; }
+    .footer { text-align:center; font-size: 10px; color: #888; margin-top: 28px; border-top: 1px solid #eee; padding-top: 12px; }
+    .print-btn { background: #c9a227; color: #fff; border: none; padding: 10px 22px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 13px; }
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="text-align:right;margin-bottom:14px">
+    <button class="print-btn" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+    <a href="{{ url_for('pedido', order_number=order['order_number']) }}" style="margin-left:10px;font-size:13px;color:#666">← Volver al pedido</a>
+  </div>
+
+  <div class="header">
+    <div>
+      <p class="brand">JD PEPTIDES</p>
+      <p class="tag">PÉPTIDOS DE INVESTIGACIÓN · MÉXICO</p>
+      <p class="tag" style="margin-top:8px">jdpeptides@gmail.com · www.jdpeptides.mx</p>
+    </div>
+    <div class="invoice-meta">
+      <strong>COMPROBANTE</strong><br>
+      <code style="font-size:13px;background:#f5f5f5;padding:2px 6px;border-radius:3px">{{ order['order_number'] }}</code><br>
+      <span style="color:#666">{{ order['created_at'][:16] }}</span>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <h2>Datos del cliente</h2>
+      <strong>{{ order['customer_name'] }}</strong><br>
+      {{ order['customer_email'] }}<br>
+      {% if order['customer_phone'] %}Tel: {{ order['customer_phone'] }}<br>{% endif %}
+    </div>
+    <div class="col">
+      <h2>Dirección de envío</h2>
+      {{ order['address'] }}<br>
+      {{ order['city'] }}{% if order['state'] %}, {{ order['state'] }}{% endif %} {{ order['zip_code'] or '' }}
+    </div>
+  </div>
+
+  <h2>Productos</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Dosis</th>
+        <th class="num">Cant.</th>
+        <th class="num">P. Unit.</th>
+        <th class="num">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+        <tr>
+          <td>{{ it['product_name'] }}</td>
+          <td>{{ it['dose'] }}</td>
+          <td class="num">{{ it['quantity'] }}</td>
+          <td class="num">${{ "{:,.2f}".format(it['unit_price']) }}</td>
+          <td class="num">${{ "{:,.2f}".format(it['subtotal']) }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr><td>Subtotal</td><td class="num">${{ "{:,.2f}".format(order['subtotal']) }}</td></tr>
+    <tr><td>Envío</td><td class="num">{% if order['shipping'] == 0 %}Gratis{% else %}${{ "{:,.2f}".format(order['shipping']) }}{% endif %}</td></tr>
+    <tr class="total"><td>TOTAL MXN</td><td class="num">${{ "{:,.2f}".format(order['total']) }}</td></tr>
+  </table>
+
+  <div style="margin-top:18px;font-size:12px;color:#555">
+    <strong>Método de pago:</strong> {{ order['payment_method']|title }} ·
+    <strong>Estado:</strong> {{ order['status']|title }}
+    {% if order['tracking_number'] %}
+      <br><strong>Guía:</strong> {{ order['tracking_carrier'] }} — {{ order['tracking_number'] }}
+    {% endif %}
+  </div>
+
+  <div class="ruo">
+    <strong>FOR RESEARCH USE ONLY</strong> — Los productos de JD Peptides son exclusivamente para uso en
+    investigación científica <em>in vitro</em>. No son medicamentos ni están destinados al consumo humano o veterinario.
+  </div>
+
+  <div class="footer">
+    JD Peptides · México · For Research Use Only<br>
+    Este documento es un comprobante de compra, no factura fiscal CFDI. Solicita tu factura en jdpeptides@gmail.com.
+  </div>
+</body>
+</html>

@@ -1379,6 +1379,35 @@ CREATE TABLE IF NOT EXISTS email_log (
     resend_id TEXT,
     sent_at TEXT DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    order_id INTEGER,
+    customer_email TEXT NOT NULL,
+    customer_name TEXT,
+    rating INTEGER NOT NULL,
+    title TEXT,
+    comment TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    created_at TEXT DEFAULT (datetime('now')),
+    moderated_at TEXT,
+    moderated_by TEXT,
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (order_id)   REFERENCES orders(id)
+);
+
+CREATE TABLE IF NOT EXISTS abandoned_carts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_email TEXT NOT NULL,
+    customer_name TEXT,
+    items_json TEXT NOT NULL,
+    total REAL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    reminded_at TEXT,
+    recovered_order_id INTEGER,
+    FOREIGN KEY (recovered_order_id) REFERENCES orders(id)
+);
 """
 
 PRODUCTS_SEED = [
@@ -1771,6 +1800,11 @@ CREATE INDEX IF NOT EXISTS idx_po_items_po        ON purchase_order_items(po_id)
 CREATE INDEX IF NOT EXISTS idx_email_log_sent     ON email_log(sent_at);
 CREATE INDEX IF NOT EXISTS idx_email_log_status   ON email_log(status);
 CREATE INDEX IF NOT EXISTS idx_email_log_type     ON email_log(email_type);
+CREATE INDEX IF NOT EXISTS idx_reviews_product    ON reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_status     ON reviews(status);
+CREATE INDEX IF NOT EXISTS idx_reviews_created    ON reviews(created_at);
+CREATE INDEX IF NOT EXISTS idx_abandoned_email    ON abandoned_carts(customer_email);
+CREATE INDEX IF NOT EXISTS idx_abandoned_created  ON abandoned_carts(created_at);
 """
 
 def init_db():
@@ -2816,6 +2850,64 @@ def init_db():
         except Exception as _e:
             print(f'[INIT] migration v15 MXN pricing skipped: {_e}')
 
+    # Migration v16 (2026-05-13): tracking de guía en orders.
+    # Permite que el admin pegue el número de guía y la paquetería usada;
+    # el cliente lo ve en /pedido/<order_number> con link a la página de
+    # tracking de la paquetería.
+    _mig_v16_tag = 'migration:v16:shipping_tracking_20260513'
+    already_v16 = db.execute(
+        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v16_tag,)
+    ).fetchone()
+    if not already_v16:
+        try:
+            _order_cols = [r[1] for r in db.execute("PRAGMA table_info(orders)").fetchall()]
+            if 'tracking_number' not in _order_cols:
+                db.execute("ALTER TABLE orders ADD COLUMN tracking_number TEXT DEFAULT ''")
+            if 'tracking_carrier' not in _order_cols:
+                db.execute("ALTER TABLE orders ADD COLUMN tracking_carrier TEXT DEFAULT ''")
+            if 'tracking_updated_at' not in _order_cols:
+                db.execute("ALTER TABLE orders ADD COLUMN tracking_updated_at TEXT")
+
+            _any_prod = db.execute("SELECT id FROM products LIMIT 1").fetchone()
+            if _any_prod:
+                _any_id = _any_prod['id'] if hasattr(_any_prod, '__getitem__') else _any_prod[0]
+                db.execute(
+                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
+                    (_any_id, 'ajuste', 0, _mig_v16_tag, datetime.now().isoformat())
+                )
+            db.commit()
+        except Exception as _e:
+            print(f'[INIT] migration v16 tracking skipped: {_e}')
+
+
+# ---------------------------------------------------------------------------
+# Carrier tracking helpers — generate public tracking URL from carrier name
+# ---------------------------------------------------------------------------
+
+_CARRIER_TRACKING_URLS = {
+    'dhl':       'https://www.dhl.com/mx-es/home/tracking/tracking-express.html?submit=1&tracking-id={n}',
+    'fedex':     'https://www.fedex.com/fedextrack/?trknbr={n}',
+    'estafeta':  'https://www.estafeta.com/Herramientas/Rastreo?wayBill={n}',
+    'redpack':   'https://www.redpack.com.mx/es/rastreo/?guias={n}',
+    'paquetexpress': 'https://www.paquetexpress.com.mx/rastreo/{n}',
+    '99minutos': 'https://app.99minutos.com/tracking/{n}',
+    'ups':       'https://www.ups.com/track?tracknum={n}',
+    'usps':      'https://tools.usps.com/go/TrackConfirmAction?tLabels={n}',
+}
+
+def carrier_tracking_url(carrier, number):
+    """Devuelve URL pública de tracking para una paquetería conocida."""
+    if not carrier or not number:
+        return None
+    slug = (carrier or '').strip().lower().replace(' ', '').replace('-', '')
+    tmpl = _CARRIER_TRACKING_URLS.get(slug)
+    if tmpl:
+        return tmpl.format(n=number.strip())
+    return None
+
+# Disponible en templates
+app.jinja_env.globals['carrier_tracking_url'] = carrier_tracking_url
+
 
 # ---------------------------------------------------------------------------
 # Auth decorator
@@ -3026,9 +3118,48 @@ def robots_txt():
         lines.append(f'Disallow: {p}')
     lines.append('')
     lines.append(f'Sitemap: {base}/sitemap.xml')
+    lines.append(f'Sitemap: {base}/image-sitemap.xml')
     body = '\n'.join(lines) + '\n'
     return body, 200, {'Content-Type': 'text/plain; charset=utf-8',
                        'Cache-Control': 'public, max-age=86400'}
+
+
+@app.route('/image-sitemap.xml')
+def image_sitemap_xml():
+    """Sitemap específico de imágenes — Google Images indexa más rápido.
+    Spec: https://developers.google.com/search/docs/crawling-indexing/sitemaps/image-sitemaps"""
+    from xml.sax.saxutils import escape as xml_escape
+    base = request.url_root.rstrip('/')
+
+    prods = query_db(
+        "SELECT slug, sku, name, image_path FROM products "
+        "WHERE active=1 AND image_path<>'' ORDER BY id"
+    ) or []
+
+    xml_lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+        '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
+    ]
+    for p in prods:
+        key = p['slug'] or p['sku']
+        if not key:
+            continue
+        loc = f'{base}/producto/{key}'
+        img_url = f'{base}/static/img/{p["image_path"]}'
+        title = f"{p['name']} — JD Peptides"
+        xml_lines.append('  <url>')
+        xml_lines.append(f'    <loc>{xml_escape(loc)}</loc>')
+        xml_lines.append('    <image:image>')
+        xml_lines.append(f'      <image:loc>{xml_escape(img_url)}</image:loc>')
+        xml_lines.append(f'      <image:title>{xml_escape(title)}</image:title>')
+        xml_lines.append('    </image:image>')
+        xml_lines.append('  </url>')
+    xml_lines.append('</urlset>')
+
+    return ('\n'.join(xml_lines) + '\n', 200,
+            {'Content-Type': 'application/xml; charset=utf-8',
+             'Cache-Control': 'public, max-age=3600'})
 
 
 @app.route('/sitemap.xml')
@@ -3284,7 +3415,22 @@ def producto(slug):
     images = [img for img in images_raw if
               os.path.exists(os.path.join(UPLOAD_FOLDER, img['filename'])) or
               os.path.exists(os.path.join(_static_img, img['filename']))]
-    return render_template('producto.html', product=product, related=related, benefits=benefits, images=images)
+
+    # Reviews aprobadas + stats para Schema.org
+    stats = _product_review_stats(product['id'])
+    approved_reviews = query_db(
+        "SELECT * FROM reviews WHERE product_id=? AND status='approved' "
+        "ORDER BY created_at DESC LIMIT 20",
+        (product['id'],)
+    ) or []
+    # Inyectar avg/count en product para que el JSON-LD lo pueda leer
+    product = dict(product)
+    product['avg_rating']    = stats['avg']
+    product['reviews_count'] = stats['count']
+
+    return render_template('producto.html', product=product, related=related,
+                           benefits=benefits, images=images,
+                           reviews=approved_reviews, review_stats=stats)
 
 
 @app.route('/carrito/agregar', methods=['POST'])
@@ -3373,6 +3519,139 @@ def eliminar_carrito(pid):
     cart.pop(str(pid), None)
     save_cart(cart)
     return jsonify({'success': True, 'cart_count': cart_count()})
+
+
+@app.route('/api/cart/abandon-snapshot', methods=['POST'])
+def api_cart_abandon_snapshot():
+    """Captura email + carrito antes de finalizar el checkout. Si el cliente
+    abandona, el cron job /cron/send-abandoned-reminders le manda un correo
+    de recordatorio con su carrito.
+
+    Idempotente por email — si ya existe una entrada no recuperada en las
+    últimas 48h, se actualiza en vez de duplicar."""
+    data = request.get_json(silent=True) or request.form
+    email = (data.get('email') or '').strip().lower()
+    name  = (data.get('name')  or '').strip()[:100]
+    if not email or not valid_email(email):
+        return jsonify({'ok': False, 'error': 'invalid_email'}), 400
+
+    cart = get_cart()
+    if not cart:
+        return jsonify({'ok': False, 'error': 'empty_cart'}), 400
+
+    items_json = json.dumps([
+        {'product_id': pid, 'name': it.get('name'), 'dose': it.get('dose'),
+         'quantity': it.get('quantity'), 'price': it.get('price'),
+         'image': it.get('image')}
+        for pid, it in cart.items()
+    ])
+    total = cart_total()
+
+    # Dedupe: si hay snapshot reciente sin recovery, update en lugar de insertar
+    cutoff = (datetime.now() - timedelta(hours=48)).isoformat()
+    existing = query_db(
+        "SELECT id FROM abandoned_carts "
+        "WHERE customer_email=? AND created_at >= ? AND recovered_order_id IS NULL "
+        "ORDER BY id DESC LIMIT 1",
+        (email, cutoff), one=True
+    )
+    if existing:
+        execute_db(
+            "UPDATE abandoned_carts SET items_json=?, total=?, "
+            "customer_name=?, created_at=? WHERE id=?",
+            (items_json, total, name, datetime.now().isoformat(), existing['id'])
+        )
+    else:
+        execute_db(
+            "INSERT INTO abandoned_carts (customer_email, customer_name, "
+            "items_json, total) VALUES (?,?,?,?)",
+            (email, name, items_json, total)
+        )
+    return jsonify({'ok': True})
+
+
+@app.route('/cron/send-abandoned-reminders', methods=['GET', 'POST'])
+def cron_abandoned_reminders():
+    """Endpoint para Vercel Cron (o llamada externa autenticada). Envía un
+    correo de recordatorio a cada carrito abandonado que cumple:
+      - created_at: entre 4 y 72 horas atrás (ventana óptima)
+      - reminded_at: NULL (no se le ha mandado aún)
+      - recovered_order_id: NULL (no completó la compra)
+    Auth: header X-Cron-Secret == env CRON_SECRET. Sin esa env, rechaza."""
+    secret = os.environ.get('CRON_SECRET', '').strip()
+    if not secret:
+        return jsonify({'ok': False, 'error': 'cron_disabled'}), 403
+    # Vercel Cron envía Authorization: Bearer <CRON_SECRET> automáticamente.
+    # Aceptamos también X-Cron-Secret y ?secret=… para invocación manual.
+    auth = request.headers.get('Authorization', '')
+    bearer = auth[7:].strip() if auth.lower().startswith('bearer ') else ''
+    provided = (bearer
+                or request.headers.get('X-Cron-Secret', '')
+                or request.args.get('secret', ''))
+    if provided != secret:
+        return jsonify({'ok': False, 'error': 'unauthorized'}), 403
+
+    lower = (datetime.now() - timedelta(hours=72)).isoformat()
+    upper = (datetime.now() - timedelta(hours=4)).isoformat()
+    candidates = query_db(
+        "SELECT * FROM abandoned_carts "
+        "WHERE reminded_at IS NULL AND recovered_order_id IS NULL "
+        "AND created_at BETWEEN ? AND ? "
+        "ORDER BY created_at",
+        (lower, upper)
+    ) or []
+
+    sent = 0
+    for c in candidates:
+        try:
+            items = json.loads(c['items_json']) if c['items_json'] else []
+        except Exception:
+            items = []
+        if not items:
+            continue
+        rows_html = ''.join(
+            f"""<tr>
+              <td style="padding:8px;border-bottom:1px solid #eee">{it.get('name', '')} ({it.get('dose', '')})</td>
+              <td style="padding:8px;border-bottom:1px solid #eee;text-align:center">×{it.get('quantity', 1)}</td>
+              <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${(it.get('price', 0) * it.get('quantity', 1)):,.2f}</td>
+            </tr>"""
+            for it in items
+        )
+        html = f"""
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff">
+          <div style="background:#0d0d0d;padding:24px;text-align:center">
+            <h1 style="margin:0;color:#c9a227;font-size:20px;letter-spacing:2px">JD PEPTIDES</h1>
+          </div>
+          <div style="padding:28px 32px;color:#444;line-height:1.7">
+            <p>Hola{f' {c["customer_name"]}' if c['customer_name'] else ''},</p>
+            <p>Notamos que dejaste algunos productos en tu carrito. ¿Te ayudamos a completar tu pedido?</p>
+            <table style="width:100%;border-collapse:collapse;font-size:14px;margin:1rem 0">{rows_html}
+              <tr><td colspan="2" style="padding:10px 8px;font-weight:700">Total</td>
+                  <td style="padding:10px 8px;text-align:right;font-weight:800;color:#c9a227">${c['total']:,.2f} MXN</td></tr>
+            </table>
+            <p style="text-align:center;margin:1.5rem 0">
+              <a href="https://www.jdpeptides.mx/catalogo"
+                 style="background:#c9a227;color:#0d0d0d;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:700">
+                 Volver al catálogo →
+              </a>
+            </p>
+            <p style="font-size:0.85rem;color:#888;margin-top:1.5rem">Si ya completaste tu compra ignora este mensaje. Si tienes dudas responde este correo.</p>
+          </div>
+        </div>"""
+        ok = _send_email(
+            c['customer_email'],
+            'Olvidaste algo en tu carrito 🛒 — JD Peptides',
+            html,
+            email_type='abandoned_cart',
+        )
+        if ok:
+            execute_db(
+                "UPDATE abandoned_carts SET reminded_at=? WHERE id=?",
+                (datetime.now().isoformat(), c['id'])
+            )
+            sent += 1
+
+    return jsonify({'ok': True, 'candidates': len(candidates), 'sent': sent})
 
 
 @app.route('/checkout')
@@ -3527,6 +3806,19 @@ def procesar_checkout():
     except Exception as e:
         print(f"[Email] Error al enviar: {e}")
 
+    # Marcar como recuperado cualquier abandoned_cart con este email
+    # (en las últimas 72 h) para no enviarle reminder al cliente que ya compró.
+    try:
+        cutoff = (datetime.now() - timedelta(hours=72)).isoformat()
+        execute_db(
+            "UPDATE abandoned_carts SET recovered_order_id=? "
+            "WHERE customer_email=? AND recovered_order_id IS NULL "
+            "AND created_at >= ?",
+            (order['id'], (order['customer_email'] or '').lower(), cutoff)
+        )
+    except Exception as e:
+        print(f"[abandoned_carts] mark recovered failed: {e}")
+
     return render_template('pedido_exitoso.html', order=order, items=items)
 
 
@@ -3600,6 +3892,22 @@ def pedido(order_number):
 
     items = query_db("SELECT * FROM order_items WHERE order_id=?", (order['id'],))
     return render_template('pedido_exitoso.html', order=order, items=items)
+
+
+@app.route('/pedido/<order_number>/factura')
+def pedido_factura(order_number):
+    """Factura imprimible (HTML print-optimized). El cliente abre Print del
+    navegador → Guardar como PDF para tener su comprobante.
+    Requiere mismo whitelist que /pedido/<n> (anti-enumeration)."""
+    if order_number not in (session.get('view_orders') or []):
+        return redirect(url_for('pedido', order_number=order_number))
+    order = query_db("SELECT * FROM orders WHERE order_number=?",
+                     (order_number,), one=True)
+    if not order:
+        flash('Pedido no encontrado.', 'error')
+        return redirect(url_for('index'))
+    items = query_db("SELECT * FROM order_items WHERE order_id=?", (order['id'],))
+    return render_template('factura.html', order=order, items=items)
 
 
 # ---------------------------------------------------------------------------
@@ -4594,6 +4902,203 @@ def admin_actualizar_estado(oid):
 
     flash('Estado actualizado.', 'success')
     return redirect(url_for('admin_orden_detalle', oid=oid))
+
+
+@app.route('/admin/ordenes/<int:oid>/tracking', methods=['POST'])
+@admin_required
+def admin_set_tracking(oid):
+    """Admin pega número de guía y paquetería. El cliente lo verá en
+    /pedido/<order_number> con enlace a la página pública de tracking."""
+    order = query_db("SELECT * FROM orders WHERE id=?", (oid,), one=True)
+    if not order:
+        flash('Orden no encontrada.', 'error')
+        return redirect(url_for('admin_ordenes'))
+
+    carrier = (request.form.get('tracking_carrier') or '').strip()[:60]
+    number  = (request.form.get('tracking_number')  or '').strip()[:80]
+    notify  = request.form.get('notify_customer') == '1'
+
+    execute_db(
+        "UPDATE orders SET tracking_carrier=?, tracking_number=?, "
+        "tracking_updated_at=? WHERE id=?",
+        (carrier, number, datetime.now().isoformat(), oid)
+    )
+
+    if notify and number and carrier and order['customer_email']:
+        tracking_url = carrier_tracking_url(carrier, number)
+        link_html = (f'<p><a href="{tracking_url}" '
+                     f'style="background:#c9a227;color:#0d0d0d;padding:10px 22px;'
+                     f'border-radius:6px;text-decoration:none;font-weight:700">'
+                     f'📦 Ver estado de envío</a></p>') if tracking_url else ''
+        html = f"""
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff">
+          <div style="background:#0d0d0d;padding:24px;text-align:center">
+            <h1 style="margin:0;color:#c9a227;font-size:20px;letter-spacing:2px">JD PEPTIDES</h1>
+          </div>
+          <div style="background:#c9a227;padding:14px 32px;text-align:center">
+            <span style="color:#fff;font-weight:700;font-size:16px">🚚 Tu pedido está en camino</span>
+          </div>
+          <div style="padding:28px 32px;color:#444;line-height:1.7">
+            <p>Hola {order['customer_name']},</p>
+            <p>Tu pedido <strong>{order['order_number']}</strong> ya fue despachado vía <strong>{carrier}</strong>.</p>
+            <p><strong>Número de guía:</strong> <code style="background:#f5f5f5;padding:4px 8px;border-radius:4px">{number}</code></p>
+            {link_html}
+            <p style="font-size:0.85rem;color:#888;margin-top:1.5rem">¿Dudas? Responde este correo o escríbenos por WhatsApp.</p>
+          </div>
+        </div>"""
+        _send_email_bg(order['customer_email'],
+                       f'🚚 Tu pedido está en camino — {order["order_number"]}',
+                       html,
+                       bcc=EMAIL_BCC or None,
+                       email_type='order_tracking',
+                       order_id=oid)
+        flash('Guía guardada y cliente notificado por correo.', 'success')
+    else:
+        flash('Guía guardada.', 'success')
+
+    return redirect(url_for('admin_orden_detalle', oid=oid))
+
+
+# ---------------------------------------------------------------------------
+# Reviews — público (cliente deja review) + admin (modera)
+# ---------------------------------------------------------------------------
+
+@app.route('/pedido/<order_number>/review', methods=['POST'])
+def submit_review(order_number):
+    """Cliente publica review verificada — debe venir de una orden válida.
+    El review queda en status='pending' hasta que admin lo apruebe."""
+    order = query_db(
+        "SELECT * FROM orders WHERE order_number=?",
+        (order_number,), one=True
+    )
+    if not order:
+        flash('Pedido no encontrado.', 'error')
+        return redirect(url_for('tracking'))
+
+    if order['status'] != 'entregado':
+        flash('Solo puedes reseñar pedidos entregados.', 'error')
+        return redirect(url_for('pedido', order_number=order_number))
+
+    product_id = safe_int(request.form.get('product_id'), 0)
+    rating     = safe_int(request.form.get('rating'), 0)
+    title      = (request.form.get('title') or '').strip()[:120]
+    comment    = (request.form.get('comment') or '').strip()[:1500]
+
+    if not (1 <= rating <= 5):
+        flash('La calificación debe estar entre 1 y 5 estrellas.', 'error')
+        return redirect(url_for('pedido', order_number=order_number))
+    if len(comment) < 10:
+        flash('Por favor escribe un comentario más descriptivo (min 10 caracteres).', 'error')
+        return redirect(url_for('pedido', order_number=order_number))
+
+    # Verificar que el producto esté en la orden (anti-spam)
+    in_order = query_db(
+        "SELECT 1 FROM order_items WHERE order_id=? AND product_id=?",
+        (order['id'], product_id), one=True
+    )
+    if not in_order:
+        flash('Producto no está en este pedido.', 'error')
+        return redirect(url_for('pedido', order_number=order_number))
+
+    # 1 review por (email, producto, orden)
+    existing = query_db(
+        "SELECT 1 FROM reviews WHERE customer_email=? AND product_id=? AND order_id=?",
+        (order['customer_email'], product_id, order['id']), one=True
+    )
+    if existing:
+        flash('Ya enviaste una reseña para este producto.', 'error')
+        return redirect(url_for('pedido', order_number=order_number))
+
+    execute_db(
+        """INSERT INTO reviews (product_id, order_id, customer_email,
+            customer_name, rating, title, comment, status)
+           VALUES (?,?,?,?,?,?,?,'pending')""",
+        (product_id, order['id'], order['customer_email'],
+         order['customer_name'], rating, title, comment)
+    )
+
+    # Notificar admin
+    for recipient in EMAIL_NOTIFY:
+        _send_email_bg(
+            recipient,
+            f'📝 Nueva reseña pendiente de moderación — {order["customer_name"]}',
+            f'<p>Cliente: <strong>{order["customer_name"]}</strong> ({order["customer_email"]})</p>'
+            f'<p>Calificación: <strong>{"★" * rating}{"☆" * (5 - rating)}</strong></p>'
+            f'<p>Título: {title or "(sin título)"}</p>'
+            f'<p style="white-space:pre-wrap">{comment}</p>'
+            f'<p><a href="https://www.jdpeptides.mx/admin/reviews">Moderar reseñas →</a></p>',
+            email_type='review_pending'
+        )
+
+    flash('¡Gracias por tu reseña! La revisaremos antes de publicarla.', 'success')
+    return redirect(url_for('pedido', order_number=order_number))
+
+
+@app.route('/admin/reviews')
+@admin_required
+def admin_reviews():
+    """Moderación de reviews — admin aprueba/rechaza."""
+    status_filter = (request.args.get('status') or 'pending').lower()
+    if status_filter not in ('pending', 'approved', 'rejected', 'all'):
+        status_filter = 'pending'
+
+    if status_filter == 'all':
+        rows = query_db(
+            "SELECT r.*, p.name AS product_name, p.sku AS product_sku "
+            "FROM reviews r LEFT JOIN products p ON p.id = r.product_id "
+            "ORDER BY r.created_at DESC LIMIT 200"
+        ) or []
+    else:
+        rows = query_db(
+            "SELECT r.*, p.name AS product_name, p.sku AS product_sku "
+            "FROM reviews r LEFT JOIN products p ON p.id = r.product_id "
+            "WHERE r.status=? ORDER BY r.created_at DESC LIMIT 200",
+            (status_filter,)
+        ) or []
+
+    counts = {
+        s: query_db("SELECT COUNT(*) AS c FROM reviews WHERE status=?", (s,), one=True)['c']
+        for s in ('pending', 'approved', 'rejected')
+    }
+    counts['all'] = sum(counts.values())
+
+    return render_template('admin/reviews.html',
+                           rows=rows, status=status_filter, counts=counts)
+
+
+@app.route('/admin/reviews/<int:rid>/moderate', methods=['POST'])
+@admin_required
+def admin_moderate_review(rid):
+    action = request.form.get('action', '')
+    if action not in ('approve', 'reject'):
+        flash('Acción inválida.', 'error')
+        return redirect(url_for('admin_reviews'))
+    new_status = 'approved' if action == 'approve' else 'rejected'
+    execute_db(
+        "UPDATE reviews SET status=?, moderated_at=?, moderated_by=? WHERE id=?",
+        (new_status, datetime.now().isoformat(),
+         session.get('admin_user', ''), rid)
+    )
+    flash(f"Reseña {('aprobada' if new_status == 'approved' else 'rechazada')}.", 'success')
+    return redirect(request.referrer or url_for('admin_reviews'))
+
+
+def _product_review_stats(product_id):
+    """Devuelve dict con avg_rating, count, distribution (por estrella)."""
+    rows = query_db(
+        "SELECT rating, COUNT(*) AS n FROM reviews "
+        "WHERE product_id=? AND status='approved' GROUP BY rating",
+        (product_id,)
+    ) or []
+    dist = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    total = 0
+    rating_sum = 0
+    for r in rows:
+        dist[r['rating']] = r['n']
+        total += r['n']
+        rating_sum += r['rating'] * r['n']
+    avg = (rating_sum / total) if total else 0
+    return {'avg': avg, 'count': total, 'dist': dist}
 
 
 @app.route('/admin/ordenes-compra')

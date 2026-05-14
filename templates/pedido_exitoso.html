@@ -79,6 +79,27 @@
       </div>
     {% endif %}
 
+    <!-- Tracking de guía -->
+    {% if order['tracking_number'] %}
+      {% set _turl = carrier_tracking_url(order['tracking_carrier'], order['tracking_number']) %}
+      <div style="background:rgba(201,162,39,0.08);border-left:3px solid var(--gold);padding:1.2rem 1.4rem;border-radius:0 8px 8px 0;margin:1rem 0">
+        <p style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin:0 0 0.6rem">📦 Envío en curso</p>
+        <p style="margin:0 0 0.4rem;font-size:0.95rem;color:var(--text)"><strong>{{ order['tracking_carrier'] }}</strong></p>
+        <p style="margin:0;font-family:monospace;font-size:0.9rem;color:var(--text2)">Guía: <code style="background:var(--bg3);padding:2px 8px;border-radius:4px">{{ order['tracking_number'] }}</code></p>
+        {% if _turl %}
+          <p style="margin:0.7rem 0 0">
+            <a href="{{ _turl }}" target="_blank" rel="noopener" class="btn btn-gold btn-sm">↗ Rastrear envío en {{ order['tracking_carrier'] }}</a>
+          </p>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <!-- Acciones (factura) -->
+    <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin:1rem 0">
+      <a href="{{ url_for('pedido_factura', order_number=order['order_number']) }}"
+         class="btn btn-ghost btn-sm" target="_blank" rel="noopener">📄 Ver/descargar comprobante</a>
+    </div>
+
     <!-- Items -->
     <div class="success-items">
       {% for item in items %}
@@ -155,6 +176,53 @@
         <a href="{{ url_for('contacto') }}" class="btn btn-outline btn-lg">Contactar</a>
       {% endif %}
     </div>
+
+    {# Formulario de review — solo si el pedido está ENTREGADO #}
+    {% if order['status'] == 'entregado' %}
+      <div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border)">
+        <h3 style="font-size:1.1rem;margin:0 0 0.5rem">¿Cómo fue tu experiencia?</h3>
+        <p style="color:var(--text3);font-size:0.88rem;margin:0 0 1.2rem">
+          Las reseñas ayudan a otros investigadores a elegir. Solo cuentan una vez aprobadas.
+        </p>
+        {% for it in items %}
+          <details style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:0.6rem">
+            <summary style="cursor:pointer;font-weight:700;color:var(--text)">★ Reseñar {{ it['product_name'] }}</summary>
+            <form method="POST" action="{{ url_for('submit_review', order_number=order['order_number']) }}" style="margin-top:1rem">
+              <input type="hidden" name="product_id" value="{{ it['product_id'] }}">
+              <div style="margin-bottom:0.8rem">
+                <label style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:0.3rem">Calificación</label>
+                <div class="rating-stars" data-target="rating-{{ it['product_id'] }}" style="font-size:1.6rem;color:#666;cursor:pointer;letter-spacing:0.2rem">
+                  <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span>
+                </div>
+                <input type="hidden" id="rating-{{ it['product_id'] }}" name="rating" value="0">
+              </div>
+              <div style="margin-bottom:0.8rem">
+                <input type="text" name="title" class="form-control" placeholder="Título corto (opcional)" maxlength="120">
+              </div>
+              <div style="margin-bottom:0.8rem">
+                <textarea name="comment" class="form-control" rows="3" placeholder="Comparte tu experiencia con este producto (10+ caracteres)" required minlength="10" maxlength="1500"></textarea>
+              </div>
+              <button type="submit" class="btn btn-gold btn-sm">Enviar reseña</button>
+            </form>
+          </details>
+        {% endfor %}
+        <script>
+        document.querySelectorAll('.rating-stars').forEach(group => {
+          const target = document.getElementById(group.dataset.target);
+          group.querySelectorAll('span').forEach(s => {
+            s.addEventListener('click', () => {
+              const v = parseInt(s.dataset.v, 10);
+              target.value = v;
+              group.querySelectorAll('span').forEach(x => {
+                x.textContent = parseInt(x.dataset.v, 10) <= v ? '★' : '☆';
+                x.style.color = parseInt(x.dataset.v, 10) <= v ? '#c9a227' : '#666';
+              });
+            });
+          });
+        });
+        </script>
+      </div>
+    {% endif %}
 
   </div>
 </section>

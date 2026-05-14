@@ -1,0 +1,75 @@
+{% extends "admin/base.html" %}
+{% block title %}Reseñas — Admin JD Peptides{% endblock %}
+{% block page_title %}Moderación de Reseñas{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem">
+  <a href="?status=pending"  class="pill {% if status=='pending'  %}active{% endif %}" style="{% if status!='pending'  %}color:#f97316{% endif %}">⏳ Pendientes ({{ counts.pending }})</a>
+  <a href="?status=approved" class="pill {% if status=='approved' %}active{% endif %}" style="{% if status!='approved' %}color:#22c55e{% endif %}">✓ Aprobadas ({{ counts.approved }})</a>
+  <a href="?status=rejected" class="pill {% if status=='rejected' %}active{% endif %}" style="{% if status!='rejected' %}color:#ef4444{% endif %}">✗ Rechazadas ({{ counts.rejected }})</a>
+  <a href="?status=all"      class="pill {% if status=='all'      %}active{% endif %}">Todas ({{ counts.all }})</a>
+</div>
+
+<div class="admin-card">
+  <div class="admin-card-header"><h3>Reseñas <span style="color:var(--text3);font-weight:400">({{ rows|length }})</span></h3></div>
+  <div style="overflow-x:auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th style="width:130px">Fecha</th>
+          <th>Cliente</th>
+          <th>Producto</th>
+          <th style="width:100px">★</th>
+          <th>Reseña</th>
+          <th style="width:160px">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td style="font-size:0.74rem;color:var(--text3);white-space:nowrap">{{ r['created_at'][:16] }}</td>
+            <td>
+              <span class="strong">{{ r['customer_name'] or '—' }}</span><br>
+              <span style="font-size:0.72rem;color:var(--text3)">{{ r['customer_email'] }}</span>
+            </td>
+            <td>
+              <span class="strong">{{ r['product_name'] or '—' }}</span><br>
+              <span style="font-size:0.72rem;color:var(--text3)">{{ r['product_sku'] or '' }}</span>
+            </td>
+            <td>
+              <span style="color:var(--gold);letter-spacing:1px">
+                {% for i in range(1, 6) %}{% if i <= r['rating'] %}★{% else %}☆{% endif %}{% endfor %}
+              </span>
+            </td>
+            <td>
+              {% if r['title'] %}<strong>{{ r['title'] }}</strong><br>{% endif %}
+              <span style="color:var(--text2);font-size:0.88rem">{{ r['comment'] }}</span>
+            </td>
+            <td>
+              {% if r['status'] == 'pending' %}
+                <form method="POST" action="{{ url_for('admin_moderate_review', rid=r['id']) }}" style="display:inline">
+                  {{ csrf_field() }}
+                  <button name="action" value="approve" class="btn btn-sm" style="background:#22c55e;color:#fff;border:none">✓</button>
+                </form>
+                <form method="POST" action="{{ url_for('admin_moderate_review', rid=r['id']) }}" style="display:inline">
+                  {{ csrf_field() }}
+                  <button name="action" value="reject" class="btn btn-sm" style="background:#ef4444;color:#fff;border:none">✗</button>
+                </form>
+              {% else %}
+                <span class="stock-badge {% if r['status']=='approved' %}ok{% else %}out{% endif %}">
+                  {{ 'aprobada' if r['status']=='approved' else 'rechazada' }}
+                </span>
+                {% if r['moderated_by'] %}<br><span style="font-size:0.65rem;color:var(--text3)">por {{ r['moderated_by'] }}</span>{% endif %}
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text3)">Sin reseñas en este estado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

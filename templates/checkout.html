@@ -157,6 +157,30 @@
 
 {% block extra_js %}
 <script>
+// Carrito abandonado — snapshot del carrito + email cuando el usuario llena
+// su email pero no completa la compra. Se dispara en `blur` del input email.
+(function() {
+  const form = document.getElementById('checkoutForm');
+  if (!form) return;
+  const emailInput = form.querySelector('input[name="email"]');
+  const nameInput  = form.querySelector('input[name="name"]');
+  if (!emailInput) return;
+  let snapshotSent = false;
+  emailInput.addEventListener('blur', () => {
+    const email = (emailInput.value || '').trim();
+    const name  = (nameInput?.value || '').trim();
+    if (snapshotSent) return;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return;
+    snapshotSent = true;
+    fetch('/api/cart/abandon-snapshot', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email, name}),
+      keepalive: true
+    }).catch(() => { snapshotSent = false; });
+  });
+})();
+
 document.getElementById('checkoutForm').addEventListener('submit', function(e) {
   const btn = this.querySelector('button[type=submit]');
   btn.disabled = true;

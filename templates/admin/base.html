@@ -110,6 +110,13 @@
         </span>
         Correos
       </a>
+      <a href="{{ url_for('admin_reviews') }}"
+         class="admin-nav-link {% if request.endpoint == 'admin_reviews' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5 12 2"/></svg>
+        </span>
+        Reseñas
+      </a>
       {% if session.get('admin_user') == 'Alb.peptide10' %}
       <a href="{{ url_for('admin_usuarios') }}"
          class="admin-nav-link {% if request.endpoint == 'admin_usuarios' %}active{% endif %}">

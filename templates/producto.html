@@ -13,6 +13,47 @@
 <meta property="product:price:amount"   content="{{ '%.2f'|format(product['price']) }}">
 <meta property="product:price:currency" content="MXN">
 <meta name="twitter:card"       content="summary_large_image">
+
+{# Schema.org Product structured data — rich snippets en Google #}
+{%- set _availability = 'https://schema.org/InStock' if product['stock'] > 0 else 'https://schema.org/OutOfStock' %}
+{%- set _img_url = url_for('static', filename='img/' + _og_img, _external=True) %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": {{ product['name']|tojson }},
+  "image": [{{ _img_url|tojson }}],
+  "description": {{ (product['description'] or (product['name'] + ' — Péptido de investigación.'))|tojson }},
+  "sku": {{ product['sku']|tojson }},
+  "mpn": {{ product['sku']|tojson }},
+  "brand": {
+    "@type": "Brand",
+    "name": "JD Peptides"
+  },
+  "category": {{ product['category']|tojson }},
+  {%- if product.get('avg_rating') and product.get('reviews_count') %}
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ '%.1f'|format(product['avg_rating']) }}",
+    "reviewCount": {{ product['reviews_count'] }},
+    "bestRating": "5",
+    "worstRating": "1"
+  },
+  {%- endif %}
+  "offers": {
+    "@type": "Offer",
+    "url": {{ request.url|tojson }},
+    "priceCurrency": "MXN",
+    "price": "{{ '%.2f'|format(product['price']) }}",
+    "availability": {{ _availability|tojson }},
+    "itemCondition": "https://schema.org/NewCondition",
+    "seller": {
+      "@type": "Organization",
+      "name": "JD Peptides"
+    }
+  }
+}
+</script>
 {% endblock %}
 
 {% block content %}
@@ -165,6 +206,16 @@
           </p>
         </div>
 
+        {% if review_stats.count > 0 %}
+        <div style="display:flex;align-items:center;gap:0.6rem;font-size:0.95rem;margin-top:0.5rem">
+          <span style="color:var(--gold);font-size:1.1rem;letter-spacing:1px">
+            {% for i in range(1, 6) %}{% if i <= review_stats.avg|round %}★{% else %}☆{% endif %}{% endfor %}
+          </span>
+          <strong style="color:var(--text)">{{ '%.1f'|format(review_stats.avg) }}</strong>
+          <span style="color:var(--text3)">({{ review_stats.count }} reseña{{ 's' if review_stats.count != 1 else '' }})</span>
+        </div>
+        {% endif %}
+
         <!-- Add to cart -->
         <div>
           <h4 style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.75rem">Cantidad</h4>
@@ -208,6 +259,34 @@
 
       </div>
     </div>
+
+    <!-- Reviews -->
+    {% if reviews %}
+      <div style="margin-top:4rem">
+        <div class="section-header" style="text-align:left;margin-bottom:1.5rem">
+          <h3>Reseñas <span class="gold">verificadas</span>
+            <span style="font-size:1rem;color:var(--text3);font-weight:400">({{ review_stats.count }})</span>
+          </h3>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem">
+          {% for rv in reviews %}
+            <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+                <span style="color:var(--gold);letter-spacing:1px">
+                  {% for i in range(1, 6) %}{% if i <= rv['rating'] %}★{% else %}☆{% endif %}{% endfor %}
+                </span>
+                <span style="font-size:0.72rem;color:var(--text3)">{{ rv['created_at'][:10] }}</span>
+              </div>
+              {% if rv['title'] %}<p style="font-weight:700;margin:0 0 0.4rem;color:var(--text)">{{ rv['title'] }}</p>{% endif %}
+              <p style="color:var(--text2);font-size:0.92rem;line-height:1.65;margin:0">{{ rv['comment'] }}</p>
+              <p style="font-size:0.75rem;color:var(--text3);margin-top:0.6rem">
+                — {{ rv['customer_name'] or 'Cliente verificado' }} · <span style="color:var(--gold)">✓ compra verificada</span>
+              </p>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
 
     <!-- Related products -->
     {% if related %}

@@ -140,6 +140,42 @@
           <button type="submit" class="btn btn-gold btn-block">Actualizar Estado</button>
         </form>
 
+        <!-- Tracking de guía -->
+        <form method="POST" action="{{ url_for('admin_set_tracking', oid=order['id']) }}"
+              style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+          {{ csrf_field() }}
+          <div style="font-size:0.78rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem">
+            📦 Guía de envío
+          </div>
+          <div class="admin-form-group" style="margin-bottom:0.6rem">
+            <label class="admin-label" style="font-size:0.75rem">Paquetería</label>
+            <select name="tracking_carrier" class="admin-input">
+              <option value="">— elegir —</option>
+              {% for c in ['DHL','FedEx','Estafeta','Redpack','Paquetexpress','99minutos','UPS','USPS'] %}
+                <option value="{{ c }}" {% if order['tracking_carrier'] == c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="admin-form-group" style="margin-bottom:0.6rem">
+            <label class="admin-label" style="font-size:0.75rem">Número de guía</label>
+            <input type="text" name="tracking_number" class="admin-input"
+                   value="{{ order['tracking_number'] or '' }}" placeholder="Ej: 1234567890">
+          </div>
+          {% if order['tracking_number'] and order['tracking_carrier'] %}
+            {% set _turl = carrier_tracking_url(order['tracking_carrier'], order['tracking_number']) %}
+            {% if _turl %}
+              <p style="font-size:0.72rem;margin:0 0 0.6rem">
+                <a href="{{ _turl }}" target="_blank" rel="noopener" class="link-gold">↗ Verificar guía en {{ order['tracking_carrier'] }}</a>
+              </p>
+            {% endif %}
+          {% endif %}
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:var(--text2);cursor:pointer;margin-bottom:0.75rem">
+            <input type="checkbox" name="notify_customer" value="1" checked>
+            Notificar al cliente por correo
+          </label>
+          <button type="submit" class="btn btn-ghost btn-block btn-sm">Guardar guía</button>
+        </form>
+
         <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
           <div style="font-size:0.78rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem">
             Resumen

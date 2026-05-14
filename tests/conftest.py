@@ -72,12 +72,18 @@ def client(app):
 
 @pytest.fixture
 def admin_client(app):
-    """Test client con sesión admin pre-establecida (saltea login)."""
+    """Test client con sesión admin pre-establecida (saltea login).
+    Pone un CSRF token fijo en session — los tests POST pueden enviarlo
+    como `_csrf` en form-data o como header `X-CSRFToken`."""
+    CSRF = 'test-csrf-token-' + 'x' * 16
     with app.test_client() as c:
         with c.session_transaction() as sess:
             sess['admin_logged_in'] = True
             sess['admin_user']      = 'admin_test'
             sess['admin_role']      = 'superadmin'
+            sess['_csrf']           = CSRF
+        # Helper para que el test pueda hacer c.post(..., data={..., **csrf})
+        c.csrf = CSRF
         yield c
 
 

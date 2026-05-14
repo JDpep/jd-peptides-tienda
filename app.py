@@ -445,8 +445,11 @@ if UPLOAD_FOLDER != _static_img and os.path.isdir(_static_img):
 # Email configuration — Resend API (works on Railway, no SMTP needed)
 # Docs: https://resend.com/docs  |  Free tier: 3,000 emails/month
 # ---------------------------------------------------------------------------
-RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
-EMAIL_FROM     = os.environ.get('EMAIL_FROM', 'JD Peptides <noreply@jdpeptides.mx>')
+RESEND_API_KEY = (os.environ.get('RESEND_API_KEY', '') or '').strip()
+EMAIL_FROM     = (os.environ.get('EMAIL_FROM', 'JD Peptides <noreply@jdpeptides.mx>') or '').strip()
+# Vercel serverless mata daemon threads cuando la response termina, así que
+# en Vercel debemos enviar SÍNCRONO. En local/dev seguimos usando threading.
+_IS_VERCEL = bool(os.environ.get('VERCEL'))
 
 # Destinatarios para emails internos (alertas stock, OCs, errores).
 # El owner siempre ve copia. Configurable via env EMAIL_NOTIFY (csv).
@@ -806,7 +809,11 @@ def _send_email(to, subject, html, bcc=None, reply_to=None, email_type=None, ord
 
 
 def _send_email_bg(to, subject, html, bcc=None, reply_to=None, email_type=None, order_id=None):
-    """Envía email en background — no bloquea la respuesta HTTP."""
+    """Envía email — síncrono en Vercel (daemon threads se matan al cerrar
+    el worker serverless), threaded en local/dev para no bloquear la response."""
+    if _IS_VERCEL:
+        _send_email(to, subject, html, bcc, reply_to, email_type, order_id)
+        return
     t = threading.Thread(
         target=_send_email,
         args=(to, subject, html, bcc, reply_to, email_type, order_id),

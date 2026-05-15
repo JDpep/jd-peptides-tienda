@@ -794,7 +794,12 @@ def _send_email(to, subject, html, bcc=None, reply_to=None, email_type=None, ord
             _detail = e.read().decode('utf-8', errors='replace')[:280]
         except Exception:
             _detail = ''
-        print(f"[Email] Resend HTTP {e.code} para {_mask_email(to)}")
+        # Sanitize: el body de Resend puede incluir el email del destinatario
+        # — lo enmascaramos antes de loguear a stdout (Vercel logs son persistentes).
+        _safe_detail = re.sub(r'[\w._%+-]+@[\w.-]+\.[A-Za-z]{2,}',
+                              lambda m: _mask_email(m.group(0)),
+                              _detail)
+        print(f"[Email] Resend HTTP {e.code} para {_mask_email(to)} — {_safe_detail}")
         _log_email(to, subject, 'failed',
                    email_type=email_type,
                    error_msg=f'HTTP {e.code}: {_detail}'[:500],

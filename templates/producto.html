@@ -22,13 +22,18 @@
 {% set _og_img = product['image_path'] or {'JDP-RT20':'vial_rt20.png','JDP-RT10':'vial_rt10.png','JDP-KLOW80':'vial_klow80.png','JDP-MOTSC':'vial_mots_c.png','JDP-DSIP':'vial_dsip.png','JDP-SEMAX':'vial_semax.png','JDP-NAD':'vial_nad.png','JDP-BPC157':'vial_bpc157.png','JDP-KPV':'vial_kpv.png','JDP-TB500':'vial_tb500.png','JDP-CP':'vial_cp.png','JDP-TESA':'vial_tesamorelin.png','JDP-GHKCU':'vial_ghk_cu.png','JDP-BAC':'vial_bac.png'}.get(product['sku'], 'hero-pattern.svg') %}
 <meta property="og:type"        content="product">
 <meta property="og:site_name"   content="JD Peptides">
+<meta property="og:locale"      content="es_MX">
 <meta property="og:title"       content="{{ product['name'] }} — JD Peptides">
 <meta property="og:description" content="{{ (product['description'] or product['name'] + ' — Péptido de investigación')[:200] }}">
-<meta property="og:url"         content="{{ request.url }}">
+<meta property="og:url"         content="{{ request.base_url }}">
 <meta property="og:image"       content="{{ url_for('static', filename='img/' + _og_img, _external=True) }}">
+<meta property="og:image:alt"   content="{{ product['name'] }} — {{ product['dose'] }} — JD Peptides">
 <meta property="product:price:amount"   content="{{ '%.2f'|format(product['price']) }}">
 <meta property="product:price:currency" content="MXN">
-<meta name="twitter:card"       content="summary_large_image">
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="{{ product['name'] }} — JD Peptides">
+<meta name="twitter:description" content="{{ (product['description'] or product['name'] + ' — Péptido de investigación')[:200] }}">
+<meta name="twitter:image"       content="{{ url_for('static', filename='img/' + _og_img, _external=True) }}">
 
 {# Schema.org Product structured data — rich snippets en Google #}
 {%- set _availability = 'https://schema.org/InStock' if product['stock'] > 0 else 'https://schema.org/OutOfStock' %}

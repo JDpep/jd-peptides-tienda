@@ -59,7 +59,7 @@
     </div>
     <div class="col">
       <h2>Dirección de envío</h2>
-      {{ order['address'] }}<br>
+      {{ order['address'] }}{% if order['address_ext'] %} #{{ order['address_ext'] }}{% endif %}{% if order['address_int'] %} Int. {{ order['address_int'] }}{% endif %}<br>
       {{ order['city'] }}{% if order['state'] %}, {{ order['state'] }}{% endif %} {{ order['zip_code'] or '' }}
     </div>
   </div>

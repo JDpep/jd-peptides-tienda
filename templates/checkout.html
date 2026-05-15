@@ -47,12 +47,27 @@
                 </span>
               </label>
               <input type="text" name="address" id="addr-input" class="form-control"
-                     placeholder="Calle, número, colonia, ciudad…" required
+                     placeholder="Calle y colonia (sin número)" required
                      autocomplete="street-address" autocapitalize="words" spellcheck="false">
               <div id="addr-suggestions" class="addr-suggest" hidden></div>
               <p id="addr-attr" style="font-size:0.65rem;color:var(--text3);margin-top:0.35rem;display:none">
                 Resultados por <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" style="color:var(--text2)">© OpenStreetMap</a>
               </p>
+            </div>
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+              <div class="form-group">
+                <label>Número exterior *</label>
+                <input type="text" name="address_ext" class="form-control" placeholder="Ej. 123" required
+                       maxlength="20" autocomplete="address-line2" inputmode="text">
+              </div>
+              <div class="form-group">
+                <label>
+                  Número interior
+                  <span style="font-size:0.7rem;font-weight:400;color:var(--text3);margin-left:0.4rem">(opcional)</span>
+                </label>
+                <input type="text" name="address_int" class="form-control" placeholder="Ej. 4B, Depto 12"
+                       maxlength="20" autocomplete="address-line3">
+              </div>
             </div>
             <div class="form-row form-row-3">
               <div class="form-group">

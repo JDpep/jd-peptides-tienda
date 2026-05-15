@@ -49,7 +49,7 @@
           </div>
           <div class="info-block" style="grid-column:1/-1">
             <dt>Dirección de envío</dt>
-            <dd>{{ order['address'] }}, {{ order['city'] }}{% if order['state'] %}, {{ order['state'] }}{% endif %}{% if order['zip_code'] %} {{ order['zip_code'] }}{% endif %}</dd>
+            <dd>{{ order['address'] }}{% if order['address_ext'] %} #{{ order['address_ext'] }}{% endif %}{% if order['address_int'] %} Int. {{ order['address_int'] }}{% endif %}, {{ order['city'] }}{% if order['state'] %}, {{ order['state'] }}{% endif %}{% if order['zip_code'] %} {{ order['zip_code'] }}{% endif %}</dd>
           </div>
           {% if order['notes'] %}
             <div class="info-block" style="grid-column:1/-1">

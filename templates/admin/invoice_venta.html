@@ -155,7 +155,7 @@
         {% if order['address'] %}
         <div class="info-row">
           <span class="info-label">Dirección</span>
-          <span class="info-value">{{ order['address'] }}, {{ order['city'] }}{% if order['state'] %}, {{ order['state'] }}{% endif %}</span>
+          <span class="info-value">{{ order['address'] }}{% if order['address_ext'] %} #{{ order['address_ext'] }}{% endif %}{% if order['address_int'] %} Int. {{ order['address_int'] }}{% endif %}, {{ order['city'] }}{% if order['state'] %}, {{ order['state'] }}{% endif %}</span>
         </div>
         {% endif %}
       </div>

@@ -485,6 +485,26 @@ def _payment_label(method):
     return {'transferencia':'Transferencia Bancaria','efectivo':'Efectivo',
             'criptomonedas':'Criptomonedas','zelle':'Zelle','paypal':'PayPal'}.get(method, method)
 
+def _format_address(order):
+    """Construye la dirección completa con número exterior/interior si existen."""
+    parts = [(order.get('address') or '').strip()]
+    ext = (order.get('address_ext') or '').strip()
+    if ext:
+        parts.append(f'#{ext}')
+    interior = (order.get('address_int') or '').strip()
+    if interior:
+        parts.append(f'Int. {interior}')
+    street_line = ' '.join(p for p in parts if p)
+    city = (order.get('city') or '').strip()
+    state = (order.get('state') or '').strip()
+    zip_code = (order.get('zip_code') or '').strip()
+    tail = ', '.join(p for p in (city, state) if p)
+    full = ', '.join(p for p in (street_line, tail) if p)
+    if zip_code:
+        full = f'{full} {zip_code}'
+    return full
+
+
 def _admin_html(order, items):
     """Email interno para los administradores — muestra todos los datos."""
     pl = _payment_label(order['payment_method'])
@@ -508,7 +528,7 @@ def _admin_html(order, items):
           <tr><td style="padding:5px 0;color:#666;width:130px">Nombre</td><td style="padding:5px 0;font-weight:600;color:#111">{order['customer_name']}</td></tr>
           <tr><td style="padding:5px 0;color:#666">Email</td><td style="padding:5px 0;color:#111">{order['customer_email']}</td></tr>
           <tr><td style="padding:5px 0;color:#666">Teléfono</td><td style="padding:5px 0;color:#111">{order['customer_phone'] or '—'}</td></tr>
-          <tr><td style="padding:5px 0;color:#666">Dirección</td><td style="padding:5px 0;color:#111">{order['address']}, {order['city']}{', ' + order['state'] if order['state'] else ''} {order['zip_code'] or ''}</td></tr>
+          <tr><td style="padding:5px 0;color:#666">Dirección</td><td style="padding:5px 0;color:#111">{_format_address(order)}</td></tr>
           <tr><td style="padding:5px 0;color:#666">Método de pago</td><td style="padding:5px 0;font-weight:700;color:#c9a227">{pl}</td></tr>
           {notes_row}
         </table>
@@ -749,7 +769,26 @@ def _log_email(to_addr, subject, status, *, email_type=None, error_msg=None,
         print(f"[Email] log persist failed: {type(_e).__name__}: {_e}")
 
 
-def _send_email(to, subject, html, bcc=None, reply_to=None, email_type=None, order_id=None):
+def _html_to_text(html):
+    """Convierte HTML simple a texto plano para la versión multipart.
+    No es un parser robusto — colapsa tags, decodifica entidades comunes."""
+    if not html:
+        return ''
+    txt = re.sub(r'<br\s*/?>', '\n', html, flags=re.I)
+    txt = re.sub(r'</p\s*>', '\n\n', txt, flags=re.I)
+    txt = re.sub(r'</h[1-6]\s*>', '\n\n', txt, flags=re.I)
+    txt = re.sub(r'</li\s*>', '\n', txt, flags=re.I)
+    txt = re.sub(r'</tr\s*>', '\n', txt, flags=re.I)
+    txt = re.sub(r'<[^>]+>', '', txt)
+    txt = (txt.replace('&nbsp;', ' ').replace('&amp;', '&')
+              .replace('&lt;', '<').replace('&gt;', '>')
+              .replace('&quot;', '"').replace('&#39;', "'"))
+    txt = re.sub(r'[ \t]+', ' ', txt)
+    txt = re.sub(r'\n{3,}', '\n\n', txt)
+    return txt.strip()
+
+
+def _send_email(to, subject, html, bcc=None, reply_to=None, email_type=None, order_id=None, text=None):
     """Envía un email via Resend API. `bcc` puede ser str o list.
     Registra el resultado en email_log (status: ok / failed / skipped)."""
     if not RESEND_API_KEY:
@@ -763,6 +802,10 @@ def _send_email(to, subject, html, bcc=None, reply_to=None, email_type=None, ord
         "to": [to] if isinstance(to, str) else to,
         "subject": subject,
         "html": html,
+        # Versión texto plano (multipart). Reduce score de spam y permite que
+        # clientes sin HTML lean el mensaje. Si el caller no la pasa, la
+        # derivamos del HTML.
+        "text": text or _html_to_text(html),
     }
     if bcc:
         body["bcc"] = [bcc] if isinstance(bcc, str) else bcc
@@ -821,15 +864,16 @@ def _send_email(to, subject, html, bcc=None, reply_to=None, email_type=None, ord
     return False
 
 
-def _send_email_bg(to, subject, html, bcc=None, reply_to=None, email_type=None, order_id=None):
+def _send_email_bg(to, subject, html, bcc=None, reply_to=None, email_type=None, order_id=None, text=None):
     """Envía email — síncrono en Vercel (daemon threads se matan al cerrar
     el worker serverless), threaded en local/dev para no bloquear la response."""
     if _IS_VERCEL:
-        _send_email(to, subject, html, bcc, reply_to, email_type, order_id)
+        _send_email(to, subject, html, bcc, reply_to, email_type, order_id, text=text)
         return
     t = threading.Thread(
         target=_send_email,
         args=(to, subject, html, bcc, reply_to, email_type, order_id),
+        kwargs={'text': text},
         daemon=True,
     )
     t.start()
@@ -837,15 +881,18 @@ def _send_email_bg(to, subject, html, bcc=None, reply_to=None, email_type=None, 
 
 def _do_send_emails(order, items):
     admin_html = _admin_html(order, items)
-    subject_admin = f'⚡ Nueva Orden JD Peptides — {order["order_number"]}'
+    subject_admin = f'Nueva orden {order["order_number"]} — JD Peptides'
     for recipient in EMAIL_NOTIFY:
         _send_email_bg(recipient, subject_admin, admin_html,
                        email_type='order_new_admin', order_id=order.get('id'))
     customer_html = _customer_html(order, items)
+    # Reply-To: el cliente puede responder y le llega al admin real, no a noreply.
+    _reply_to = EMAIL_NOTIFY[0] if EMAIL_NOTIFY else None
     _send_email_bg(order['customer_email'],
-                   f'✅ Confirmación de tu pedido — {order["order_number"]}',
+                   f'Confirmación de tu pedido {order["order_number"]} — JD Peptides',
                    customer_html,
                    bcc=EMAIL_BCC or None,
+                   reply_to=_reply_to,
                    email_type='order_new_customer', order_id=order.get('id'))
     print(f"[Email] Encolado (bg) — admins {[_mask_email(a) for a in EMAIL_NOTIFY]} + cliente {_mask_email(order['customer_email'])} (bcc {_mask_email(EMAIL_BCC) if EMAIL_BCC else 'none'})")
 
@@ -1304,6 +1351,8 @@ CREATE TABLE IF NOT EXISTS orders (
     customer_email TEXT NOT NULL,
     customer_phone TEXT,
     address TEXT,
+    address_ext TEXT,
+    address_int TEXT,
     city TEXT,
     state TEXT,
     zip_code TEXT,
@@ -1857,6 +1906,12 @@ def init_db():
     _order_cols = [row[1] for row in db.execute("PRAGMA table_info(orders)").fetchall()]
     if 'status_history' not in _order_cols:
         db.execute("ALTER TABLE orders ADD COLUMN status_history TEXT DEFAULT '[]'")
+        db.commit()
+    if 'address_ext' not in _order_cols:
+        db.execute("ALTER TABLE orders ADD COLUMN address_ext TEXT")
+        db.commit()
+    if 'address_int' not in _order_cols:
+        db.execute("ALTER TABLE orders ADD COLUMN address_int TEXT")
         db.commit()
 
     # Migrate supplier_documents table
@@ -3905,14 +3960,16 @@ def procesar_checkout():
     email = request.form.get('email', '').strip()
     phone = request.form.get('phone', '').strip()
     address = request.form.get('address', '').strip()
+    address_ext = request.form.get('address_ext', '').strip()[:20]
+    address_int = request.form.get('address_int', '').strip()[:20]
     city = request.form.get('city', '').strip()
     state = request.form.get('state', '').strip()
     zip_code = request.form.get('zip_code', '').strip()
     payment_method = request.form.get('payment_method', '')
     notes = request.form.get('notes', '').strip()
 
-    if not all([name, email, address, city, payment_method]):
-        flash('Por favor completa todos los campos requeridos.', 'error')
+    if not all([name, email, address, address_ext, city, payment_method]):
+        flash('Por favor completa todos los campos requeridos (incluido el número exterior).', 'error')
         return redirect(url_for('checkout'))
 
     if not valid_email(email):
@@ -3957,10 +4014,11 @@ def procesar_checkout():
         # Insertar orden
         cur = db.execute(
             """INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
-               address, city, state, zip_code, payment_method, notes, subtotal, shipping, total)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            ('TEMP', name, email, phone, address, city, state, zip_code,
-             payment_method, notes, subtotal, shipping, total)
+               address, address_ext, address_int, city, state, zip_code,
+               payment_method, notes, subtotal, shipping, total)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ('TEMP', name, email, phone, address, address_ext, address_int,
+             city, state, zip_code, payment_method, notes, subtotal, shipping, total)
         )
         order_id = cur.lastrowid
         # Non-predictable order number: JD-YYMMDD-<8 random base64url chars>

@@ -159,7 +159,7 @@
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.5rem;text-align:left">
       <h4 style="color:var(--text2);font-size:0.85rem;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem">Dirección de Envío</h4>
       <p style="color:var(--text);font-size:0.9rem;line-height:1.7">
-        {{ order['address'] }}<br>
+        {{ order['address'] }}{% if order['address_ext'] %} #{{ order['address_ext'] }}{% endif %}{% if order['address_int'] %} Int. {{ order['address_int'] }}{% endif %}<br>
         {{ order['city'] }}{% if order['state'] %}, {{ order['state'] }}{% endif %}{% if order['zip_code'] %} {{ order['zip_code'] }}{% endif %}
       </p>
     </div>

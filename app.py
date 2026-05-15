@@ -3203,14 +3203,52 @@ def admin_poll():
 # Media serving — uploaded images (persistent volume or static/img fallback)
 # ---------------------------------------------------------------------------
 
+def _serve_webp_if_supported(folder, filename):
+    """Sirve la versión .webp del asset si existe y el cliente la soporta.
+    Reduce el peso ~90% para browsers modernos sin tocar templates."""
+    base, ext = os.path.splitext(filename)
+    if ext.lower() in ('.png', '.jpg', '.jpeg'):
+        if 'image/webp' in request.headers.get('Accept', ''):
+            webp_path = os.path.join(folder, base + '.webp')
+            if os.path.exists(webp_path):
+                resp = send_from_directory(folder, base + '.webp', mimetype='image/webp')
+                resp.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+                resp.headers['Vary'] = 'Accept'
+                return resp
+    return None
+
+
 @app.route('/media/<path:filename>')
 def media_file(filename):
     """Serve uploaded product images from the persistent volume.
-    Falls back to static/img for images bundled with the app."""
+    Falls back to static/img for images bundled with the app.
+    Sirve .webp transparentemente cuando el browser lo soporta."""
     upload_path = os.path.join(UPLOAD_FOLDER, filename)
     if os.path.exists(upload_path):
+        webp = _serve_webp_if_supported(UPLOAD_FOLDER, filename)
+        if webp is not None:
+            return webp
         return send_from_directory(UPLOAD_FOLDER, filename)
+    webp = _serve_webp_if_supported(_static_img, filename)
+    if webp is not None:
+        return webp
     return send_from_directory(_static_img, filename)
+
+
+@app.before_request
+def _serve_webp_for_static_images():
+    """Intercepta /static/img/*.png|jpg y sirve la versión .webp cuando el
+    browser la soporta (header Accept: image/webp). Transparente, sin tocar
+    templates. Para `/media/` ya lo hace media_file()."""
+    path = request.path
+    if not path.startswith('/static/img/'):
+        return None
+    if not path.endswith(('.png', '.jpg', '.jpeg')):
+        return None
+    filename = path[len('/static/img/'):]
+    # Prefer UPLOAD_FOLDER si existe (mantener consistencia con media_file)
+    folder = _static_img
+    return _serve_webp_if_supported(folder, filename)
 
 
 # ---------------------------------------------------------------------------

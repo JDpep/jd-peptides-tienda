@@ -116,7 +116,8 @@
             <div class="product-detail-visual product-detail-has-img" id="gallery-main" style="cursor:pointer">
               <img id="gallery-main-img"
                    src="/media/{{ images[0]['filename'] }}"
-                   alt="{{ product['name'] }}" class="product-detail-img">
+                   alt="{{ product['name'] }}" class="product-detail-img"
+                   decoding="async" fetchpriority="high">
               <span class="badge badge-cat {{ _bc.get(product['category'], 'badge-cat-default') }}" style="position:absolute;top:1rem;left:1rem;z-index:2">{{ product['category'] }}</span>
             </div>
             {% if images|length > 1 %}
@@ -126,6 +127,7 @@
                    alt="{{ product['name'] }}"
                    class="gallery-thumb {% if loop.first %}active{% endif %}"
                    data-src="/media/{{ img['filename'] }}"
+                   loading="lazy" decoding="async"
                    style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:2px solid {% if loop.first %}var(--gold){% else %}var(--border){% endif %};cursor:pointer;transition:border-color 0.2s">
               {% endfor %}
             </div>
@@ -320,7 +322,8 @@
                   <div class="product-visual-cat"><span class="badge badge-cat {{ _bc.get(p['category'], 'badge-cat-default') }}">{{ p['category'] }}</span></div>
                   {% if _rimg %}
                     <img src="{{ url_for('static', filename='img/' + _rimg) }}"
-                         alt="{{ p['name'] }}" class="product-card-img">
+                         alt="{{ p['name'] }}" class="product-card-img"
+                         loading="lazy" decoding="async">
                   {% else %}
                     <div class="product-visual-pattern">
                       <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">

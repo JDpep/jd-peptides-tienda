@@ -177,6 +177,14 @@
       </ul>
 
       <div class="navbar-actions">
+        <form action="{{ url_for('catalogo') }}" method="get" class="navbar-search" role="search" aria-label="Buscar productos">
+          <svg class="navbar-search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M11 11l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <input type="search" name="q" placeholder="Buscar péptido…" value="{{ request.args.get('q', '') }}"
+                 autocomplete="off" maxlength="60" aria-label="Buscar">
+        </form>
         <a href="{{ url_for('carrito') }}" class="cart-btn">
           🛒
           <span class="cart-count cart-badge" {% if cart_count() == 0 %}style="display:none"{% endif %}>{{ cart_count() }}</span>
@@ -190,6 +198,14 @@
 
   <!-- Mobile Nav -->
   <div class="mobile-nav" id="mobileNav">
+    <form action="{{ url_for('catalogo') }}" method="get" class="mobile-nav-search" role="search">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M11 11l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <input type="search" name="q" placeholder="Buscar péptido…" value="{{ request.args.get('q', '') }}"
+             autocomplete="off" maxlength="60" aria-label="Buscar">
+    </form>
     <a href="{{ url_for('index') }}">Inicio</a>
     <a href="{{ url_for('catalogo') }}">Catálogo</a>
     <a href="{{ url_for('tracking') }}">Rastrear pedido</a>

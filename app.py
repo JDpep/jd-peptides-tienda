@@ -772,7 +772,15 @@ def _send_email(to, subject, html, bcc=None, reply_to=None, email_type=None, ord
     req = urllib.request.Request(
         "https://api.resend.com/emails",
         data=payload,
-        headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json",
+            # urllib's default UA ("Python-urllib/3.x") trips Cloudflare's bot
+            # filter on api.resend.com → returns HTML 403 with "error code: 1010".
+            # A plain UA bypasses the bot challenge cleanly.
+            "User-Agent": "jdpeptides.mx/1.0 (+https://jdpeptides.mx)",
+            "Accept": "application/json",
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:

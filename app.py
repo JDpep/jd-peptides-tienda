@@ -4116,7 +4116,7 @@ def procesar_checkout():
             """INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
                address, address_ext, address_int, city, state, zip_code,
                payment_method, notes, subtotal, shipping, total, customer_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             ('TEMP', name, email, phone, address, address_ext, address_int,
              city, state, zip_code, payment_method, notes, subtotal, shipping, total, _cust_id)
         )

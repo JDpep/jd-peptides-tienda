@@ -699,25 +699,31 @@ def _status_update_html(order, new_status, new_payment):
 
 
 def send_status_email(order, new_status, new_payment):
-    """Envía notificación al cliente cuando cambia el estado de su orden (background)."""
-    html = _status_update_html(order, new_status, new_payment)
+    """Envía notificación al cliente solo en hitos relevantes: enviado, entregado,
+    cancelado (status) o reembolsado (payment). 'nuevo' y 'procesando' NO notifican
+    para no saturar al cliente."""
+    NOTIFY_STATUSES = {'enviado', 'entregado', 'cancelado'}
+    notify_status  = new_status if new_status in NOTIFY_STATUSES else ''
+    notify_payment = new_payment if new_payment == 'reembolsado' else ''
+    if not notify_status and not notify_payment:
+        return
+    html = _status_update_html(order, notify_status, notify_payment)
     if not html:
         return
     subject_map = {
-        'procesando': f'⚙️ Tu pedido está siendo procesado — {order["order_number"]}',
-        'enviado':    f'🚚 ¡Tu pedido está en camino! — {order["order_number"]}',
-        'entregado':  f'✅ Pedido entregado — {order["order_number"]}',
-        'cancelado':  f'❌ Pedido cancelado — {order["order_number"]}',
+        'enviado':    f'Tu pedido está en camino — {order["order_number"]}',
+        'entregado':  f'Pedido entregado — {order["order_number"]}',
+        'cancelado':  f'Pedido cancelado — {order["order_number"]}',
     }
-    if new_payment == 'reembolsado':
-        subject = f'💸 Reembolso procesado — {order["order_number"]}'
+    if notify_payment == 'reembolsado':
+        subject = f'Reembolso procesado — {order["order_number"]}'
     else:
-        subject = subject_map.get(new_status, f'Actualización de tu pedido — {order["order_number"]}')
+        subject = subject_map.get(notify_status, f'Actualización de tu pedido — {order["order_number"]}')
     _send_email_bg(order['customer_email'], subject, html,
                    bcc=EMAIL_BCC or None,
                    email_type='order_status',
                    order_id=order.get('id'))
-    print(f"[Email] Estado encolado (bg) a {_mask_email(order['customer_email'])} ({new_status or new_payment})")
+    print(f"[Email] Estado encolado (bg) a {_mask_email(order['customer_email'])} ({notify_status or notify_payment})")
 
 
 def _mask_email(addr):
@@ -5560,7 +5566,35 @@ def admin_ordenes_bulk_status():
             oid = int(sid)
         except (TypeError, ValueError):
             continue
+        order = query_db("SELECT * FROM orders WHERE id=?", (oid,), one=True)
+        if not order or order['status'] == new_status:
+            continue
+        old_status = order['status']
         execute_db("UPDATE orders SET status=? WHERE id=?", (new_status, oid))
+        # Append a status_history para que el timeline público lo refleje.
+        try:
+            _hist_raw = order['status_history'] if 'status_history' in order.keys() else '[]'
+            try:
+                _hist = json.loads(_hist_raw or '[]')
+                if not isinstance(_hist, list):
+                    _hist = []
+            except Exception:
+                _hist = []
+            _hist.append({
+                'timestamp':  datetime.now().isoformat(timespec='seconds'),
+                'admin_user': session.get('admin_user', 'admin'),
+                'status':     new_status,
+                'status_old': old_status,
+            })
+            execute_db("UPDATE orders SET status_history=? WHERE id=?",
+                       (json.dumps(_hist[-50:]), oid))
+        except Exception as _e:
+            print(f'[Orders] bulk-status: status_history falló para #{oid}: {_e}')
+        # Notificar cliente si el estado nuevo es uno de los hitos
+        updated = query_db("SELECT * FROM orders WHERE id=?", (oid,), one=True)
+        send_status_email(updated, new_status, '')
+        sse_bus.publish('order_updated', {'id': oid, 'status': new_status,
+                                          'payment_status': updated['payment_status']})
         n += 1
     flash(f'{n} órden(es) actualizadas a "{new_status}".', 'success')
     return redirect(request.referrer or url_for('admin_ordenes'))

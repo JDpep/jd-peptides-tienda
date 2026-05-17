@@ -2,14 +2,23 @@
   "name": "JD Peptides",
   "short_name": "JD Peptides",
   "description": "Péptidos de investigación — calidad de laboratorio. For research use only.",
-  "start_url": "/",
+  "start_url": "/?utm_source=pwa",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0d0d0d",
   "theme_color": "#c9a227",
   "scope": "/",
   "icons": [
+    { "src": "/static/img/favicon-32.png", "sizes": "32x32",   "type": "image/png" },
     { "src": "/static/img/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
-    { "src": "/static/img/favicon-32.png",       "sizes": "32x32",   "type": "image/png" }
+    { "src": "/static/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/static/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Catálogo", "short_name": "Catálogo", "url": "/catalogo",
+      "icons": [{ "src": "/static/img/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Rastrear pedido", "short_name": "Rastreo", "url": "/tracking",
+      "icons": [{ "src": "/static/img/icon-192.png", "sizes": "192x192" }] }
   ],
   "categories": ["medical", "shopping", "science"],
   "lang": "es-MX"

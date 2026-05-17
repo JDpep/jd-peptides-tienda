@@ -3218,6 +3218,18 @@ def _serve_webp_if_supported(folder, filename):
     return None
 
 
+@app.route('/sw.js')
+def service_worker():
+    """Sirve el Service Worker desde la raíz para que tenga scope '/'.
+    Si se sirviera desde /static/sw.js, su scope sería /static/ y no podría
+    interceptar requests del shell HTML."""
+    resp = send_from_directory(os.path.join(os.path.dirname(__file__), 'static'), 'sw.js',
+                               mimetype='application/javascript')
+    resp.headers['Service-Worker-Allowed'] = '/'
+    resp.headers['Cache-Control'] = 'no-cache, must-revalidate'
+    return resp
+
+
 @app.route('/media/<path:filename>')
 def media_file(filename):
     """Serve uploaded product images from the persistent volume.

@@ -57,6 +57,144 @@
   </div>
 </div>
 
+<!-- KPIs Engagement & Growth -->
+<section class="kpi-section">
+  <header class="kpi-section-head">
+    <h2>KPIs · Engagement & Growth</h2>
+    <span class="kpi-section-sub">Periodos vs anterior · Datos en vivo</span>
+  </header>
+
+  <div class="kpi-grid">
+    {# Revenue 7d con delta #}
+    <div class="kpi-card">
+      <div class="kpi-label">Revenue · 7 días</div>
+      <div class="kpi-value">${{ "{:,.0f}".format(kpis.rev_7d) }}</div>
+      <div class="kpi-meta">
+        <span class="kpi-meta-n">{{ kpis.n_7d }} órdenes</span>
+        {% if kpis.rev_7d_delta is not none %}
+          <span class="kpi-delta {% if kpis.rev_7d_delta >= 0 %}kpi-delta-up{% else %}kpi-delta-down{% endif %}">
+            {{ '+' if kpis.rev_7d_delta >= 0 else '' }}{{ kpis.rev_7d_delta }}%
+          </span>
+        {% else %}
+          <span class="kpi-delta kpi-delta-na">—</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Revenue 30d con delta #}
+    <div class="kpi-card">
+      <div class="kpi-label">Revenue · 30 días</div>
+      <div class="kpi-value">${{ "{:,.0f}".format(kpis.rev_30d) }}</div>
+      <div class="kpi-meta">
+        <span class="kpi-meta-n">{{ kpis.n_30d }} órdenes</span>
+        {% if kpis.rev_30d_delta is not none %}
+          <span class="kpi-delta {% if kpis.rev_30d_delta >= 0 %}kpi-delta-up{% else %}kpi-delta-down{% endif %}">
+            {{ '+' if kpis.rev_30d_delta >= 0 else '' }}{{ kpis.rev_30d_delta }}%
+          </span>
+        {% else %}
+          <span class="kpi-delta kpi-delta-na">—</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Ticket promedio #}
+    <div class="kpi-card">
+      <div class="kpi-label">Ticket promedio · 30d</div>
+      <div class="kpi-value">${{ "{:,.0f}".format(kpis.aov_30d) }}</div>
+      <div class="kpi-meta"><span class="kpi-meta-n">AOV</span></div>
+    </div>
+
+    {# MTD #}
+    <div class="kpi-card">
+      <div class="kpi-label">Mes en curso</div>
+      <div class="kpi-value">${{ "{:,.0f}".format(kpis.rev_mtd) }}</div>
+      <div class="kpi-meta"><span class="kpi-meta-n">{{ kpis.n_mtd }} órdenes</span></div>
+    </div>
+
+    {# Recovery rate carritos abandonados #}
+    <div class="kpi-card">
+      <div class="kpi-label">Carrito abandonado · recuperación</div>
+      <div class="kpi-value">{{ kpis.recovery_rate }}%</div>
+      <div class="kpi-meta">
+        <span class="kpi-meta-n">{{ kpis.ac_recovered_30d }}/{{ kpis.ac_total_30d }} · 30d</span>
+      </div>
+    </div>
+
+    {# Repeat customer rate #}
+    <div class="kpi-card">
+      <div class="kpi-label">Tasa de recompra</div>
+      <div class="kpi-value">{{ kpis.repeat_rate }}%</div>
+      <div class="kpi-meta">
+        <span class="kpi-meta-n">% clientes con &gt;1 orden</span>
+      </div>
+    </div>
+
+    {# Clientes registrados #}
+    <div class="kpi-card">
+      <div class="kpi-label">Clientes registrados</div>
+      <div class="kpi-value">{{ kpis.customers_total }}</div>
+      <div class="kpi-meta">
+        <span class="kpi-meta-n">+{{ kpis.customers_new_7d }} esta semana · +{{ kpis.customers_new_30d }} este mes</span>
+      </div>
+    </div>
+
+    {# Tasa cancelación #}
+    <div class="kpi-card">
+      <div class="kpi-label">Tasa de cancelación · 30d</div>
+      <div class="kpi-value {% if kpis.cancel_rate >= 10 %}kpi-warn{% endif %}">{{ kpis.cancel_rate }}%</div>
+      <div class="kpi-meta">
+        <span class="kpi-meta-n">{{ '< 5% es saludable' if kpis.cancel_rate < 5 else 'Revisa motivos' }}</span>
+      </div>
+    </div>
+
+    {# Email delivery rate #}
+    <div class="kpi-card">
+      <div class="kpi-label">Entrega emails · 7d</div>
+      {% if kpis.email_delivery_rate is none %}
+        <div class="kpi-value kpi-muted">—</div>
+        <div class="kpi-meta"><span class="kpi-meta-n">Sin actividad reciente</span></div>
+      {% else %}
+        <div class="kpi-value {% if kpis.email_delivery_rate < 95 %}kpi-warn{% endif %}">{{ kpis.email_delivery_rate }}%</div>
+        <div class="kpi-meta">
+          <span class="kpi-meta-n">{{ kpis.email_ok }} ok · {{ kpis.email_failed }} fail</span>
+        </div>
+      {% endif %}
+    </div>
+
+    {# Reviews pendientes #}
+    <div class="kpi-card">
+      <div class="kpi-label">Reseñas pendientes</div>
+      <div class="kpi-value {% if kpis.reviews_pending > 0 %}kpi-warn{% endif %}">{{ kpis.reviews_pending }}</div>
+      <div class="kpi-meta">
+        {% if kpis.reviews_pending > 0 %}
+          <a href="{{ url_for('admin_reviews') }}" class="kpi-link">Moderar →</a>
+        {% else %}
+          <span class="kpi-meta-n">Todo al día</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if kpis.top_products_30d %}
+  <div class="kpi-top-products">
+    <h3>Top 5 productos · 30 días</h3>
+    <div class="kpi-top-list">
+      {% for p in kpis.top_products_30d %}
+        <div class="kpi-top-row">
+          <span class="kpi-top-rank">{{ loop.index }}</span>
+          <div class="kpi-top-name">
+            <div>{{ p.name }} <span class="kpi-top-dose">{{ p.dose }}</span></div>
+            <div class="kpi-top-sku">{{ p.sku }}</div>
+          </div>
+          <div class="kpi-top-units">{{ p.units_sold }} u</div>
+          <div class="kpi-top-rev">${{ "{:,.0f}".format(p.revenue) }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
 <!-- 7-day sales chart -->
 <div class="chart-7d-wrap">
   <div class="chart-7d-title">Ventas — Últimos 7 Días</div>

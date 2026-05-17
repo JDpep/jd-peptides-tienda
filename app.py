@@ -4797,6 +4797,169 @@ def admin_eliminar_usuario(uid):
     return redirect(url_for('admin_usuarios'))
 
 
+def _compute_engagement_kpis():
+    """Calcula KPIs de engagement y growth.
+    Devuelve dict con métricas para el dashboard admin. Mantiene queries
+    simples y agrupadas en una sola función para fácil mantenimiento."""
+    today = date.today()
+    iso_today      = today.isoformat()
+    iso_7d_ago     = (today - timedelta(days=7)).isoformat()
+    iso_14d_ago    = (today - timedelta(days=14)).isoformat()
+    iso_30d_ago    = (today - timedelta(days=30)).isoformat()
+    iso_60d_ago    = (today - timedelta(days=60)).isoformat()
+    iso_month_start = today.replace(day=1).isoformat()
+
+    # ── Revenue por ventanas + delta vs período anterior ──────────────────
+    # NOTA: comparamos created_at (TEXT 'YYYY-MM-DD HH:MM:SS') lexicográfica-
+    # mente contra 'YYYY-MM-DD'. Funciona en SQLite y Postgres sin casting,
+    # a diferencia de date(created_at) que falla con TEXT en PG.
+    def _rev(since, until=None):
+        if until:
+            r = query_db(
+                "SELECT COALESCE(SUM(total),0) AS v, COUNT(*) AS n FROM orders "
+                "WHERE status != 'cancelado' AND created_at >= ? AND created_at < ?",
+                (since, until), one=True
+            )
+        else:
+            r = query_db(
+                "SELECT COALESCE(SUM(total),0) AS v, COUNT(*) AS n FROM orders "
+                "WHERE status != 'cancelado' AND created_at >= ?",
+                (since,), one=True
+            )
+        return float(r['v'] or 0), int(r['n'] or 0)
+
+    rev_today, n_today = _rev(iso_today)
+    rev_7d,  n_7d  = _rev(iso_7d_ago)
+    rev_30d, n_30d = _rev(iso_30d_ago)
+    rev_prev_7d,  _ = _rev(iso_14d_ago, iso_7d_ago)
+    rev_prev_30d, _ = _rev(iso_60d_ago, iso_30d_ago)
+    rev_mtd, n_mtd = _rev(iso_month_start)
+
+    def _pct(curr, prev):
+        if prev <= 0:
+            return None  # sin baseline para comparar
+        return round((curr - prev) / prev * 100, 1)
+
+    aov_30d = (rev_30d / n_30d) if n_30d else 0.0
+
+    # ── Funnel: abandoned cart recovery ───────────────────────────────────
+    ac_total_30d = query_db(
+        "SELECT COUNT(*) AS c FROM abandoned_carts WHERE created_at >= ?",
+        (iso_30d_ago,), one=True
+    )['c'] or 0
+    ac_recovered_30d = query_db(
+        "SELECT COUNT(*) AS c FROM abandoned_carts "
+        "WHERE created_at >= ? AND recovered_order_id IS NOT NULL",
+        (iso_30d_ago,), one=True
+    )['c'] or 0
+    recovery_rate = round((ac_recovered_30d / ac_total_30d * 100), 1) if ac_total_30d else 0.0
+
+    # ── Customers ─────────────────────────────────────────────────────────
+    customers_total = 0
+    customers_new_7d = 0
+    customers_new_30d = 0
+    repeat_rate = 0.0
+    try:
+        customers_total = query_db("SELECT COUNT(*) AS c FROM customers", one=True)['c'] or 0
+        customers_new_7d = query_db(
+            "SELECT COUNT(*) AS c FROM customers WHERE created_at >= ?",
+            (iso_7d_ago,), one=True
+        )['c'] or 0
+        customers_new_30d = query_db(
+            "SELECT COUNT(*) AS c FROM customers WHERE created_at >= ?",
+            (iso_30d_ago,), one=True
+        )['c'] or 0
+        # Repeat customer rate: clientes con >1 orden no-cancelada / total clientes con >=1 orden
+        unique_buyers = query_db(
+            "SELECT COUNT(DISTINCT LOWER(customer_email)) AS c FROM orders WHERE status != 'cancelado'",
+            one=True
+        )['c'] or 0
+        repeat_buyers = query_db(
+            "SELECT COUNT(*) AS c FROM ("
+            "  SELECT LOWER(customer_email) AS e, COUNT(*) AS n FROM orders "
+            "  WHERE status != 'cancelado' "
+            "  GROUP BY LOWER(customer_email) HAVING COUNT(*) > 1"
+            ") AS t",
+            one=True
+        )['c'] or 0
+        repeat_rate = round((repeat_buyers / unique_buyers * 100), 1) if unique_buyers else 0.0
+    except Exception as _e:
+        print(f'[KPIs] customers query failed: {_e}')
+
+    # ── Top productos últimos 30d (por revenue) ───────────────────────────
+    top_products_30d = query_db("""
+        SELECT p.id, p.name, p.sku, p.dose,
+               SUM(oi.quantity) AS units_sold,
+               SUM(oi.subtotal) AS revenue
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        JOIN products p ON oi.product_id = p.id
+        WHERE o.status != 'cancelado' AND o.created_at >= ?
+        GROUP BY p.id, p.name, p.sku, p.dose
+        ORDER BY revenue DESC
+        LIMIT 5
+    """, (iso_30d_ago,)) or []
+
+    # ── Reviews pendientes de moderación ─────────────────────────────────
+    reviews_pending = 0
+    try:
+        reviews_pending = query_db(
+            "SELECT COUNT(*) AS c FROM reviews WHERE status='pending'",
+            one=True
+        )['c'] or 0
+    except Exception:
+        pass
+
+    # ── Email delivery rate (últimos 7d) ─────────────────────────────────
+    email_ok = email_failed = 0
+    try:
+        rows = query_db(
+            "SELECT status, COUNT(*) AS c FROM email_log "
+            "WHERE sent_at >= ? GROUP BY status",
+            (iso_7d_ago,)
+        ) or []
+        for r in rows:
+            if r['status'] == 'ok':
+                email_ok = r['c']
+            elif r['status'] == 'failed':
+                email_failed = r['c']
+    except Exception:
+        pass
+    email_total = email_ok + email_failed
+    email_delivery_rate = round((email_ok / email_total * 100), 1) if email_total else None
+
+    # ── Tasa cancelación 30d ─────────────────────────────────────────────
+    cancel_30d = query_db(
+        "SELECT COUNT(*) AS c FROM orders WHERE status='cancelado' AND created_at >= ?",
+        (iso_30d_ago,), one=True
+    )['c'] or 0
+    total_30d_all = query_db(
+        "SELECT COUNT(*) AS c FROM orders WHERE created_at >= ?",
+        (iso_30d_ago,), one=True
+    )['c'] or 0
+    cancel_rate = round((cancel_30d / total_30d_all * 100), 1) if total_30d_all else 0.0
+
+    return {
+        'rev_today': rev_today, 'n_today': n_today,
+        'rev_7d': rev_7d, 'n_7d': n_7d, 'rev_7d_delta': _pct(rev_7d, rev_prev_7d),
+        'rev_30d': rev_30d, 'n_30d': n_30d, 'rev_30d_delta': _pct(rev_30d, rev_prev_30d),
+        'rev_mtd': rev_mtd, 'n_mtd': n_mtd,
+        'aov_30d': aov_30d,
+        'ac_total_30d': ac_total_30d,
+        'ac_recovered_30d': ac_recovered_30d,
+        'recovery_rate': recovery_rate,
+        'customers_total': customers_total,
+        'customers_new_7d': customers_new_7d,
+        'customers_new_30d': customers_new_30d,
+        'repeat_rate': repeat_rate,
+        'top_products_30d': [dict(r) for r in top_products_30d],
+        'reviews_pending': reviews_pending,
+        'email_ok': email_ok, 'email_failed': email_failed,
+        'email_delivery_rate': email_delivery_rate,
+        'cancel_rate': cancel_rate,
+    }
+
+
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
@@ -4876,18 +5039,22 @@ def admin_dashboard():
         })
 
     # ── Ventas últimos 7 días ──────────────────────────────────────────────
+    # NOTA: usamos substring(created_at, 1, 10) en vez de date(col) para
+    # ser compatible con Postgres (TEXT col) y SQLite. El cutoff lo
+    # calculamos en Python para evitar date('now', '-6 days') de SQLite.
+    from datetime import timedelta
+    _cutoff_7d = (date.today() - timedelta(days=6)).isoformat()
     sales_7d_raw = query_db("""
-        SELECT date(created_at) as day,
+        SELECT substring(created_at, 1, 10) as day,
                COUNT(*) as order_count,
                COALESCE(SUM(total), 0) as day_total
         FROM orders
-        WHERE date(created_at) >= date('now', '-6 days')
+        WHERE created_at >= ?
           AND status != 'cancelado'
-        GROUP BY date(created_at)
+        GROUP BY substring(created_at, 1, 10)
         ORDER BY day ASC
-    """)
+    """, (_cutoff_7d,))
     # Ensure all 7 days are present (fill gaps with 0)
-    from datetime import timedelta
     sales_7d = []
     for i in range(6, -1, -1):
         d = (date.today() - timedelta(days=i)).isoformat()
@@ -4906,6 +5073,8 @@ def admin_dashboard():
     """)
     status_counts = {r['status']: r['count'] for r in status_rows}
 
+    kpis = _compute_engagement_kpis()
+
     return render_template('admin/dashboard.html',
                            total_sales=total_sales,
                            orders_today=orders_today,
@@ -4916,7 +5085,8 @@ def admin_dashboard():
                            comparativo=comparativo,
                            mes_actual=mes_actual,
                            sales_7d=sales_7d,
-                           status_counts=status_counts)
+                           status_counts=status_counts,
+                           kpis=kpis)
 
 
 @app.route('/admin/productos')

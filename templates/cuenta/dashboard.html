@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Mi cuenta — JD Peptides{% endblock %}
+{% block meta_description %}Tu cuenta JD Peptides: historial de pedidos, datos guardados.{% endblock %}
+
+{% block content %}
+<section style="max-width:980px;margin:2.5rem auto;padding:0 1rem">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:2rem">
+    <div>
+      <h1 style="font-size:1.75rem;margin:0 0 0.4rem;color:var(--text)">Hola, {{ customer.name or customer.email }}</h1>
+      <p style="color:var(--text3);font-size:0.9rem;margin:0">{{ customer.email }}</p>
+    </div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      <a href="{{ url_for('cuenta_perfil') }}" class="btn btn-outline">Editar perfil</a>
+      <form method="post" action="{{ url_for('cuenta_logout') }}" style="margin:0">
+        <button type="submit" class="btn btn-ghost">Cerrar sesión</button>
+      </form>
+    </div>
+  </div>
+
+  <h2 style="font-size:1.1rem;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;border-bottom:2px solid var(--gold);padding-bottom:0.5rem;margin-bottom:1.25rem">Mis pedidos</h2>
+
+  {% if orders %}
+    <div style="display:flex;flex-direction:column;gap:0.75rem">
+      {% for o in orders %}
+        <a href="{{ url_for('pedido', order_number=o.order_number) }}" class="form-card" style="text-decoration:none;display:grid;grid-template-columns:1fr auto auto;gap:1rem;align-items:center;padding:1rem 1.25rem">
+          <div>
+            <div style="color:var(--text);font-weight:600">{{ o.order_number }}</div>
+            <div style="color:var(--text3);font-size:0.8rem;margin-top:0.2rem">{{ o.created_at[:16] }}</div>
+          </div>
+          <span class="badge badge-{% if o.status == 'entregado' %}green{% elif o.status == 'enviado' %}orange{% elif o.status == 'cancelado' %}red{% else %}gold{% endif %}" style="font-size:0.7rem">{{ o.status }}</span>
+          <div style="font-weight:700;color:var(--gold);font-size:1.05rem">${{ '{:,.2f}'.format(o.total) }}</div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color:var(--text3);text-align:center;padding:3rem 1rem">No tienes pedidos aún. <a href="{{ url_for('catalogo') }}" style="color:var(--gold)">Explorar catálogo →</a></p>
+  {% endif %}
+</section>
+{% endblock %}

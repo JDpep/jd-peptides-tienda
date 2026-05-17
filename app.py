@@ -1327,6 +1327,23 @@ CREATE TABLE IF NOT EXISTS admin_users (
     created_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS customers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    name TEXT,
+    phone TEXT,
+    default_address TEXT,
+    default_address_ext TEXT,
+    default_address_int TEXT,
+    default_city TEXT,
+    default_state TEXT,
+    default_zip_code TEXT,
+    last_login_at TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
+
 CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     sku TEXT UNIQUE NOT NULL,
@@ -1912,6 +1929,9 @@ def init_db():
         db.commit()
     if 'address_int' not in _order_cols:
         db.execute("ALTER TABLE orders ADD COLUMN address_int TEXT")
+        db.commit()
+    if 'customer_id' not in _order_cols:
+        db.execute("ALTER TABLE orders ADD COLUMN customer_id INTEGER")
         db.commit()
 
     # Migrate supplier_documents table
@@ -3038,6 +3058,32 @@ def admin_required(f):
     return decorated
 
 
+def customer_required(f):
+    """Gate de rutas que requieren cliente logueado.
+    Redirige a /cuenta/login y guarda destino en ?next= para volver post-auth."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('customer_id'):
+            return redirect(url_for('cuenta_login', next=request.path))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def get_current_customer():
+    """Retorna dict del cliente logueado o None. Cachea durante el request."""
+    if not session.get('customer_id'):
+        return None
+    if hasattr(g, '_current_customer'):
+        return g._current_customer
+    row = query_db("SELECT * FROM customers WHERE id=?", (session['customer_id'],), one=True)
+    g._current_customer = dict(row) if row else None
+    if not g._current_customer:
+        # cliente eliminado de DB pero sesión vieja — limpia
+        session.pop('customer_id', None)
+        session.pop('customer_email', None)
+    return g._current_customer
+
+
 # Superadmin gate. La condición ahora chequea contra:
 #   1) Variable de entorno OWNER_USER (preferida en prod) o
 #   2) ADMIN_USERNAME (el bootstrap user creado en init_db) o
@@ -3271,7 +3317,7 @@ def _serve_webp_for_static_images():
 # que no aportan valor SEO (cart, checkout, login, APIs, etc.)
 _ROBOTS_DISALLOW = [
     '/admin', '/api', '/carrito', '/checkout', '/pedido', '/tracking',
-    '/static/img/qr_', '/qr/', '/contacto',
+    '/static/img/qr_', '/qr/', '/contacto', '/cuenta',
 ]
 
 @app.route('/robots.txt')
@@ -3996,8 +4042,10 @@ def checkout():
     subtotal = cart_total()
     shipping = compute_shipping(subtotal)
     total = subtotal + shipping
+    # Prefill con datos del cliente logueado (si lo está)
+    cust = get_current_customer() or {}
     return render_template('checkout.html', cart=cart, subtotal=subtotal,
-                           shipping=shipping, total=total)
+                           shipping=shipping, total=total, customer=cust)
 
 
 @app.route('/checkout/procesar', methods=['POST'])
@@ -4061,14 +4109,16 @@ def procesar_checkout():
                 )
                 return redirect(url_for('checkout'))
 
-        # Insertar orden
+        # Insertar orden — vincula al cliente logueado si lo está
+        _cust = get_current_customer()
+        _cust_id = _cust['id'] if _cust else None
         cur = db.execute(
             """INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
                address, address_ext, address_int, city, state, zip_code,
-               payment_method, notes, subtotal, shipping, total)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               payment_method, notes, subtotal, shipping, total, customer_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             ('TEMP', name, email, phone, address, address_ext, address_int,
-             city, state, zip_code, payment_method, notes, subtotal, shipping, total)
+             city, state, zip_code, payment_method, notes, subtotal, shipping, total, _cust_id)
         )
         order_id = cur.lastrowid
         # Non-predictable order number: JD-YYMMDD-<8 random base64url chars>
@@ -4244,6 +4294,140 @@ def pedido_factura(order_number):
         return redirect(url_for('index'))
     items = query_db("SELECT * FROM order_items WHERE order_id=?", (order['id'],))
     return render_template('factura.html', order=order, items=items)
+
+
+# ---------------------------------------------------------------------------
+# Customer account routes (cliente final, distinto de admin)
+# ---------------------------------------------------------------------------
+
+_PASSWORD_MIN_LEN = 8
+
+
+@app.route('/cuenta/registro', methods=['GET', 'POST'])
+def cuenta_registro():
+    """Registro de cuenta de cliente. Si el email ya tiene órdenes con ese
+    correo, las vinculamos automáticamente al nuevo customer_id."""
+    if session.get('customer_id'):
+        return redirect(url_for('cuenta_dashboard'))
+    next_url = request.args.get('next') or request.form.get('next') or url_for('cuenta_dashboard')
+    if request.method == 'POST':
+        email = (request.form.get('email') or '').strip().lower()
+        password = request.form.get('password') or ''
+        name = (request.form.get('name') or '').strip()[:100]
+        phone = (request.form.get('phone') or '').strip()[:30]
+        if not valid_email(email):
+            flash('Email no válido.', 'error')
+            return render_template('cuenta/registro.html', email=email, name=name, phone=phone, next=next_url)
+        if len(password) < _PASSWORD_MIN_LEN:
+            flash(f'La contraseña debe tener al menos {_PASSWORD_MIN_LEN} caracteres.', 'error')
+            return render_template('cuenta/registro.html', email=email, name=name, phone=phone, next=next_url)
+        existing = query_db("SELECT id FROM customers WHERE email=?", (email,), one=True)
+        if existing:
+            flash('Ya existe una cuenta con ese email. Inicia sesión.', 'error')
+            return redirect(url_for('cuenta_login', next=next_url))
+        cid = execute_db(
+            "INSERT INTO customers (email, password_hash, name, phone) VALUES (?,?,?,?)",
+            (email, generate_password_hash(password, method='pbkdf2:sha256'), name, phone)
+        )
+        # Vincular órdenes preexistentes con ese email a este customer
+        try:
+            execute_db("UPDATE orders SET customer_id=? WHERE LOWER(customer_email)=? AND customer_id IS NULL",
+                       (cid, email))
+        except Exception as e:
+            print(f'[cuenta] vincular orders falló: {e}')
+        session['customer_id'] = cid
+        session['customer_email'] = email
+        execute_db("UPDATE customers SET last_login_at=? WHERE id=?", (datetime.now().isoformat(), cid))
+        flash('Cuenta creada. Bienvenido a JD Peptides.', 'success')
+        return redirect(next_url)
+    return render_template('cuenta/registro.html', email='', name='', phone='', next=next_url)
+
+
+_customer_login_attempts = {}
+_customer_login_lock = threading.Lock()
+_CUSTOMER_LOGIN_LIMIT = 8
+_CUSTOMER_LOGIN_WINDOW = 600  # 10 min
+
+
+def _customer_login_rate_limited(ip):
+    now = time.time()
+    with _customer_login_lock:
+        q = _customer_login_attempts.setdefault(ip, deque())
+        while q and (now - q[0]) > _CUSTOMER_LOGIN_WINDOW:
+            q.popleft()
+        if len(q) >= _CUSTOMER_LOGIN_LIMIT:
+            return True
+        q.append(now)
+        return False
+
+
+@app.route('/cuenta/login', methods=['GET', 'POST'])
+def cuenta_login():
+    if session.get('customer_id'):
+        return redirect(url_for('cuenta_dashboard'))
+    next_url = request.args.get('next') or request.form.get('next') or url_for('cuenta_dashboard')
+    if request.method == 'POST':
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+        if _customer_login_rate_limited(ip):
+            flash('Demasiados intentos. Intenta de nuevo en unos minutos.', 'error')
+            return render_template('cuenta/login.html', email='', next=next_url)
+        email = (request.form.get('email') or '').strip().lower()
+        password = request.form.get('password') or ''
+        user = query_db("SELECT * FROM customers WHERE email=?", (email,), one=True)
+        if user and check_password_hash(user['password_hash'], password):
+            session['customer_id'] = user['id']
+            session['customer_email'] = user['email']
+            execute_db("UPDATE customers SET last_login_at=? WHERE id=?", (datetime.now().isoformat(), user['id']))
+            return redirect(next_url)
+        # Mismo error para email-no-existe y password-mal — no enumeración
+        flash('Email o contraseña incorrectos.', 'error')
+        return render_template('cuenta/login.html', email=email, next=next_url)
+    return render_template('cuenta/login.html', email='', next=next_url)
+
+
+@app.route('/cuenta/logout', methods=['POST', 'GET'])
+def cuenta_logout():
+    session.pop('customer_id', None)
+    session.pop('customer_email', None)
+    flash('Sesión cerrada.', 'success')
+    return redirect(url_for('index'))
+
+
+@app.route('/cuenta')
+@customer_required
+def cuenta_dashboard():
+    cust = get_current_customer()
+    orders = query_db(
+        "SELECT id, order_number, status, payment_status, total, created_at "
+        "FROM orders WHERE customer_id=? OR LOWER(customer_email)=? "
+        "ORDER BY id DESC LIMIT 50",
+        (cust['id'], cust['email'])
+    ) or []
+    return render_template('cuenta/dashboard.html', customer=cust, orders=orders)
+
+
+@app.route('/cuenta/perfil', methods=['GET', 'POST'])
+@customer_required
+def cuenta_perfil():
+    cust = get_current_customer()
+    if request.method == 'POST':
+        name = (request.form.get('name') or '').strip()[:100]
+        phone = (request.form.get('phone') or '').strip()[:30]
+        addr = (request.form.get('default_address') or '').strip()[:200]
+        ext = (request.form.get('default_address_ext') or '').strip()[:20]
+        intr = (request.form.get('default_address_int') or '').strip()[:20]
+        city = (request.form.get('default_city') or '').strip()[:80]
+        state = (request.form.get('default_state') or '').strip()[:80]
+        zip_code = (request.form.get('default_zip_code') or '').strip()[:10]
+        execute_db(
+            "UPDATE customers SET name=?, phone=?, default_address=?, default_address_ext=?, "
+            "default_address_int=?, default_city=?, default_state=?, default_zip_code=? "
+            "WHERE id=?",
+            (name, phone, addr, ext, intr, city, state, zip_code, cust['id'])
+        )
+        flash('Perfil actualizado.', 'success')
+        return redirect(url_for('cuenta_perfil'))
+    return render_template('cuenta/perfil.html', customer=cust)
 
 
 # ---------------------------------------------------------------------------
@@ -6092,6 +6276,7 @@ def inject_globals():
         'contact_email':   CONTACT_EMAIL,
         'contact_location': CONTACT_LOCATION,
         'ga_measurement_id': GA_MEASUREMENT_ID,
+        'current_customer': get_current_customer(),
     }
 
 

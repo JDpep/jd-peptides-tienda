@@ -308,6 +308,25 @@ p { color: var(--text2); }
   -webkit-appearance: none; appearance: none;
 }
 
+.account-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  color: var(--text2);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: all var(--transition);
+  text-decoration: none;
+}
+.account-btn:hover {
+  color: var(--gold);
+  background: rgba(199,154,58,0.1);
+  border-color: rgba(199,154,58,0.3);
+}
+
 .cart-btn {
   position: relative;
   display: flex;

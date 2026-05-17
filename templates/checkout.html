@@ -20,18 +20,26 @@
           <!-- Personal info -->
           <div class="form-card">
             <h3>Información Personal</h3>
+            {% if not current_customer %}
+              <p style="font-size:0.82rem;color:var(--text3);margin:-0.25rem 0 0.75rem">
+                ¿Ya tienes cuenta? <a href="{{ url_for('cuenta_login', next=url_for('checkout')) }}" style="color:var(--gold)">Inicia sesión</a> para autocompletar.
+              </p>
+            {% endif %}
             <div class="form-group">
               <label class="form-group label">Nombre completo *</label>
-              <input type="text" name="name" class="form-control" placeholder="Tu nombre" required autocomplete="name">
+              <input type="text" name="name" class="form-control" placeholder="Tu nombre" required autocomplete="name"
+                     value="{{ customer.name or '' }}">
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label>Email *</label>
-                <input type="email" name="email" class="form-control" placeholder="tu@email.com" required autocomplete="email">
+                <input type="email" name="email" class="form-control" placeholder="tu@email.com" required autocomplete="email"
+                       value="{{ customer.email or '' }}"{% if current_customer %} readonly{% endif %}>
               </div>
               <div class="form-group">
                 <label>Teléfono</label>
-                <input type="tel" name="phone" class="form-control" placeholder="+52 xxx xxx xxxx" autocomplete="tel">
+                <input type="tel" name="phone" class="form-control" placeholder="+52 xxx xxx xxxx" autocomplete="tel"
+                       value="{{ customer.phone or '' }}">
               </div>
             </div>
           </div>
@@ -48,7 +56,8 @@
               </label>
               <input type="text" name="address" id="addr-input" class="form-control"
                      placeholder="Calle y colonia (sin número)" required
-                     autocomplete="street-address" autocapitalize="words" spellcheck="false">
+                     autocomplete="street-address" autocapitalize="words" spellcheck="false"
+                     value="{{ customer.default_address or '' }}">
               <div id="addr-suggestions" class="addr-suggest" hidden></div>
               <p id="addr-attr" style="font-size:0.65rem;color:var(--text3);margin-top:0.35rem;display:none">
                 Resultados por <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" style="color:var(--text2)">© OpenStreetMap</a>
@@ -58,7 +67,8 @@
               <div class="form-group">
                 <label>Número exterior *</label>
                 <input type="text" name="address_ext" class="form-control" placeholder="Ej. 123" required
-                       maxlength="20" autocomplete="address-line2" inputmode="text">
+                       maxlength="20" autocomplete="address-line2" inputmode="text"
+                       value="{{ customer.default_address_ext or '' }}">
               </div>
               <div class="form-group">
                 <label>
@@ -66,21 +76,25 @@
                   <span style="font-size:0.7rem;font-weight:400;color:var(--text3);margin-left:0.4rem">(opcional)</span>
                 </label>
                 <input type="text" name="address_int" class="form-control" placeholder="Ej. 4B, Depto 12"
-                       maxlength="20" autocomplete="address-line3">
+                       maxlength="20" autocomplete="address-line3"
+                       value="{{ customer.default_address_int or '' }}">
               </div>
             </div>
             <div class="form-row form-row-3">
               <div class="form-group">
                 <label>Ciudad *</label>
-                <input type="text" name="city" id="addr-city" class="form-control" placeholder="Ciudad" required autocomplete="address-level2">
+                <input type="text" name="city" id="addr-city" class="form-control" placeholder="Ciudad" required autocomplete="address-level2"
+                       value="{{ customer.default_city or '' }}">
               </div>
               <div class="form-group">
                 <label>Estado</label>
-                <input type="text" name="state" id="addr-state" class="form-control" placeholder="Estado" autocomplete="address-level1">
+                <input type="text" name="state" id="addr-state" class="form-control" placeholder="Estado" autocomplete="address-level1"
+                       value="{{ customer.default_state or '' }}">
               </div>
               <div class="form-group">
                 <label>C.P.</label>
-                <input type="text" name="zip_code" id="addr-zip" class="form-control" placeholder="00000" autocomplete="postal-code">
+                <input type="text" name="zip_code" id="addr-zip" class="form-control" placeholder="00000" autocomplete="postal-code"
+                       value="{{ customer.default_zip_code or '' }}">
               </div>
             </div>
           </div>

@@ -12,6 +12,7 @@
 <section class="checkout-section">
   <div class="container">
     <form method="POST" action="{{ url_for('procesar_checkout') }}" id="checkoutForm">
+      <input type="hidden" name="checkout_token" value="{{ checkout_token }}">
       <div class="checkout-grid">
 
         <!-- Left: Forms -->

@@ -63,14 +63,35 @@
   {%- endif %}
   "offers": {
     "@type": "Offer",
-    "url": {{ request.url|tojson }},
+    "url": {{ request.base_url|tojson }},
     "priceCurrency": "MXN",
     "price": "{{ '%.2f'|format(product['price']) }}",
+    "priceValidUntil": {{ price_valid_until|tojson }},
     "availability": {{ _availability|tojson }},
     "itemCondition": "https://schema.org/NewCondition",
     "seller": {
       "@type": "Organization",
       "name": "JD Peptides"
+    },
+    "hasMerchantReturnPolicy": {
+      "@type": "MerchantReturnPolicy",
+      "applicableCountry": "MX",
+      "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+      "merchantReturnDays": 7,
+      "returnMethod": "https://schema.org/ReturnByMail",
+      "returnFees": "https://schema.org/ReturnFeesCustomerResponsibility"
+    },
+    "shippingDetails": {
+      "@type": "OfferShippingDetails",
+      "shippingDestination": {
+        "@type": "DefinedRegion",
+        "addressCountry": "MX"
+      },
+      "deliveryTime": {
+        "@type": "ShippingDeliveryTime",
+        "businessDays": {"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"]},
+        "transitTime": {"@type": "QuantitativeValue", "minValue": 2, "maxValue": 6, "unitCode": "DAY"}
+      }
     }
   }
 }

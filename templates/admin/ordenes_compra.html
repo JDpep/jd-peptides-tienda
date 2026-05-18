@@ -292,20 +292,25 @@ function ocActualizar(){
 }
 function ocToggleTodos(cb){ document.querySelectorAll('.oc-cb').forEach(function(c){c.checked=cb.checked;}); ocActualizar(); }
 function estadoOC(s){ return s==='recibido'?'Recibido':s==='cancelado'?'Cancelado':'Pendiente'; }
+function ocEscape(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
 function ocVer(){
   var items=ocGetSel(); if(!items.length) return;
   var html='<table style="width:100%;border-collapse:collapse;font-size:0.83rem"><thead><tr style="border-bottom:1px solid rgba(201,162,39,0.3)">';
-  ['N° OC','Proveedor','Fecha','F. Esperada','Artículos','Total','Estado'].forEach(function(h){html+='<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.76rem">'+h+'</th>';});
+  ['N° OC','Proveedor','Fecha','F. Esperada','Artículos','Total','Estado'].forEach(function(h){html+='<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.76rem">'+ocEscape(h)+'</th>';});
   html+='</tr></thead><tbody>';
   items.forEach(function(o){
     html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">';
-    html+='<td style="padding:0.35rem 0.5rem;font-family:monospace;font-weight:700;color:var(--gold,#c9a227)">'+o.numero+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem;font-weight:600">'+o.proveedor+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem;color:var(--text3)">'+o.fecha+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem">'+o.esperada+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem;text-align:center">'+o.articulos+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold,#c9a227)">$'+o.total+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem">'+estadoOC(o.estado)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;font-family:monospace;font-weight:700;color:var(--gold,#c9a227)">'+ocEscape(o.numero)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;font-weight:600">'+ocEscape(o.proveedor)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;color:var(--text3)">'+ocEscape(o.fecha)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem">'+ocEscape(o.esperada)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;text-align:center">'+ocEscape(o.articulos)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold,#c9a227)">$'+ocEscape(o.total)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem">'+ocEscape(estadoOC(o.estado))+'</td>';
     html+='</tr>';
   });
   html+='</tbody></table>';

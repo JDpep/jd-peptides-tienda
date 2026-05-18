@@ -327,23 +327,28 @@
     document.querySelectorAll('.dash-cb').forEach(function(c){ c.checked = cb.checked; });
     dashActualizar();
   }
+  function dashEscape(s){
+    return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
   function dashVer() {
     var items = dashGetSel();
     if (!items.length) return;
     var html = '<table style="width:100%;border-collapse:collapse;font-size:0.83rem"><thead><tr style="border-bottom:1px solid rgba(201,162,39,0.3)">';
     ['# Orden','Cliente','Email','Total','Estado','Pago','Fecha'].forEach(function(h){
-      html += '<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.76rem">' + h + '</th>';
+      html += '<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.76rem">' + dashEscape(h) + '</th>';
     });
     html += '</tr></thead><tbody>';
     items.forEach(function(o){
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">';
-      html += '<td style="padding:0.35rem 0.5rem;font-family:monospace;font-size:0.78rem">' + o.numero + '</td>';
-      html += '<td style="padding:0.35rem 0.5rem;font-weight:600">' + o.cliente + '</td>';
-      html += '<td style="padding:0.35rem 0.5rem;font-size:0.78rem">' + o.email + '</td>';
-      html += '<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold,#c9a227)">$' + o.total + '</td>';
-      html += '<td style="padding:0.35rem 0.5rem">' + o.estado + '</td>';
-      html += '<td style="padding:0.35rem 0.5rem">' + o.pago + '</td>';
-      html += '<td style="padding:0.35rem 0.5rem;color:var(--text3)">' + o.fecha + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem;font-family:monospace;font-size:0.78rem">' + dashEscape(o.numero) + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem;font-weight:600">' + dashEscape(o.cliente) + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem;font-size:0.78rem">' + dashEscape(o.email) + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold,#c9a227)">$' + dashEscape(o.total) + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem">' + dashEscape(o.estado) + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem">' + dashEscape(o.pago) + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem;color:var(--text3)">' + dashEscape(o.fecha) + '</td>';
       html += '</tr>';
     });
     html += '</tbody></table>';

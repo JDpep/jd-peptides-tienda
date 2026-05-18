@@ -249,6 +249,21 @@
                 </div>
               {% endfor %}
             </div>
+
+            {% if total_pages and total_pages > 1 %}
+            <nav class="catalog-pagination" aria-label="Páginas del catálogo" style="display:flex;gap:.4rem;align-items:center;justify-content:center;margin:1.5rem 0 0;flex-wrap:wrap">
+              {% set qs = request.args.to_dict() %}
+              {% if page > 1 %}
+                {% set _ = qs.update({'page': page - 1}) %}
+                <a class="btn btn-ghost btn-sm" rel="prev" href="?{{ qs|urlencode }}">‹ Anterior</a>
+              {% endif %}
+              <span style="font-size:.85rem;color:var(--text3)">Página {{ page }} de {{ total_pages }} · {{ total_products }} productos</span>
+              {% if page < total_pages %}
+                {% set _ = qs.update({'page': page + 1}) %}
+                <a class="btn btn-gold btn-sm" rel="next" href="?{{ qs|urlencode }}">Siguiente ›</a>
+              {% endif %}
+            </nav>
+            {% endif %}
           {% else %}
             <div class="catalog-empty">
               <div class="catalog-empty-illustration">

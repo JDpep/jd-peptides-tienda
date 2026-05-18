@@ -316,24 +316,29 @@ function tipoLabel(t) {
   return '= Ajuste';
 }
 
+function invEscape(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
 function verSeleccionados() {
   var movs = getSeleccionados();
   if (!movs.length) return;
   var html = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem">';
   html += '<thead><tr style="border-bottom:1px solid rgba(201,162,39,0.3)">';
   ['Fecha','Producto','SKU','Tipo','Cantidad','Motivo','Referencia'].forEach(function(h){
-    html += '<th style="padding:0.4rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.78rem">' + h + '</th>';
+    html += '<th style="padding:0.4rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.78rem">' + invEscape(h) + '</th>';
   });
   html += '</tr></thead><tbody>';
   movs.forEach(function(m){
     html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">';
-    html += '<td style="padding:0.4rem 0.5rem;color:var(--text3)">' + m.fecha + '</td>';
-    html += '<td style="padding:0.4rem 0.5rem;font-weight:600">' + m.producto + '</td>';
-    html += '<td style="padding:0.4rem 0.5rem;font-family:monospace;font-size:0.78rem">' + m.sku + '</td>';
-    html += '<td style="padding:0.4rem 0.5rem">' + tipoLabel(m.tipo) + '</td>';
-    html += '<td style="padding:0.4rem 0.5rem;text-align:center;font-weight:700">' + m.cantidad + '</td>';
-    html += '<td style="padding:0.4rem 0.5rem">' + (m.motivo || '—') + '</td>';
-    html += '<td style="padding:0.4rem 0.5rem;font-family:monospace;font-size:0.78rem">' + (m.referencia || '—') + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem;color:var(--text3)">' + invEscape(m.fecha) + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem;font-weight:600">' + invEscape(m.producto) + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem;font-family:monospace;font-size:0.78rem">' + invEscape(m.sku) + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem">' + invEscape(tipoLabel(m.tipo)) + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem;text-align:center;font-weight:700">' + invEscape(m.cantidad) + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem">' + invEscape(m.motivo || '—') + '</td>';
+    html += '<td style="padding:0.4rem 0.5rem;font-family:monospace;font-size:0.78rem">' + invEscape(m.referencia || '—') + '</td>';
     html += '</tr>';
   });
   html += '</tbody></table>';

@@ -145,20 +145,28 @@ function ordActualizar(){
   document.getElementById('ord-check-all').indeterminate=n>0&&n<total;
 }
 function ordToggleTodos(cb){ document.querySelectorAll('.ord-cb').forEach(function(c){c.checked=cb.checked;}); ordActualizar(); }
+function ordEscape(s){
+  // Escape HTML antes de concatenar a innerHTML — el nombre/email del cliente
+  // viene del checkout y puede contener <img onerror=...>; sin este escape un
+  // pedido malicioso ejecuta JS dentro del panel admin.
+  return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
 function ordVer(){
   var items=ordGetSel(); if(!items.length) return;
   var html='<table style="width:100%;border-collapse:collapse;font-size:0.83rem"><thead><tr style="border-bottom:1px solid rgba(201,162,39,0.3)">';
-  ['# Orden','Fecha','Cliente','Email','Total','Estado','Pago'].forEach(function(h){html+='<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.76rem">'+h+'</th>';});
+  ['# Orden','Fecha','Cliente','Email','Total','Estado','Pago'].forEach(function(h){html+='<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.76rem">'+ordEscape(h)+'</th>';});
   html+='</tr></thead><tbody>';
   items.forEach(function(o){
     html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">';
-    html+='<td style="padding:0.35rem 0.5rem;font-family:monospace;font-size:0.78rem">'+o.numero+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem;color:var(--text3)">'+o.fecha+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem;font-weight:600">'+o.cliente+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem;font-size:0.78rem">'+o.email+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold,#c9a227)">$'+o.total+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem">'+o.estado+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem">'+o.pago+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;font-family:monospace;font-size:0.78rem">'+ordEscape(o.numero)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;color:var(--text3)">'+ordEscape(o.fecha)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;font-weight:600">'+ordEscape(o.cliente)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;font-size:0.78rem">'+ordEscape(o.email)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold,#c9a227)">$'+ordEscape(o.total)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem">'+ordEscape(o.estado)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem">'+ordEscape(o.pago)+'</td>';
     html+='</tr>';
   });
   html+='</tbody></table>';

@@ -98,7 +98,6 @@ GA_MEASUREMENT_ID = os.environ.get('GA_MEASUREMENT_ID', '').strip()
 # (the old SEC-1 behavior) every cold start would mint a different key and
 # CSRF/session tokens would fail across containers in the same deploy, which
 # is exactly the "CSRF token missing or invalid" bug at /admin/login.
-import hashlib as _hashlib
 _DEFAULT_SECRET = 'jdp_secret_key_2024_ultra_secure'  # legacy fallback (public)
 _SECRET_FROM_ENV = (os.environ.get('SECRET_KEY') or '').strip()
 _is_prod = bool(os.environ.get('VERCEL') or os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PRODUCTION'))
@@ -106,29 +105,19 @@ _is_prod = bool(os.environ.get('VERCEL') or os.environ.get('RAILWAY_ENVIRONMENT'
 if _SECRET_FROM_ENV and _SECRET_FROM_ENV != _DEFAULT_SECRET:
     _SECRET_KEY = _SECRET_FROM_ENV
     _SECRET_SOURCE = 'env'
-else:
-    _deploy_id = (
-        os.environ.get('VERCEL_GIT_COMMIT_SHA')
-        or os.environ.get('VERCEL_DEPLOYMENT_ID')
-        or os.environ.get('RAILWAY_DEPLOYMENT_ID')
-        or os.environ.get('RAILWAY_GIT_COMMIT_SHA')
-        or ''
+elif _is_prod:
+    # SECRET_KEY no env en prod — abortamos. La cookie firmada con clave
+    # derivable del commit SHA público (forjable) es peor que un sitio caído:
+    # cualquiera podría minar la clave y crear sesiones de admin sin password.
+    raise RuntimeError(
+        'SECRET_KEY env var es obligatoria en producción. '
+        'Genera con: python -c "import secrets; print(secrets.token_hex(32))" '
+        'y configúrala en Vercel/Railway.'
     )
-    if _deploy_id:
-        _SECRET_KEY = _hashlib.sha256(
-            (_deploy_id + '|jdp-fallback-salt-2026').encode()
-        ).hexdigest()
-        _SECRET_SOURCE = 'deployment-hash'
-    else:
-        import secrets as _secrets_mod
-        _SECRET_KEY = _secrets_mod.token_hex(32)
-        _SECRET_SOURCE = 'ephemeral'
-
-if _is_prod and _SECRET_SOURCE != 'env':
-    print('[SECURITY] WARNING: SECRET_KEY env var NO configurada. '
-          f'Usando fallback ({_SECRET_SOURCE}). Las sesiones se invalidarán '
-          'al re-deployar. CONFIGURA SECRET_KEY EN RAILWAY/VERCEL CON UNA '
-          'CLAVE ALEATORIA DE 64 HEX (python -c "import secrets; print(secrets.token_hex(32))").')
+else:
+    import secrets as _secrets_mod
+    _SECRET_KEY = _secrets_mod.token_hex(32)
+    _SECRET_SOURCE = 'ephemeral-dev'
 
 app.secret_key = _SECRET_KEY
 
@@ -471,12 +460,17 @@ WHATSAPP_NUMBER  = os.environ.get('WHATSAPP_NUMBER', '').strip()
 CONTACT_EMAIL    = os.environ.get('CONTACT_EMAIL', 'info@jdpeptides.com').strip()
 CONTACT_LOCATION = os.environ.get('CONTACT_LOCATION', 'México').strip()
 
+import html as _html_mod
+def _h(v):
+    """Escape input para incrustar de forma segura en HTML de email/admin."""
+    return _html_mod.escape('' if v is None else str(v))
+
 def _build_items_rows(items):
     return ''.join(f"""
         <tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee">{i['product_name']}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee">{_h(i['product_name'])}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center">{i['quantity']}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center">{i['dose']}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center">{_h(i['dose'])}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">${i['unit_price']:.2f}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:700">${i['subtotal']:.2f}</td>
         </tr>""" for i in items)
@@ -506,11 +500,12 @@ def _format_address(order):
 
 
 def _admin_html(order, items):
-    """Email interno para los administradores — muestra todos los datos."""
+    """Email interno para los administradores — muestra todos los datos.
+    Todo campo controlado por el cliente pasa por _h() (HTML escape)."""
     pl = _payment_label(order['payment_method'])
     rows = _build_items_rows(items)
     notes_row = (f'<tr><td style="padding:5px 0;color:#666">Notas</td>'
-                 f'<td style="padding:5px 0;color:#555;font-style:italic">{order["notes"]}</td></tr>'
+                 f'<td style="padding:5px 0;color:#555;font-style:italic">{_h(order["notes"])}</td></tr>'
                  if order['notes'] else '')
     return f"""
     <div style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;background:#fff">
@@ -519,16 +514,16 @@ def _admin_html(order, items):
         <p style="margin:6px 0 0;color:#999;font-size:12px;letter-spacing:1px">⚡ NUEVA ORDEN DE COMPRA</p>
       </div>
       <div style="background:#c9a227;padding:14px 32px">
-        <span style="color:#fff;font-weight:700;font-size:16px">Orden # {order['order_number']}</span>
-        &nbsp;&nbsp;<span style="color:#fff;font-size:13px">{order['created_at'][:16]}</span>
+        <span style="color:#fff;font-weight:700;font-size:16px">Orden # {_h(order['order_number'])}</span>
+        &nbsp;&nbsp;<span style="color:#fff;font-size:13px">{_h(order['created_at'][:16])}</span>
       </div>
       <div style="padding:28px 32px">
         <h3 style="margin:0 0 12px;color:#0d0d0d;font-size:13px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #c9a227;padding-bottom:8px">Datos del Cliente</h3>
         <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px">
-          <tr><td style="padding:5px 0;color:#666;width:130px">Nombre</td><td style="padding:5px 0;font-weight:600;color:#111">{order['customer_name']}</td></tr>
-          <tr><td style="padding:5px 0;color:#666">Email</td><td style="padding:5px 0;color:#111">{order['customer_email']}</td></tr>
-          <tr><td style="padding:5px 0;color:#666">Teléfono</td><td style="padding:5px 0;color:#111">{order['customer_phone'] or '—'}</td></tr>
-          <tr><td style="padding:5px 0;color:#666">Dirección</td><td style="padding:5px 0;color:#111">{_format_address(order)}</td></tr>
+          <tr><td style="padding:5px 0;color:#666;width:130px">Nombre</td><td style="padding:5px 0;font-weight:600;color:#111">{_h(order['customer_name'])}</td></tr>
+          <tr><td style="padding:5px 0;color:#666">Email</td><td style="padding:5px 0;color:#111">{_h(order['customer_email'])}</td></tr>
+          <tr><td style="padding:5px 0;color:#666">Teléfono</td><td style="padding:5px 0;color:#111">{_h(order['customer_phone'] or '—')}</td></tr>
+          <tr><td style="padding:5px 0;color:#666">Dirección</td><td style="padding:5px 0;color:#111">{_h(_format_address(order))}</td></tr>
           <tr><td style="padding:5px 0;color:#666">Método de pago</td><td style="padding:5px 0;font-weight:700;color:#c9a227">{pl}</td></tr>
           {notes_row}
         </table>
@@ -579,13 +574,13 @@ def _customer_html(order, items):
         <p style="margin:0;color:#fff;font-weight:700;font-size:18px">✓ ¡Pedido recibido!</p>
       </div>
       <div style="padding:32px">
-        <p style="font-size:15px;color:#333;margin:0 0 8px">Hola <strong>{order['customer_name']}</strong>,</p>
+        <p style="font-size:15px;color:#333;margin:0 0 8px">Hola <strong>{_h(order['customer_name'])}</strong>,</p>
         <p style="font-size:14px;color:#555;margin:0 0 24px">Hemos recibido tu pedido correctamente. A continuación encontrarás el resumen.</p>
 
         <div style="background:#f9f9f9;border-radius:8px;padding:16px 20px;margin-bottom:24px">
           <span style="font-size:13px;color:#888">Número de orden</span><br>
-          <span style="font-size:20px;font-weight:700;color:#0d0d0d;letter-spacing:1px">{order['order_number']}</span>
-          <span style="font-size:12px;color:#aaa;margin-left:12px">{order['created_at'][:16]}</span>
+          <span style="font-size:20px;font-weight:700;color:#0d0d0d;letter-spacing:1px">{_h(order['order_number'])}</span>
+          <span style="font-size:12px;color:#aaa;margin-left:12px">{_h(order['created_at'][:16])}</span>
         </div>
 
         <h3 style="margin:0 0 12px;color:#0d0d0d;font-size:13px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #c9a227;padding-bottom:8px">Productos ordenados</h3>
@@ -832,7 +827,9 @@ def _send_email(to, subject, html, bcc=None, reply_to=None, email_type=None, ord
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        # Timeout 8s: el p95 de Resend es ~1s; 8s cubre picos pero deja margen
+        # para el límite duro de 10s que Vercel da a una función serverless.
+        with urllib.request.urlopen(req, timeout=8) as resp:
             _bcc_log = f' (bcc {_mask_email(bcc)})' if bcc else ''
             _raw = resp.read().decode('utf-8', errors='replace') if resp.length else ''
             _resend_id = ''
@@ -870,11 +867,66 @@ def _send_email(to, subject, html, bcc=None, reply_to=None, email_type=None, ord
     return False
 
 
+_EMAIL_QUEUE_DDL = """
+CREATE TABLE IF NOT EXISTS email_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    to_addr TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    html TEXT NOT NULL,
+    bcc TEXT,
+    reply_to TEXT,
+    email_type TEXT,
+    order_id INTEGER,
+    attempts INTEGER DEFAULT 0,
+    last_error TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at TEXT DEFAULT (datetime('now')),
+    sent_at TEXT
+)
+"""
+_email_queue_ready = False
+
+
+def _ensure_email_queue():
+    """Garantiza que email_queue exista — barato (CREATE IF NOT EXISTS).
+    Se llama lazy desde _enqueue_email() y el cron, así no hace falta
+    activar RUN_MIGRATIONS para que el sistema funcione tras deploy."""
+    global _email_queue_ready
+    if _email_queue_ready:
+        return
+    try:
+        db = get_db()
+        db.execute(_EMAIL_QUEUE_DDL)
+        db.commit()
+        _email_queue_ready = True
+    except Exception as e:
+        print(f"[Email] _ensure_email_queue falló: {type(e).__name__}: {e}")
+
+
+def _enqueue_email(to, subject, html, bcc=None, reply_to=None, email_type=None, order_id=None):
+    """Persiste el envío en email_queue para que el cron lo reintente."""
+    try:
+        _ensure_email_queue()
+        _to = to if isinstance(to, str) else ','.join(to)
+        _bcc = bcc if isinstance(bcc, str) or bcc is None else ','.join(bcc)
+        execute_db(
+            "INSERT INTO email_queue (to_addr, subject, html, bcc, reply_to, email_type, order_id, status) "
+            "VALUES (?,?,?,?,?,?,?, 'pending')",
+            (_to, subject, html, _bcc, reply_to, email_type, order_id)
+        )
+    except Exception as e:
+        print(f"[Email] No se pudo encolar — {type(e).__name__}: {e}")
+
+
 def _send_email_bg(to, subject, html, bcc=None, reply_to=None, email_type=None, order_id=None, text=None):
-    """Envía email — síncrono en Vercel (daemon threads se matan al cerrar
-    el worker serverless), threaded en local/dev para no bloquear la response."""
+    """Envía email — en Vercel, intenta sync; si falla, encola para retry.
+    En local/dev usa thread daemon para no bloquear la response."""
     if _IS_VERCEL:
-        _send_email(to, subject, html, bcc, reply_to, email_type, order_id, text=text)
+        ok = _send_email(to, subject, html, bcc, reply_to, email_type, order_id, text=text)
+        if not ok:
+            # email_log ya registró 'failed'. Encolamos para retry vía cron.
+            _enqueue_email(to, subject, html, bcc=bcc, reply_to=reply_to,
+                           email_type=email_type, order_id=order_id)
         return
     t = threading.Thread(
         target=_send_email,
@@ -913,20 +965,22 @@ VALID_PAYMENT_METHODS = {'transferencia', 'efectivo', 'criptomonedas', 'zelle', 
 
 
 def send_low_stock_alert(product):
-    """Envía alerta de stock bajo a los admins (máximo 1 por producto cada 24 horas)."""
-    alerted_at = product.get('low_stock_alerted_at')
-    if alerted_at:
-        try:
-            last = datetime.fromisoformat(alerted_at)
-            if (datetime.now() - last).total_seconds() < 86400:
-                return  # Ya se envió alerta en las últimas 24 horas
-        except Exception:
-            pass
-    # Registrar timestamp de la alerta antes de enviar
-    execute_db(
-        "UPDATE products SET low_stock_alerted_at=? WHERE id=?",
-        (datetime.now().isoformat(), product['id'])
+    """Envía alerta de stock bajo a los admins (máximo 1 por producto cada 24h).
+    Usa UPDATE condicional para evitar race: dos checkouts concurrentes ambos
+    leen alerted_at=null y antes mandaban dos emails; ahora solo el primer
+    UPDATE con rowcount=1 procede."""
+    now_iso = datetime.now().isoformat()
+    cutoff = (datetime.now() - timedelta(hours=24)).isoformat()
+    db = get_db()
+    cur = db.execute(
+        "UPDATE products SET low_stock_alerted_at=? "
+        "WHERE id=? AND (low_stock_alerted_at IS NULL OR low_stock_alerted_at < ?)",
+        (now_iso, product['id'], cutoff)
     )
+    db.commit()
+    # rowcount==0 → otro proceso ya envió la alerta dentro de las 24h
+    if getattr(cur, 'rowcount', 1) == 0:
+        return
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff">
       <div style="background:#0d0d0d;padding:24px 32px;text-align:center">
@@ -1186,6 +1240,8 @@ class _NullCursor:
     def close(self): pass
     @property
     def lastrowid(self): return None
+    @property
+    def rowcount(self): return 0
 
 class _FakeResult:
     def __init__(self, rows): self._rows = rows
@@ -1202,6 +1258,12 @@ class _PGCursor:
     def fetchall(self): return self._cur.fetchall()
     def close(self): self._cur.close()
     def __iter__(self): return iter(self._cur.fetchall())
+    @property
+    def rowcount(self):
+        try:
+            return self._cur.rowcount
+        except Exception:
+            return None
     @property
     def lastrowid(self):
         if not self._is_insert:
@@ -1279,12 +1341,48 @@ class _PGWrapper:
 # Database helpers
 # ---------------------------------------------------------------------------
 
+_PG_POOL = None
+_PG_POOL_LOCK = threading.Lock()
+
+
+def _pg_pool():
+    """Pool de conexiones psycopg2 a nivel proceso. Cada Vercel container
+    caliente comparte hasta 4 conexiones, evitando el handshake TLS (~250ms)
+    de cada request. Lazy init para no abrir conexiones en cold start si la
+    primera request es a /static/."""
+    global _PG_POOL
+    if _PG_POOL is not None:
+        return _PG_POOL
+    with _PG_POOL_LOCK:
+        if _PG_POOL is None:
+            from psycopg2 import pool as _psycopg2_pool
+            _PG_POOL = _psycopg2_pool.ThreadedConnectionPool(
+                minconn=1,
+                maxconn=int(os.environ.get('PG_POOL_MAX', '4')),
+                dsn=_DATABASE_URL,
+                connect_timeout=5,
+            )
+    return _PG_POOL
+
+
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         if _USE_POSTGRES:
-            raw = psycopg2.connect(_DATABASE_URL)
-            db = g._database = _PGWrapper(raw)
+            try:
+                raw = _pg_pool().getconn()
+                # Si la conexión fue dejada en estado roto, la limpiamos
+                if raw.closed:
+                    _pg_pool().putconn(raw, close=True)
+                    raw = _pg_pool().getconn()
+                g._raw_pg = raw
+                db = g._database = _PGWrapper(raw)
+            except Exception as _e:
+                # Pool agotado o caído → fallback a connect directo
+                print(f'[DB] pool getconn falló ({type(_e).__name__}), fallback directo')
+                raw = psycopg2.connect(_DATABASE_URL, connect_timeout=5)
+                g._raw_pg = None  # no es del pool — close() en teardown
+                db = g._database = _PGWrapper(raw)
         else:
             os.makedirs(os.path.dirname(DATABASE), exist_ok=True)
             db = g._database = sqlite3.connect(DATABASE, check_same_thread=False)
@@ -1300,8 +1398,30 @@ def get_db():
 @app.teardown_appcontext
 def close_connection(exception):
     db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
+    if db is None:
+        return
+    raw_pg = getattr(g, '_raw_pg', None)
+    if raw_pg is not None:
+        # Devuelve la conexión al pool; si hubo excepción, la cerramos.
+        try:
+            if exception is not None:
+                try:
+                    raw_pg.rollback()
+                except Exception:
+                    pass
+                _pg_pool().putconn(raw_pg, close=True)
+            else:
+                _pg_pool().putconn(raw_pg)
+        except Exception:
+            try:
+                raw_pg.close()
+            except Exception:
+                pass
+    else:
+        try:
+            db.close()
+        except Exception:
+            pass
 
 
 def query_db(query, args=(), one=False):
@@ -1470,6 +1590,24 @@ CREATE TABLE IF NOT EXISTS email_log (
     order_id INTEGER,
     resend_id TEXT,
     sent_at TEXT DEFAULT (datetime('now'))
+);
+
+-- email_queue: retry queue para envíos fallidos en Vercel (timeout / 5xx).
+-- El cron /cron/process-email-queue los reintenta.
+CREATE TABLE IF NOT EXISTS email_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    to_addr TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    html TEXT NOT NULL,
+    bcc TEXT,
+    reply_to TEXT,
+    email_type TEXT,
+    order_id INTEGER,
+    attempts INTEGER DEFAULT 0,
+    last_error TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at TEXT DEFAULT (datetime('now')),
+    sent_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS reviews (
@@ -3273,10 +3411,22 @@ def _serve_webp_if_supported(folder, filename):
 @app.route('/sw.js')
 def service_worker():
     """Sirve el Service Worker desde la raíz para que tenga scope '/'.
-    Si se sirviera desde /static/sw.js, su scope sería /static/ y no podría
-    interceptar requests del shell HTML."""
-    resp = send_from_directory(os.path.join(os.path.dirname(__file__), 'static'), 'sw.js',
-                               mimetype='application/javascript')
+    Reemplaza __JDP_BUILD__ con el SHA del deploy → invalidación automática
+    de cache en cada release, sin pegarse CSS viejo en clientes existentes."""
+    sw_path = os.path.join(os.path.dirname(__file__), 'static', 'sw.js')
+    try:
+        with open(sw_path, 'r', encoding='utf-8') as _f:
+            src = _f.read()
+    except Exception:
+        return ('// SW unavailable', 500, {'Content-Type': 'application/javascript'})
+    build_id = (
+        os.environ.get('VERCEL_GIT_COMMIT_SHA')
+        or os.environ.get('VERCEL_DEPLOYMENT_ID')
+        or os.environ.get('RAILWAY_DEPLOYMENT_ID')
+        or ''
+    )[:12] or 'jdp-' + datetime.now().strftime('%Y%m%d')
+    src = src.replace('__JDP_BUILD__', build_id)
+    resp = Response(src, mimetype='application/javascript')
     resp.headers['Service-Worker-Allowed'] = '/'
     resp.headers['Cache-Control'] = 'no-cache, must-revalidate'
     return resp
@@ -3287,6 +3437,10 @@ def media_file(filename):
     """Serve uploaded product images from the persistent volume.
     Falls back to static/img for images bundled with the app.
     Sirve .webp transparentemente cuando el browser lo soporta."""
+    # Path-traversal guard: rechaza '..' o paths absolutos. send_from_directory
+    # ya filtra esto, pero validamos antes para tener un 404 limpio.
+    if '..' in filename.split('/') or filename.startswith('/') or '\\' in filename:
+        abort(404)
     upload_path = os.path.join(UPLOAD_FOLDER, filename)
     if os.path.exists(upload_path):
         webp = _serve_webp_if_supported(UPLOAD_FOLDER, filename)
@@ -3400,7 +3554,7 @@ def sitemap_xml():
     # Static pages
     _add('/',           priority='1.0', changefreq='daily')
     _add('/catalogo',   priority='0.9', changefreq='daily')
-    _add('/nosotros',   priority='0.6', changefreq='monthly')
+    _add('/sobre-nosotros', priority='0.6', changefreq='monthly')
     _add('/faq',        priority='0.7', changefreq='monthly')
     _add('/privacidad', priority='0.3', changefreq='yearly')
     _add('/terminos',   priority='0.3', changefreq='yearly')
@@ -3683,10 +3837,24 @@ def catalogo():
     min_price = _parse_price_arg(request.args.get('min_price'))
     max_price = _parse_price_arg(request.args.get('max_price'))
 
-    products = _filter_products(
+    all_products = _filter_products(
         category=category, search=search, tag=tag, sort=sort,
         in_stock=in_stock, min_price=min_price, max_price=max_price,
     )
+
+    # Paginación — 24 productos por página. Crawler-friendly (URLs estables)
+    # y baja transferencia HTML para LCP móvil.
+    PAGE_SIZE = 24
+    try:
+        page = max(1, int(request.args.get('page', '1')))
+    except (TypeError, ValueError):
+        page = 1
+    total = len(all_products)
+    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    if page > total_pages:
+        page = total_pages
+    start = (page - 1) * PAGE_SIZE
+    products = all_products[start:start + PAGE_SIZE]
 
     categories = query_db("SELECT DISTINCT category FROM products WHERE active=1 ORDER BY category")
 
@@ -3708,7 +3876,9 @@ def catalogo():
                            current_tag=tag, available_tags=available_tags,
                            current_sort=sort, current_in_stock=in_stock,
                            current_min_price=min_price, current_max_price=max_price,
-                           price_min_bound=price_min, price_max_bound=price_max)
+                           price_min_bound=price_min, price_max_bound=price_max,
+                           page=page, total_pages=total_pages,
+                           total_products=total)
 
 
 @app.route('/api/productos')
@@ -3813,9 +3983,11 @@ def producto(slug):
     product['avg_rating']    = stats['avg']
     product['reviews_count'] = stats['count']
 
+    price_valid_until = (datetime.now() + timedelta(days=90)).strftime('%Y-%m-%d')
     return render_template('producto.html', product=product, related=related,
                            benefits=benefits, images=images,
-                           reviews=approved_reviews, review_stats=stats)
+                           reviews=approved_reviews, review_stats=stats,
+                           price_valid_until=price_valid_until)
 
 
 @app.route('/carrito/agregar', methods=['POST'])
@@ -3919,6 +4091,25 @@ def api_cart_abandon_snapshot():
     name  = (data.get('name')  or '').strip()[:100]
     if not email or not valid_email(email):
         return jsonify({'ok': False, 'error': 'invalid_email'}), 400
+
+    # Anti-spam: si en las últimas 48h ya hay un snapshot reciente con este
+    # email, no creamos uno NUEVO con un email distinto al original — solo
+    # actualizamos. Esto bloquea el caso "atacante envía email de víctima
+    # con carrito elegido" porque a la víctima solo se le pueden enviar
+    # snapshots dentro de su propio email + sesión.
+    # Adicionalmente, rate-limit: máximo 1 snapshot exitoso por email/30min.
+    _recent = query_db(
+        "SELECT created_at FROM abandoned_carts "
+        "WHERE customer_email=? ORDER BY id DESC LIMIT 1",
+        (email,), one=True
+    )
+    if _recent:
+        try:
+            _last = datetime.fromisoformat(_recent['created_at'])
+            if (datetime.now() - _last) < timedelta(minutes=30):
+                return jsonify({'ok': True, 'noop': 'rate_limit'})
+        except Exception:
+            pass
 
     cart = get_cart()
     if not cart:
@@ -4039,6 +4230,60 @@ def cron_abandoned_reminders():
     return jsonify({'ok': True, 'candidates': len(candidates), 'sent': sent})
 
 
+def _cron_authorized():
+    """Misma lógica que el cron de abandoned_reminders, reutilizable."""
+    secret = os.environ.get('CRON_SECRET', '').strip()
+    if not secret:
+        return False
+    auth = request.headers.get('Authorization', '')
+    bearer = auth[7:].strip() if auth.lower().startswith('bearer ') else ''
+    provided = (bearer
+                or request.headers.get('X-Cron-Secret', '')
+                or request.args.get('secret', ''))
+    return secrets.compare_digest(provided, secret)
+
+
+@app.route('/cron/process-email-queue', methods=['GET', 'POST'])
+def cron_process_email_queue():
+    """Reintenta emails encolados en email_queue. Procesa hasta 25 por tick
+    para mantener la función bajo el timeout de Vercel (10s). Backoff: tras
+    5 intentos se marca como 'failed' definitivo."""
+    if not _cron_authorized():
+        return jsonify({'ok': False, 'error': 'unauthorized'}), 403
+    _ensure_email_queue()
+    rows = query_db(
+        "SELECT * FROM email_queue WHERE status='pending' AND attempts < 5 "
+        "ORDER BY id ASC LIMIT 25"
+    ) or []
+    sent = 0
+    failed = 0
+    for r in rows:
+        ok = False
+        try:
+            _bcc = r['bcc'].split(',') if (r['bcc'] or '').strip() else None
+            ok = _send_email(
+                r['to_addr'], r['subject'], r['html'],
+                bcc=_bcc, reply_to=r['reply_to'],
+                email_type=r['email_type'], order_id=r['order_id']
+            )
+        except Exception as e:
+            print(f"[EmailQueue] envío {r['id']} falló: {type(e).__name__}: {e}")
+        if ok:
+            execute_db(
+                "UPDATE email_queue SET status='sent', sent_at=?, attempts=attempts+1 WHERE id=?",
+                (datetime.now().isoformat(), r['id'])
+            )
+            sent += 1
+        else:
+            new_status = 'failed' if r['attempts'] + 1 >= 5 else 'pending'
+            execute_db(
+                "UPDATE email_queue SET attempts=attempts+1, status=?, last_error=? WHERE id=?",
+                (new_status, 'retry-failed', r['id'])
+            )
+            failed += 1
+    return jsonify({'ok': True, 'processed': len(rows), 'sent': sent, 'failed': failed})
+
+
 @app.route('/checkout')
 def checkout():
     cart = get_cart()
@@ -4050,8 +4295,12 @@ def checkout():
     total = subtotal + shipping
     # Prefill con datos del cliente logueado (si lo está)
     cust = get_current_customer() or {}
+    # Token de idempotencia: el POST sólo crea pedido si el token aún no se
+    # registró en session['used_checkout_tokens']. Doble submit → mismo pedido.
+    checkout_token = secrets.token_urlsafe(24)
     return render_template('checkout.html', cart=cart, subtotal=subtotal,
-                           shipping=shipping, total=total, customer=cust)
+                           shipping=shipping, total=total, customer=cust,
+                           checkout_token=checkout_token)
 
 
 @app.route('/checkout/procesar', methods=['POST'])
@@ -4080,6 +4329,17 @@ def procesar_checkout():
         flash('El email ingresado no es válido.', 'error')
         return redirect(url_for('checkout'))
 
+    # Validación CP MX: exactamente 5 dígitos.
+    if zip_code and not re.match(r'^\d{5}$', zip_code):
+        flash('El código postal debe tener 5 dígitos.', 'error')
+        return redirect(url_for('checkout'))
+    # Teléfono opcional pero si está presente debe parecer un número MX (10-13 dígitos).
+    if phone:
+        _digits = re.sub(r'\D', '', phone)
+        if not (10 <= len(_digits) <= 13):
+            flash('El teléfono no tiene un formato válido (10 dígitos).', 'error')
+            return redirect(url_for('checkout'))
+
     if payment_method not in VALID_PAYMENT_METHODS:
         flash('Método de pago no válido.', 'error')
         return redirect(url_for('checkout'))
@@ -4088,35 +4348,36 @@ def procesar_checkout():
     shipping = compute_shipping(subtotal)
     total = subtotal + shipping
 
+    # Idempotencia: el form de /checkout incluye un token único; si se reusa
+    # significa doble submit (doble click, retry) y NO debe crear segunda orden.
+    checkout_token = (request.form.get('checkout_token') or '').strip()[:64]
+    if checkout_token:
+        prev_oid = (session.get('used_checkout_tokens') or {}).get(checkout_token)
+        if prev_oid:
+            prev = query_db("SELECT order_number FROM orders WHERE id=?", (prev_oid,), one=True)
+            if prev:
+                # Re-mostrar el pedido ya creado
+                session.pop('cart', None)
+                return redirect(url_for('pedido', order_number=prev['order_number']))
+
+    # Si hay sesión de cliente, IGNORAR el email del form (no confiar en input).
+    # El form lo trae como readonly pero DevTools puede quitarlo trivialmente.
+    _cust = get_current_customer()
+    if _cust:
+        email = (_cust.get('email') or email).strip().lower()
+
     db = get_db()
     order_id = None
     order_number = None
     alert_product_ids = []
 
     try:
-        # BEGIN EXCLUSIVE: una sola escritura activa a la vez — evita oversell concurrente
-        db.execute("BEGIN EXCLUSIVE")
+        # NOTA: psycopg2 abre transacción implícita al primer cursor; sqlite3
+        # con isolation_level por defecto también la abre antes del primer
+        # write. Un único db.commit() al final → atómico. Por eso quitamos el
+        # antiguo "BEGIN EXCLUSIVE" que el wrapper de Postgres ignoraba.
 
-        # Re-validar stock DENTRO del lock (el SELECT previo ya no es confiable)
-        for pid, item in cart.items():
-            row = db.execute(
-                "SELECT stock, name FROM products WHERE id=? AND active=1", (item['id'],)
-            ).fetchone()
-            if not row:
-                db.execute("ROLLBACK")
-                flash(f'"{item["name"]}" ya no está disponible.', 'error')
-                return redirect(url_for('checkout'))
-            if row['stock'] < item['quantity']:
-                db.execute("ROLLBACK")
-                flash(
-                    f'"{row["name"]}" está agotado. Actualiza tu carrito.' if row['stock'] == 0
-                    else f'Solo quedan {row["stock"]} unidad(es) de "{row["name"]}". Actualiza tu carrito.',
-                    'error'
-                )
-                return redirect(url_for('checkout'))
-
-        # Insertar orden — vincula al cliente logueado si lo está
-        _cust = get_current_customer()
+        # Insertar orden primero (asegura order_id para los items)
         _cust_id = _cust['id'] if _cust else None
         cur = db.execute(
             """INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
@@ -4128,12 +4389,12 @@ def procesar_checkout():
         )
         order_id = cur.lastrowid
         # Non-predictable order number: JD-YYMMDD-<8 random base64url chars>
-        # Old format `JD-DD/MM/YY-{419+id}` was enumerable → IDOR leakage risk.
         _suffix = secrets.token_urlsafe(6).replace('-', 'A').replace('_', 'B')
         order_number = f'JD-{datetime.now().strftime("%y%m%d")}-{_suffix}'
         db.execute("UPDATE orders SET order_number=? WHERE id=?", (order_number, order_id))
 
-        # Insertar ítems y descontar stock — todo dentro de la misma transacción
+        # Insertar ítems y descontar stock atómicamente. Si UPDATE con guard
+        # `stock >= ?` afecta 0 filas, otro pedido nos ganó — abortar.
         for pid, item in cart.items():
             db.execute(
                 """INSERT INTO order_items
@@ -4142,10 +4403,21 @@ def procesar_checkout():
                 (order_id, item['id'], item['name'], item['sku'], item['dose'],
                  item['quantity'], item['price'], item['quantity'] * item['price'])
             )
-            db.execute(
-                "UPDATE products SET stock = stock - ? WHERE id=?",
-                (item['quantity'], item['id'])
+            up = db.execute(
+                "UPDATE products SET stock = stock - ? "
+                "WHERE id=? AND active=1 AND stock >= ?",
+                (item['quantity'], item['id'], item['quantity'])
             )
+            # rowcount: psycopg2 cursor lo soporta vía _PGCursor; sqlite también
+            affected = getattr(up, 'rowcount', None)
+            if affected is None:
+                # Wrappers viejos no exponen rowcount — re-leer stock
+                _r = db.execute("SELECT stock FROM products WHERE id=?", (item['id'],)).fetchone()
+                if _r is None or _r['stock'] < 0:
+                    raise RuntimeError(f'oversell-{item["id"]}')
+            elif affected == 0:
+                # Sin stock o producto inactivo → abortar pedido entero
+                raise RuntimeError(f'oversell-{item["id"]}')
             db.execute(
                 "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'salida', ?, 'Venta', ?)",
                 (item['id'], item['quantity'], order_number)
@@ -4156,9 +4428,24 @@ def procesar_checkout():
 
     except Exception as e:
         try:
-            db.execute("ROLLBACK")
+            db.rollback()
         except Exception:
             pass
+        msg = str(e)
+        if msg.startswith('oversell-'):
+            try:
+                _pid = int(msg.split('-', 1)[1])
+                _row = query_db("SELECT name, stock FROM products WHERE id=?", (_pid,), one=True)
+                if _row:
+                    if _row['stock'] <= 0:
+                        flash(f'"{_row["name"]}" está agotado. Actualiza tu carrito.', 'error')
+                    else:
+                        flash(f'Solo quedan {_row["stock"]} unidad(es) de "{_row["name"]}". Actualiza tu carrito.', 'error')
+                else:
+                    flash('Algún producto ya no está disponible.', 'error')
+            except Exception:
+                flash('Algún producto ya no está disponible.', 'error')
+            return redirect(url_for('checkout'))
         print(f"[Checkout] Error en transacción: {e}")
         flash('Error al procesar el pedido. Por favor intenta de nuevo.', 'error')
         return redirect(url_for('checkout'))
@@ -4182,6 +4469,13 @@ def procesar_checkout():
     })
 
     session.pop('cart', None)
+    # Marcar token de idempotencia como consumido (cap a 5 entradas)
+    if checkout_token:
+        used = session.get('used_checkout_tokens') or {}
+        used[checkout_token] = order_id
+        if len(used) > 5:
+            used = dict(list(used.items())[-5:])
+        session['used_checkout_tokens'] = used
     order = query_db("SELECT * FROM orders WHERE id=?", (order_id,), one=True)
     items = query_db("SELECT * FROM order_items WHERE order_id=?", (order_id,))
 
@@ -4309,13 +4603,30 @@ def pedido_factura(order_number):
 _PASSWORD_MIN_LEN = 8
 
 
+def _safe_next(next_url, fallback):
+    """Validate a `?next=` parameter to prevent open-redirect attacks.
+    Acepta solo paths internos: empieza por un único '/' y no por '//' o '/\\'."""
+    if not next_url:
+        return fallback
+    n = str(next_url).strip()
+    if not n.startswith('/'):
+        return fallback
+    if n.startswith('//') or n.startswith('/\\'):
+        return fallback
+    return n
+
+
 @app.route('/cuenta/registro', methods=['GET', 'POST'])
 def cuenta_registro():
-    """Registro de cuenta de cliente. Si el email ya tiene órdenes con ese
-    correo, las vinculamos automáticamente al nuevo customer_id."""
+    """Registro de cuenta de cliente. NO vinculamos pedidos guest preexistentes
+    automáticamente — eso permitiría a un atacante registrarse con el email de
+    otro usuario y heredar todo su histórico. Para vincular un pedido el
+    cliente debe pasar por /pedido/<order_number> (que valida email + tiene
+    rate limit) y desde ahí lo whitelisteamos en la sesión."""
     if session.get('customer_id'):
         return redirect(url_for('cuenta_dashboard'))
-    next_url = request.args.get('next') or request.form.get('next') or url_for('cuenta_dashboard')
+    next_url = _safe_next(request.args.get('next') or request.form.get('next'),
+                          fallback=url_for('cuenta_dashboard'))
     if request.method == 'POST':
         email = (request.form.get('email') or '').strip().lower()
         password = request.form.get('password') or ''
@@ -4335,12 +4646,6 @@ def cuenta_registro():
             "INSERT INTO customers (email, password_hash, name, phone) VALUES (?,?,?,?)",
             (email, generate_password_hash(password, method='pbkdf2:sha256'), name, phone)
         )
-        # Vincular órdenes preexistentes con ese email a este customer
-        try:
-            execute_db("UPDATE orders SET customer_id=? WHERE LOWER(customer_email)=? AND customer_id IS NULL",
-                       (cid, email))
-        except Exception as e:
-            print(f'[cuenta] vincular orders falló: {e}')
         session['customer_id'] = cid
         session['customer_email'] = email
         execute_db("UPDATE customers SET last_login_at=? WHERE id=?", (datetime.now().isoformat(), cid))
@@ -4371,7 +4676,8 @@ def _customer_login_rate_limited(ip):
 def cuenta_login():
     if session.get('customer_id'):
         return redirect(url_for('cuenta_dashboard'))
-    next_url = request.args.get('next') or request.form.get('next') or url_for('cuenta_dashboard')
+    next_url = _safe_next(request.args.get('next') or request.form.get('next'),
+                          fallback=url_for('cuenta_dashboard'))
     if request.method == 'POST':
         ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
         if _customer_login_rate_limited(ip):
@@ -4391,7 +4697,7 @@ def cuenta_login():
     return render_template('cuenta/login.html', email='', next=next_url)
 
 
-@app.route('/cuenta/logout', methods=['POST', 'GET'])
+@app.route('/cuenta/logout', methods=['POST'])
 def cuenta_logout():
     session.pop('customer_id', None)
     session.pop('customer_email', None)
@@ -4717,7 +5023,7 @@ def _email_type_label(t):
     return _EMAIL_TYPE_LABELS.get(t or '', t or '—')
 
 
-@app.route('/admin/logout')
+@app.route('/admin/logout', methods=['POST'])
 def admin_logout():
     session.pop('admin_logged_in', None)
     session.pop('admin_user', None)
@@ -4803,10 +5109,17 @@ def admin_eliminar_usuario(uid):
     return redirect(url_for('admin_usuarios'))
 
 
+_kpis_cache = {'data': None, 'ts': 0}
+_KPIS_CACHE_TTL = 60  # segundos
+
+
 def _compute_engagement_kpis():
-    """Calcula KPIs de engagement y growth.
-    Devuelve dict con métricas para el dashboard admin. Mantiene queries
-    simples y agrupadas en una sola función para fácil mantenimiento."""
+    """Calcula KPIs de engagement y growth (cached 60s).
+    Devuelve dict con métricas para el dashboard admin. ~15 queries; el cache
+    evita repetirlas en cada hit a /admin (que el admin tiene polling abierto)."""
+    _now = time.time()
+    if _kpis_cache['data'] is not None and (_now - _kpis_cache['ts']) < _KPIS_CACHE_TTL:
+        return _kpis_cache['data']
     today = date.today()
     iso_today      = today.isoformat()
     iso_7d_ago     = (today - timedelta(days=7)).isoformat()
@@ -4945,7 +5258,7 @@ def _compute_engagement_kpis():
     )['c'] or 0
     cancel_rate = round((cancel_30d / total_30d_all * 100), 1) if total_30d_all else 0.0
 
-    return {
+    result = {
         'rev_today': rev_today, 'n_today': n_today,
         'rev_7d': rev_7d, 'n_7d': n_7d, 'rev_7d_delta': _pct(rev_7d, rev_prev_7d),
         'rev_30d': rev_30d, 'n_30d': n_30d, 'rev_30d_delta': _pct(rev_30d, rev_prev_30d),
@@ -4964,6 +5277,9 @@ def _compute_engagement_kpis():
         'email_delivery_rate': email_delivery_rate,
         'cancel_rate': cancel_rate,
     }
+    _kpis_cache['data'] = result
+    _kpis_cache['ts']   = _now
+    return result
 
 
 @app.route('/admin')
@@ -5859,7 +6175,9 @@ def admin_set_tracking(oid):
 
     if notify and number and carrier and order['customer_email']:
         tracking_url = carrier_tracking_url(carrier, number)
-        link_html = (f'<p><a href="{tracking_url}" '
+        # tracking_url viene de un dict-lookup interno → no es input directo,
+        # pero igual escapamos por defensa en profundidad.
+        link_html = (f'<p><a href="{_h(tracking_url)}" '
                      f'style="background:#c9a227;color:#0d0d0d;padding:10px 22px;'
                      f'border-radius:6px;text-decoration:none;font-weight:700">'
                      f'📦 Ver estado de envío</a></p>') if tracking_url else ''
@@ -5872,9 +6190,9 @@ def admin_set_tracking(oid):
             <span style="color:#fff;font-weight:700;font-size:16px">🚚 Tu pedido está en camino</span>
           </div>
           <div style="padding:28px 32px;color:#444;line-height:1.7">
-            <p>Hola {order['customer_name']},</p>
-            <p>Tu pedido <strong>{order['order_number']}</strong> ya fue despachado vía <strong>{carrier}</strong>.</p>
-            <p><strong>Número de guía:</strong> <code style="background:#f5f5f5;padding:4px 8px;border-radius:4px">{number}</code></p>
+            <p>Hola {_h(order['customer_name'])},</p>
+            <p>Tu pedido <strong>{_h(order['order_number'])}</strong> ya fue despachado vía <strong>{_h(carrier)}</strong>.</p>
+            <p><strong>Número de guía:</strong> <code style="background:#f5f5f5;padding:4px 8px;border-radius:4px">{_h(number)}</code></p>
             {link_html}
             <p style="font-size:0.85rem;color:#888;margin-top:1.5rem">¿Dudas? Responde este correo o escríbenos por WhatsApp.</p>
           </div>
@@ -5898,8 +6216,9 @@ def admin_set_tracking(oid):
 
 @app.route('/pedido/<order_number>/review', methods=['POST'])
 def submit_review(order_number):
-    """Cliente publica review verificada — debe venir de una orden válida.
-    El review queda en status='pending' hasta que admin lo apruebe."""
+    """Cliente publica review verificada — debe venir de una orden válida y
+    el visitante debe haber probado ownership previo (vía whitelist en sesión
+    desde /pedido/<n> con email-check, o sesión de cliente logueada y dueño)."""
     order = query_db(
         "SELECT * FROM orders WHERE order_number=?",
         (order_number,), one=True
@@ -5907,6 +6226,15 @@ def submit_review(order_number):
     if not order:
         flash('Pedido no encontrado.', 'error')
         return redirect(url_for('tracking'))
+
+    # GATE: el visitante DEBE haber demostrado que el pedido es suyo
+    whitelisted = order_number in (session.get('view_orders') or [])
+    is_owner = False
+    if session.get('customer_id') and order['customer_id'] == session.get('customer_id'):
+        is_owner = True
+    if not (whitelisted or is_owner):
+        flash('Verifica tu pedido antes de dejar una reseña.', 'error')
+        return redirect(url_for('pedido', order_number=order_number))
 
     if order['status'] != 'entregado':
         flash('Solo puedes reseñar pedidos entregados.', 'error')
@@ -5950,15 +6278,20 @@ def submit_review(order_number):
          order['customer_name'], rating, title, comment)
     )
 
-    # Notificar admin
+    # Notificar admin — html.escape() en TODO input de usuario (anti HTML inj)
+    import html as _html
+    _cname  = _html.escape(order["customer_name"] or '')
+    _cemail = _html.escape(order["customer_email"] or '')
+    _title  = _html.escape(title or '(sin título)')
+    _comm   = _html.escape(comment or '')
     for recipient in EMAIL_NOTIFY:
         _send_email_bg(
             recipient,
-            f'📝 Nueva reseña pendiente de moderación — {order["customer_name"]}',
-            f'<p>Cliente: <strong>{order["customer_name"]}</strong> ({order["customer_email"]})</p>'
+            f'📝 Nueva reseña pendiente de moderación — {_cname}',
+            f'<p>Cliente: <strong>{_cname}</strong> ({_cemail})</p>'
             f'<p>Calificación: <strong>{"★" * rating}{"☆" * (5 - rating)}</strong></p>'
-            f'<p>Título: {title or "(sin título)"}</p>'
-            f'<p style="white-space:pre-wrap">{comment}</p>'
+            f'<p>Título: {_title}</p>'
+            f'<p style="white-space:pre-wrap">{_comm}</p>'
             f'<p><a href="https://www.jdpeptides.mx/admin/reviews">Moderar reseñas →</a></p>',
             email_type='review_pending'
         )
@@ -6442,9 +6775,9 @@ def contacto():
             try:
                 _send_email_bg(
                     EMAIL_NOTIFY,
-                    f'[JD Peptides] Contacto — {nombre}',
-                    f'<p><strong>De:</strong> {nombre} &lt;{email}&gt;</p>'
-                    f'<p style="white-space:pre-wrap">{mensaje}</p>',
+                    f'[JD Peptides] Contacto — {nombre[:80]}',
+                    f'<p><strong>De:</strong> {_h(nombre)} &lt;{_h(email)}&gt;</p>'
+                    f'<p style="white-space:pre-wrap">{_h(mensaje)}</p>',
                     reply_to=email,
                     email_type='contact',
                 )
@@ -6488,19 +6821,30 @@ def inject_globals():
 # Inicializar BD al arrancar (funciona con gunicorn y python app.py)
 # ---------------------------------------------------------------------------
 
-# Si init_db() falla (ej. Postgres mal configurado), NO crashees el módulo:
-# logueamos el stack trace completo para diagnóstico y dejamos que la app
-# arranque. Las rutas que necesiten DB fallarán individualmente con 500 pero
-# al menos el sitio responde y se pueden ver los errores.
-try:
-    with app.app_context():
-        init_db()
-except Exception as _init_err:
-    import traceback as _tb
-    print('[INIT] ❌ init_db() FALLÓ — la app arranca igual, pero las rutas '
-          'que toquen DB van a fallar. Stack trace completo:')
-    print(_tb.format_exc())
-    print(f'[INIT] Error: {type(_init_err).__name__}: {_init_err}')
+# Init/migraciones: en Vercel serverless cada cold start ejecutaba init_db()
+# completo (~500-1500ms perdidos en CREATE TABLE IF NOT EXISTS + 20 migrations).
+# Ahora gateamos con RUN_MIGRATIONS=1: en deploy fresco lo activamos manualmente
+# (Vercel Settings → env), corre una vez, y luego se quita. Los cold starts
+# siguientes ya no pagan ese costo.
+# En local/dev (no Vercel) seguimos corriéndolo siempre para que la primera
+# ejecución funcione sin setup extra.
+_RUN_INIT_DB = (
+    not _IS_VERCEL
+    or os.environ.get('RUN_MIGRATIONS', '').strip() == '1'
+)
+if _RUN_INIT_DB:
+    try:
+        with app.app_context():
+            init_db()
+    except Exception as _init_err:
+        import traceback as _tb
+        print('[INIT] ❌ init_db() FALLÓ — la app arranca igual, pero las rutas '
+              'que toquen DB van a fallar. Stack trace completo:')
+        print(_tb.format_exc())
+        print(f'[INIT] Error: {type(_init_err).__name__}: {_init_err}')
+else:
+    print('[INIT] init_db() skipped (RUN_MIGRATIONS!=1). '
+          'Si necesitas correr migraciones, set RUN_MIGRATIONS=1 en Vercel env y redeploy.')
 
 # ---------------------------------------------------------------------------
 # Main

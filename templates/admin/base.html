@@ -151,12 +151,15 @@
         </span>
         Ver Tienda
       </a>
-      <a href="{{ url_for('admin_logout') }}" class="logout">
-        <span class="nav-icon">
-          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </span>
-        Cerrar Sesión
-      </a>
+      <form method="post" action="{{ url_for('admin_logout') }}" style="margin:0">
+        {{ csrf_field() }}
+        <button type="submit" class="logout" style="background:none;border:0;width:100%;text-align:left;cursor:pointer;color:inherit;font:inherit;padding:0;display:flex;align-items:center;gap:.5rem">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </span>
+          Cerrar Sesión
+        </button>
+      </form>
     </div>
   </aside>
 
@@ -176,10 +179,13 @@
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
           Tienda
         </a>
-        <a href="{{ url_for('admin_logout') }}" class="btn btn-ghost btn-sm">
-          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          Salir
-        </a>
+        <form method="post" action="{{ url_for('admin_logout') }}" style="margin:0">
+          {{ csrf_field() }}
+          <button type="submit" class="btn btn-ghost btn-sm" style="border:0;background:transparent;cursor:pointer">
+            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Salir
+          </button>
+        </form>
       </div>
     </header>
 

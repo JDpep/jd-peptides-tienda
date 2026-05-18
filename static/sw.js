@@ -12,7 +12,9 @@
  *     · POST y cualquier otro: bypass — siempre red, nunca cache.
  * - activate: borra caches viejos.
  */
-const CACHE_VERSION = 'jdp-v1';
+// Versión inyectada por /sw.js (Python). Si __JDP_BUILD__ queda como literal,
+// significa que la versión NO se substituyó — fallback a 'jdp-dev'.
+const CACHE_VERSION = '__JDP_BUILD__'.indexOf('__JDP') === 0 ? 'jdp-dev' : '__JDP_BUILD__';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const HTML_CACHE    = `${CACHE_VERSION}-html`;
 

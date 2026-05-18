@@ -224,7 +224,7 @@
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;align-items:start">
 
   <!-- Datos órdenes recientes para JS -->
-  <script>
+  <script nonce="{{ csp_nonce }}">
   var DASH_ORDENES = [
     {% for o in recent_orders %}
     { id: {{ o['id'] }}, numero: {{ o['order_number']|tojson }}, cliente: {{ o['customer_name']|tojson }},
@@ -309,7 +309,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script>
+  <script nonce="{{ csp_nonce }}">
   function dashGetSel() {
     var ids = Array.from(document.querySelectorAll('.dash-cb:checked')).map(function(c){ return parseInt(c.value); });
     return DASH_ORDENES.filter(function(o){ return ids.indexOf(o.id) !== -1; });
@@ -421,7 +421,7 @@
      ══════════════════════════════════════ -->
 
 <!-- Datos para JS -->
-<script>
+<script nonce="{{ csp_nonce }}">
 var COMP_MES = "{{ mes_actual }}";
 var COMP_DATA = [
   {% for r in comparativo %}
@@ -508,7 +508,7 @@ var COMP_DATA = [
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script>
+<script nonce="{{ csp_nonce }}">
 var compChart = null;
 var vistaGrafica = false;
 
@@ -588,7 +588,7 @@ function descargarCompPDF() {
 </script>
 
 <!-- 7-day sales chart -->
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
   var ctx = document.getElementById('chart7d');
   if (!ctx) return;

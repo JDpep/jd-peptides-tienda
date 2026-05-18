@@ -48,7 +48,7 @@
   {%- if ga_measurement_id %}
   <!-- Google Analytics 4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_measurement_id }}"></script>
-  <script>
+  <script nonce="{{ csp_nonce }}">
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
@@ -380,7 +380,7 @@
   </a>
   {% endif %}
 
-  <script>window.TAG_LABELS = {{ TAG_LABELS | tojson }};</script>
+  <script nonce="{{ csp_nonce }}">window.TAG_LABELS = {{ TAG_LABELS | tojson }};</script>
   <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
   {% block extra_js %}{% endblock %}
 
@@ -403,7 +403,7 @@
       </button>
     </div>
   </div>
-  <script>
+  <script nonce="{{ csp_nonce }}">
     (function() {
       var KEY = 'jdp_cookie_consent';
       var banner = document.getElementById('cookie-consent');
@@ -426,7 +426,7 @@
   </script>
 
   {# Service Worker — habilita PWA install + offline + instant load. Solo HTTPS. #}
-  <script>
+  <script nonce="{{ csp_nonce }}">
     if ('serviceWorker' in navigator && location.protocol === 'https:') {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});

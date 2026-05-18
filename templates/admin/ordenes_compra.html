@@ -3,7 +3,7 @@
 {% block page_title %}Órdenes de Compra{% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
   window.JDP_PRODUCTS = [
     {% for p in products %}
       { id: {{ p['id'] }}, name: {{ p['name']|tojson }}, sku: {{ p['sku']|tojson }} }{% if not loop.last %},{% endif %}
@@ -19,7 +19,7 @@
   <button class="btn btn-gold" data-modal="newPoModal">+ Nueva Orden de Compra</button>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 var OC_DATA = [
   {% for po in pos %}
   { id: {{ po['id'] }}, numero: {{ po['po_number']|tojson }}, proveedor: {{ po['supplier']|tojson }},
@@ -277,7 +277,7 @@ var OC_DATA = [
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script>
+<script nonce="{{ csp_nonce }}">
 function togglePoDetail(id) {
   const row = document.getElementById('po-detail-' + id);
   if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';

@@ -25,6 +25,10 @@
     {
       "path": "/cron/process-email-queue",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/cron/gc",
+      "schedule": "0 4 * * *"
     }
   ]
 }

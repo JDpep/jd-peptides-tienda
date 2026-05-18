@@ -179,7 +179,7 @@
 </div>
 
 <!-- Datos de movimientos para JS -->
-<script>
+<script nonce="{{ csp_nonce }}">
 var MOVIMIENTOS = [
   {% for m in movements %}
   {
@@ -278,7 +278,7 @@ var MOVIMIENTOS = [
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script>
+<script nonce="{{ csp_nonce }}">
 function getSeleccionados() {
   var ids = Array.from(document.querySelectorAll('.mov-checkbox:checked')).map(function(cb){ return parseInt(cb.value); });
   return MOVIMIENTOS.filter(function(m){ return ids.indexOf(m.id) !== -1; });
@@ -386,7 +386,7 @@ function confirmarEliminar() {
 }
 </script>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 var invSortDir = {};
 
 function filtrarInventario() {
@@ -465,7 +465,7 @@ filtrarInventario();
 </script>
 
 <!-- Stock chart script (Chart.js loaded in base from dashboard CDN — only if available) -->
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
   var wrap = document.getElementById('stockChartWrap');
   var ctx  = document.getElementById('stockChart');

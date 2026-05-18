@@ -32,7 +32,7 @@
 <style>
 @keyframes toastIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
 </style>
-<script>
+<script nonce="{{ csp_nonce }}">
 (function(){
   var toasts = document.querySelectorAll('.admin-toast');
   toasts.forEach(function(t, i){
@@ -196,7 +196,7 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-<script>
+<script nonce="{{ csp_nonce }}">
 // Sidebar toggle for mobile
 const toggle = document.getElementById('sidebarToggle');
 const sidebar = document.getElementById('adminSidebar');

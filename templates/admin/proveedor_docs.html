@@ -365,7 +365,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
 // Drag & drop upload zone
 const zone = document.getElementById('uploadZone');
 const fileInput = document.getElementById('docFileInput');

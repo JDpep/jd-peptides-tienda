@@ -191,7 +191,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
 // Carrito abandonado — snapshot del carrito + email cuando el usuario llena
 // su email pero no completa la compra. Se dispara en `blur` del input email.
 (function() {

@@ -42,7 +42,7 @@
   </p>
 {% endif %}
 
-<script>
+<script nonce="{{ csp_nonce }}">
 var ORD_DATA = [
   {% for o in orders %}
   { id: {{ o['id'] }}, numero: {{ o['order_number']|tojson }}, fecha: "{{ o['created_at'][:16] }}",
@@ -135,7 +135,7 @@ var ORD_DATA = [
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script>
+<script nonce="{{ csp_nonce }}">
 function ordGetSel(){ var ids=Array.from(document.querySelectorAll('.ord-cb:checked')).map(function(c){return parseInt(c.value);}); return ORD_DATA.filter(function(o){return ids.indexOf(o.id)!==-1;}); }
 function ordActualizar(){
   var n=document.querySelectorAll('.ord-cb:checked').length, total=document.querySelectorAll('.ord-cb').length;

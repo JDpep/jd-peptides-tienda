@@ -67,7 +67,7 @@
   </div>
 </section>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 function fmt(n, d) {
   if (isNaN(n) || !isFinite(n)) return '—';
   return Number(n).toLocaleString('es-MX', {minimumFractionDigits: d, maximumFractionDigits: d});

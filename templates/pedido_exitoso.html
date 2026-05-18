@@ -207,7 +207,7 @@
             </form>
           </details>
         {% endfor %}
-        <script>
+        <script nonce="{{ csp_nonce }}">
         document.querySelectorAll('.rating-stars').forEach(group => {
           const target = document.getElementById(group.dataset.target);
           group.querySelectorAll('span').forEach(s => {

@@ -31,7 +31,7 @@
   </div>
 </section>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
   const KEY = 'jdp_comparator';
   const urlIds = "{{ ids_arg }}".split(',').filter(Boolean);

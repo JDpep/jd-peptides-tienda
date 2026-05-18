@@ -216,7 +216,7 @@
 }
 .img-upload-label:hover { border-color:var(--gold,#c9a227); }
 </style>
-<script>
+<script nonce="{{ csp_nonce }}">
 function previewImgs(input) {
   const container = document.getElementById('new-imgs-preview');
   const txt = document.getElementById('img-upload-text');

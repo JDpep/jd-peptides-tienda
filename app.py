@@ -159,18 +159,34 @@ app.config['MAX_CONTENT_LENGTH'] = 25 * 1024 * 1024  # 25 MB per request
 
 Compress(app)
 
+# ----- CSP nonce per request ----------------------------------------------
+@app.before_request
+def _gen_csp_nonce():
+    """Genera un nonce único por request para script-src. Los templates lo
+    inyectan en cada <script> inline; el header CSP lo declara como permitido."""
+    g.csp_nonce = secrets.token_urlsafe(18)
+
+
+@app.context_processor
+def _inject_csp_nonce():
+    return {'csp_nonce': getattr(g, 'csp_nonce', '')}
+
+
 # ----- Security headers (defense-in-depth: CSP, X-Frame, X-CTO, HSTS) -----
 @app.after_request
 def _security_headers(response):
-    # Allow Google Fonts (used by base.html) and inline styles (legacy inline
-    # style attributes in templates). 'unsafe-inline' for scripts is needed for
-    # the inline JS in admin pages and small bootstrap snippets; tighten later.
+    nonce = getattr(g, 'csp_nonce', '')
+    # script-src: solo scripts con este nonce O cargados desde 'self'.
+    # 'unsafe-inline' SE IGNORA en browsers CSP3 que entiendan el nonce, pero
+    # queda como compat para los pocos crawlers/clients CSP2.
+    # style-src mantiene 'unsafe-inline' porque hay style="..." inline en
+    # muchos elementos legacy (migrar requeriría refactor masivo).
     response.headers.setdefault('Content-Security-Policy',
         "default-src 'self'; "
         "img-src 'self' data: blob: https://*.openstreetmap.org; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src  'self' https://fonts.gstatic.com data:; "
-        "script-src 'self' 'unsafe-inline'; "
+        f"script-src 'self' 'nonce-{nonce}' 'unsafe-inline' https://cdnjs.cloudflare.com; "
         # Nominatim para autocompletado de direcciones en checkout
         "connect-src 'self' https://nominatim.openstreetmap.org; "
         "frame-ancestors 'none'; "
@@ -229,34 +245,78 @@ def _enforce_admin_csrf():
         abort(403, description='CSRF token missing or invalid')
 
 
-# Login rate limiter — in-memory, per remote IP. 8 attempts / 10 minutes.
-# Sufficient for a single-worker deploy (Railway runs --workers=2 but with
-# gevent each worker shares its own dict; effective limit is ~16/10min, fine
-# for a small admin team). For stricter prod-grade limiting use Flask-Limiter
-# backed by Redis.
-_LOGIN_ATTEMPT_WINDOW = 600   # seconds
+# Rate limiter persistente (SQL). Reemplaza los dicts en memoria que en Vercel
+# multi-instancia eran inútiles: cada contenedor tenía su propio dict y un
+# atacante distribuido los recorría sin tropezar con el límite. Ahora el
+# estado vive en `auth_attempts` y es compartido entre todas las funciones.
+
+_AUTH_ATTEMPTS_DDL = """
+CREATE TABLE IF NOT EXISTS auth_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bucket TEXT NOT NULL,
+    ts TEXT NOT NULL
+)
+"""
+_auth_attempts_ready = False
+
+
+def _ensure_auth_attempts():
+    """Crea auth_attempts lazy si no existe (no requiere RUN_MIGRATIONS)."""
+    global _auth_attempts_ready
+    if _auth_attempts_ready:
+        return
+    try:
+        db = get_db()
+        db.execute(_AUTH_ATTEMPTS_DDL)
+        db.commit()
+        _auth_attempts_ready = True
+    except Exception as e:
+        print(f"[Auth] _ensure_auth_attempts falló: {type(e).__name__}: {e}")
+
+
+_LOGIN_ATTEMPT_WINDOW = 600   # 10 min
 _LOGIN_ATTEMPT_LIMIT  = 8
-_login_attempts = {}          # ip -> deque[float timestamps]
-_login_lock     = threading.Lock()
 
 
-def _login_rate_limited(ip):
-    """Return True if `ip` has exceeded the login attempt limit."""
-    now = time.time()
-    with _login_lock:
-        q = _login_attempts.setdefault(ip, deque())
-        # Drop old entries
-        while q and (now - q[0]) > _LOGIN_ATTEMPT_WINDOW:
-            q.popleft()
-        if len(q) >= _LOGIN_ATTEMPT_LIMIT:
+def _rate_limited(bucket, limit=_LOGIN_ATTEMPT_LIMIT, window=_LOGIN_ATTEMPT_WINDOW):
+    """Cuenta intentos de `bucket` en la ventana `window`. Si excede `limit`,
+    devuelve True (bloquea). Si no, registra el intento y devuelve False.
+    Es eventually consistent — bajo carga la cuenta puede subir un poco más
+    del límite, pero la protección sigue acotada."""
+    _ensure_auth_attempts()
+    cutoff = (datetime.now() - timedelta(seconds=window)).isoformat()
+    try:
+        row = query_db(
+            "SELECT COUNT(*) AS c FROM auth_attempts WHERE bucket=? AND ts >= ?",
+            (bucket, cutoff), one=True
+        )
+        n = (row['c'] if row else 0) or 0
+        if n >= limit:
             return True
-        q.append(now)
+        execute_db(
+            "INSERT INTO auth_attempts (bucket, ts) VALUES (?, ?)",
+            (bucket, datetime.now().isoformat())
+        )
+        return False
+    except Exception as e:
+        # En caso de error de DB, no bloqueamos el login (fail-open) — pero
+        # logueamos para detectar problemas.
+        print(f"[Auth] rate-limit check falló: {type(e).__name__}: {e}")
         return False
 
 
+def _login_rate_limited(ip):
+    return _rate_limited(f'admin_login:{ip}')
+
+
 def _login_attempts_reset(ip):
-    with _login_lock:
-        _login_attempts.pop(ip, None)
+    """Limpia los intentos al login exitoso para que el usuario legítimo
+    no quede bloqueado por su propio histórico de fallos."""
+    try:
+        _ensure_auth_attempts()
+        execute_db("DELETE FROM auth_attempts WHERE bucket=?", (f'admin_login:{ip}',))
+    except Exception:
+        pass
 
 
 # Expose csrf_field() to all templates
@@ -1592,6 +1652,15 @@ CREATE TABLE IF NOT EXISTS email_log (
     sent_at TEXT DEFAULT (datetime('now'))
 );
 
+-- auth_attempts: rate-limit persistente (los dicts en memoria son inútiles en
+-- Vercel multi-instancia). `bucket` agrupa por (acción, identificador), por ej.
+-- 'admin_login:1.2.3.4', 'customer_login:1.2.3.4', 'pedido_lookup:1.2.3.4'.
+CREATE TABLE IF NOT EXISTS auth_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bucket TEXT NOT NULL,
+    ts TEXT NOT NULL
+);
+
 -- email_queue: retry queue para envíos fallidos en Vercel (timeout / 5xx).
 -- El cron /cron/process-email-queue los reintenta.
 CREATE TABLE IF NOT EXISTS email_queue (
@@ -2035,6 +2104,7 @@ CREATE INDEX IF NOT EXISTS idx_reviews_status     ON reviews(status);
 CREATE INDEX IF NOT EXISTS idx_reviews_created    ON reviews(created_at);
 CREATE INDEX IF NOT EXISTS idx_abandoned_email    ON abandoned_carts(customer_email);
 CREATE INDEX IF NOT EXISTS idx_abandoned_created  ON abandoned_carts(created_at);
+CREATE INDEX IF NOT EXISTS idx_auth_attempts_bk_ts ON auth_attempts(bucket, ts);
 """
 
 def init_db():
@@ -4243,6 +4313,36 @@ def _cron_authorized():
     return secrets.compare_digest(provided, secret)
 
 
+@app.route('/cron/gc', methods=['GET', 'POST'])
+def cron_gc():
+    """Limpia auth_attempts viejos (>2h) y email_queue exitosos (>30d).
+    Mantiene las tablas pequeñas y rápidas."""
+    if not _cron_authorized():
+        return jsonify({'ok': False, 'error': 'unauthorized'}), 403
+    deleted_auth = 0
+    deleted_emails = 0
+    try:
+        _ensure_auth_attempts()
+        cutoff_auth = (datetime.now() - timedelta(hours=2)).isoformat()
+        cur = get_db().execute("DELETE FROM auth_attempts WHERE ts < ?", (cutoff_auth,))
+        get_db().commit()
+        deleted_auth = getattr(cur, 'rowcount', 0) or 0
+    except Exception as e:
+        print(f"[GC] auth_attempts purge falló: {e}")
+    try:
+        _ensure_email_queue()
+        cutoff_email = (datetime.now() - timedelta(days=30)).isoformat()
+        cur = get_db().execute(
+            "DELETE FROM email_queue WHERE status='sent' AND sent_at < ?",
+            (cutoff_email,)
+        )
+        get_db().commit()
+        deleted_emails = getattr(cur, 'rowcount', 0) or 0
+    except Exception as e:
+        print(f"[GC] email_queue purge falló: {e}")
+    return jsonify({'ok': True, 'auth_purged': deleted_auth, 'email_purged': deleted_emails})
+
+
 @app.route('/cron/process-email-queue', methods=['GET', 'POST'])
 def cron_process_email_queue():
     """Reintenta emails encolados en email_queue. Procesa hasta 25 por tick
@@ -4508,23 +4608,9 @@ def procesar_checkout():
     return render_template('pedido_exitoso.html', order=order, items=items)
 
 
-# Anti-enumeration: track /pedido/ lookup attempts per IP (8 per 10min)
-_pedido_attempts = {}
-_pedido_lock = threading.Lock()
-_PEDIDO_LIMIT = 8
-_PEDIDO_WINDOW = 600
-
-
+# Anti-enumeration: /pedido/ lookup attempts (8 per 10min) — SQL persistente
 def _pedido_rate_limited(ip):
-    now = time.time()
-    with _pedido_lock:
-        q = _pedido_attempts.setdefault(ip, deque())
-        while q and (now - q[0]) > _PEDIDO_WINDOW:
-            q.popleft()
-        if len(q) >= _PEDIDO_LIMIT:
-            return True
-        q.append(now)
-        return False
+    return _rate_limited(f'pedido_lookup:{ip}', limit=8, window=600)
 
 
 @app.route('/pedido/<order_number>', methods=['GET', 'POST'])
@@ -4654,22 +4740,8 @@ def cuenta_registro():
     return render_template('cuenta/registro.html', email='', name='', phone='', next=next_url)
 
 
-_customer_login_attempts = {}
-_customer_login_lock = threading.Lock()
-_CUSTOMER_LOGIN_LIMIT = 8
-_CUSTOMER_LOGIN_WINDOW = 600  # 10 min
-
-
 def _customer_login_rate_limited(ip):
-    now = time.time()
-    with _customer_login_lock:
-        q = _customer_login_attempts.setdefault(ip, deque())
-        while q and (now - q[0]) > _CUSTOMER_LOGIN_WINDOW:
-            q.popleft()
-        if len(q) >= _CUSTOMER_LOGIN_LIMIT:
-            return True
-        q.append(now)
-        return False
+    return _rate_limited(f'customer_login:{ip}', limit=8, window=600)
 
 
 @app.route('/cuenta/login', methods=['GET', 'POST'])
@@ -4685,8 +4757,20 @@ def cuenta_login():
             return render_template('cuenta/login.html', email='', next=next_url)
         email = (request.form.get('email') or '').strip().lower()
         password = request.form.get('password') or ''
+        # Account-level lockout: 10 fallos en 30 min sobre EL MISMO email.
+        # Bloquea ataques distribuidos contra una cuenta específica que el
+        # rate-limit por IP no cubre.
+        if email and _rate_limited(f'customer_account:{email}', limit=10, window=1800):
+            flash('Demasiados intentos contra esta cuenta. Espera 30 minutos.', 'error')
+            return render_template('cuenta/login.html', email=email, next=next_url)
         user = query_db("SELECT * FROM customers WHERE email=?", (email,), one=True)
         if user and check_password_hash(user['password_hash'], password):
+            # Limpia el contador de fallos al éxito
+            try:
+                execute_db("DELETE FROM auth_attempts WHERE bucket=?",
+                           (f'customer_account:{email}',))
+            except Exception:
+                pass
             session['customer_id'] = user['id']
             session['customer_email'] = user['email']
             execute_db("UPDATE customers SET last_login_at=? WHERE id=?", (datetime.now().isoformat(), user['id']))

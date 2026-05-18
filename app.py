@@ -394,8 +394,41 @@ os.makedirs(DOCS_FOLDER, exist_ok=True)
 _DATABASE_URL = os.environ.get('DATABASE_URL', '')
 _USE_POSTGRES = False
 
+
+def _sanitize_pg_dsn(url):
+    """Quita query params no estándar que psycopg2 rechaza con
+    `invalid URI query parameter: "X"`. Supabase y otros pooled providers
+    pueden añadir cosas como `?supa=base-pooler-mx-east-1`. Conservamos solo
+    los params que libpq/psycopg2 conocen."""
+    try:
+        from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+    except Exception:
+        return url
+    # Lista whitelist de parámetros libpq aceptados (no exhaustiva, pero cubre
+    # todos los comunes en Postgres/Supabase).
+    _LIBPQ_OK = {
+        'sslmode', 'sslcert', 'sslkey', 'sslrootcert', 'sslcrl',
+        'connect_timeout', 'application_name', 'fallback_application_name',
+        'keepalives', 'keepalives_idle', 'keepalives_interval', 'keepalives_count',
+        'tcp_user_timeout', 'replication', 'gssencmode', 'krbsrvname',
+        'service', 'options', 'target_session_attrs', 'channel_binding',
+        'sslcompression', 'sslpassword', 'requirepeer', 'sslsni',
+        'host', 'hostaddr', 'port', 'dbname', 'user', 'password', 'passfile',
+    }
+    try:
+        parts = urlsplit(url)
+        kept = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True)
+                if k.lower() in _LIBPQ_OK]
+        return urlunsplit((parts.scheme, parts.netloc, parts.path,
+                           urlencode(kept), parts.fragment))
+    except Exception:
+        return url
+
+
 if _DATABASE_URL and psycopg2 is not None:
-    # Supabase requiere SSL — inyecta sslmode=require si no está en la URL.
+    # 1. Quita query params no estándar (Supabase: `supa=...`).
+    _DATABASE_URL = _sanitize_pg_dsn(_DATABASE_URL)
+    # 2. Supabase requiere SSL — inyecta sslmode=require si no está.
     if 'sslmode=' not in _DATABASE_URL:
         _DATABASE_URL += ('&' if '?' in _DATABASE_URL else '?') + 'sslmode=require'
 
@@ -6863,30 +6896,21 @@ def inject_globals():
 # Inicializar BD al arrancar (funciona con gunicorn y python app.py)
 # ---------------------------------------------------------------------------
 
-# Init/migraciones: en Vercel serverless cada cold start ejecutaba init_db()
-# completo (~500-1500ms perdidos en CREATE TABLE IF NOT EXISTS + 20 migrations).
-# Ahora gateamos con RUN_MIGRATIONS=1: en deploy fresco lo activamos manualmente
-# (Vercel Settings → env), corre una vez, y luego se quita. Los cold starts
-# siguientes ya no pagan ese costo.
-# En local/dev (no Vercel) seguimos corriéndolo siempre para que la primera
-# ejecución funcione sin setup extra.
-_RUN_INIT_DB = (
-    not _IS_VERCEL
-    or os.environ.get('RUN_MIGRATIONS', '').strip() == '1'
-)
-if _RUN_INIT_DB:
-    try:
-        with app.app_context():
-            init_db()
-    except Exception as _init_err:
-        import traceback as _tb
-        print('[INIT] ❌ init_db() FALLÓ — la app arranca igual, pero las rutas '
-              'que toquen DB van a fallar. Stack trace completo:')
-        print(_tb.format_exc())
-        print(f'[INIT] Error: {type(_init_err).__name__}: {_init_err}')
-else:
-    print('[INIT] init_db() skipped (RUN_MIGRATIONS!=1). '
-          'Si necesitas correr migraciones, set RUN_MIGRATIONS=1 en Vercel env y redeploy.')
+# init_db() corre en cada cold start: CREATE TABLE IF NOT EXISTS son idempotentes
+# y agregan ~200-500ms al cold start. Vale la pena pagarlo SIEMPRE porque si el
+# probe a Postgres falla, caemos a SQLite efímero en /tmp y NECESITAMOS crear
+# las tablas básicas o la app devuelve 500 ("no such table"). Una optimización
+# previa lo gateaba con RUN_MIGRATIONS=1, pero rompió producción cuando el
+# probe falló por un query param incompatible — fail-safe > fast cold start.
+try:
+    with app.app_context():
+        init_db()
+except Exception as _init_err:
+    import traceback as _tb
+    print('[INIT] ❌ init_db() FALLÓ — la app arranca igual, pero las rutas '
+          'que toquen DB van a fallar. Stack trace completo:')
+    print(_tb.format_exc())
+    print(f'[INIT] Error: {type(_init_err).__name__}: {_init_err}')
 
 # ---------------------------------------------------------------------------
 # Main

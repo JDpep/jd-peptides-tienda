@@ -164,7 +164,9 @@
             <div class="products-grid animate-stagger">
               {% for p in products %}
                 {% set benefits = p['benefits'].split('|') if p['benefits'] else [] %}
-                <div class="product-card" data-product-id="{{ p['id'] }}" style="--delay:{{ loop.index0 * 0.05 }}s">
+                <div class="product-card" data-product-id="{{ p['id'] }}"
+                     data-category="{{ _cat_cls.get(p['category'], 'cat-default') }}"
+                     style="--delay:{{ loop.index0 * 0.05 }}s; --cat-color: var(--{{ _cat_cls.get(p['category'], 'cat-default') }});">
                   <button type="button" class="product-quickview-btn"
                           data-product-id="{{ p['id'] }}"
                           title="Vista rápida" aria-label="Vista rápida">
@@ -211,8 +213,12 @@
                     </div>
                   </a>
                   <div class="product-body">
+                    <div class="product-sku-row">
+                      <span class="product-sku mono">{{ p['sku'] }}</span>
+                      <span class="product-sku-dot" aria-hidden="true">·</span>
+                      <span class="product-dose-data mono">{{ p['dose'] }}</span>
+                    </div>
                     <h3 class="product-name">{{ p['name'] }}</h3>
-                    <p class="product-dose">{{ p['sku'] }} · {{ p['dose'] }}</p>
                     {% set _tags = parse_tags(p['tags']) %}
                     {% if _tags %}
                       <div class="card-tags">
@@ -223,9 +229,12 @@
                       </div>
                     {% endif %}
                     {% if benefits %}
-                      <p style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">{{ benefits[0] }}</p>
+                      <p class="product-benefit">{{ benefits[0] }}</p>
                     {% endif %}
-                    <div class="product-price" style="color:var(--gold)">${{ "%.2f"|format(p['price']) }} <span class="price-currency">MXN</span></div>
+                    <div class="product-price">
+                      <span class="product-price-amount">${{ "%.2f"|format(p['price']) }}</span>
+                      <span class="price-currency">MXN</span>
+                    </div>
                     {% set _low = p['low_stock_alert'] if p['low_stock_alert'] is not none else 5 %}
                     <div style="margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center">
                       {% if p['stock'] > _low %}

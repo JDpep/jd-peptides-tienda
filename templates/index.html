@@ -3,21 +3,54 @@
 
 {% block content %}
 
-<!-- Hero -->
-<section class="hero">
-  <div class="hero-pattern">
+<!-- Hero — Editorial Lab -->
+<section class="hero hero-editorial">
+  <div class="hero-pattern" aria-hidden="true">
     <img src="{{ url_for('static', filename='img/hero-pattern.svg') }}" alt="" aria-hidden="true" style="width:100%;height:100%;object-fit:cover;">
   </div>
+  <div class="hero-grid-overlay" aria-hidden="true"></div>
   <div class="container hero-content">
-    <p style="font-size:0.7rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#8c6a1f;margin-bottom:1rem">Análisis · Trazabilidad · CoA por lote</p>
-    <h1 class="hero-anim-title">Péptidos de investigación <span class="highlight">trazables por lote</span></h1>
-    <p class="hero-anim-body">Pureza HPLC ≥99% verificada por terceros, CoA disponible por producción. Para investigadores y laboratorios que necesitan trazabilidad y consistencia.</p>
+
+    <div class="hero-meta-row">
+      <span class="hero-eyebrow eyebrow">Análisis · Trazabilidad · CoA por lote</span>
+      <span class="hero-edition mono" aria-hidden="true">N.º 04 — VOL. 02</span>
+    </div>
+
+    <h1 class="hero-anim-title hero-headline">
+      Péptidos de investigación<br>
+      <span class="hero-highlight serif-italic">trazables por lote</span>
+    </h1>
+
+    <p class="hero-anim-body hero-lede">
+      Pureza HPLC <span class="mono hero-num">≥99%</span> verificada por terceros · CoA disponible por producción.
+      Para investigadores y laboratorios que necesitan trazabilidad y consistencia.
+    </p>
+
     <div class="hero-cta hero-anim-cta">
       <a href="{{ url_for('catalogo') }}" class="btn btn-gold btn-lg">Ver catálogo</a>
-      <a href="#calidad" class="btn btn-outline btn-lg">Ver garantía de calidad</a>
+      <a href="#calidad" class="btn btn-outline btn-lg">Ver garantía de calidad →</a>
     </div>
+
+    <!-- Number callouts: pharma data, no fluff -->
+    <ul class="hero-stats hero-anim-stats" role="list" aria-label="Indicadores de calidad">
+      <li class="hero-stat">
+        <span class="hero-stat-value mono">≥99%</span>
+        <span class="hero-stat-label">Pureza HPLC<br><em>verificada por terceros</em></span>
+      </li>
+      <li class="hero-stat" aria-hidden="true"><span class="hero-stat-divider"></span></li>
+      <li class="hero-stat">
+        <span class="hero-stat-value mono">CoA</span>
+        <span class="hero-stat-label">Por lote<br><em>endotoxinas · metales · esterilidad</em></span>
+      </li>
+      <li class="hero-stat" aria-hidden="true"><span class="hero-stat-divider"></span></li>
+      <li class="hero-stat">
+        <span class="hero-stat-value mono">24–72<small>h</small></span>
+        <span class="hero-stat-label">Envío MX<br><em>empaque refrigerado · DHL/FedEx</em></span>
+      </li>
+    </ul>
+
     <p class="hero-disclaimer hero-anim-disc">
-      <span style="display:inline-block;font-size:0.58rem;font-weight:800;letter-spacing:0.08em;color:#8c6a1f;background:rgba(140,106,31,0.12);padding:0.2rem 0.4rem;border-radius:3px;line-height:1;margin-right:0.5rem;vertical-align:1px">RUO</span>
+      <span class="hero-ruo-tag mono">RUO</span>
       Exclusivamente para uso en investigación científica <em>in vitro</em>
     </p>
   </div>

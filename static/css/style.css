@@ -1,5 +1,7 @@
 /* =========================================================
-   JD PEPTIDES — Premium Dark Store CSS
+   JD PEPTIDES — Editorial Lab CSS
+   Fraunces (display, serif w/ italic) + Inter Tight (body) +
+   JetBrains Mono (technical data: SKU, dose, MW, batch).
    ========================================================= */
 
 /* --- Variables --- */
@@ -43,25 +45,39 @@
   --cat-bienestar:    #5b3570;
   --cat-default:      #4a3812;
 
+  /* Typography stacks */
+  --font-display: 'Fraunces', 'EB Garamond', 'Times New Roman', Georgia, serif;
+  --font-body:    'Inter Tight', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Refined motion curves */
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0.05, 0.36, 1);
+
   --radius:     8px;
   --radius-lg:  14px;
   --shadow:     0 4px 24px rgba(0,0,0,0.55);
   --shadow-gold:0 0 24px rgba(199,154,58,0.3);
-  --transition: 0.25s ease;
+  --transition: 0.28s var(--ease-out);
 }
 
 /* --- Reset & Base --- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
+  font-feature-settings: 'ss01' on, 'cv11' on; /* Inter Tight: alt one + curved tails */
   background: var(--bg);
   color: var(--text);
-  line-height: 1.6;
-  font-size: 15px;
+  line-height: 1.55;
+  font-size: 15.5px;
+  letter-spacing: -0.005em;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 a { color: var(--gold); text-decoration: none; transition: color var(--transition); }
 a:hover { color: var(--gold-light); }
@@ -69,17 +85,45 @@ img { max-width: 100%; display: block; }
 ul { list-style: none; }
 input, textarea, select, button { font-family: inherit; font-size: inherit; }
 
-/* --- Typography --- */
+/* --- Typography ---
+   Display headings get Fraunces. The `serif` italic variant is reserved for
+   keyword emphasis (.serif-italic) — used in hero highlight and accent quotes.
+   Numerical/data callouts use JetBrains Mono. */
 h1, h2, h3, h4, h5 {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
-  font-weight: 700;
-  line-height: 1.2;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-optical-sizing: auto;
+  line-height: 1.05;
+  letter-spacing: -0.022em;
   color: var(--text);
 }
-h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
-h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); }
-h3 { font-size: 1.25rem; }
+h1 { font-size: clamp(2.2rem, 5.5vw, 4rem); font-weight: 500; letter-spacing: -0.028em; }
+h2 { font-size: clamp(1.7rem, 3.4vw, 2.6rem); font-weight: 500; letter-spacing: -0.025em; }
+h3 { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.015em; }
+h4 { font-size: 1.05rem; font-weight: 600; }
+h5 { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); }
 p { color: var(--text2); }
+
+.serif-italic {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-feature-settings: 'ss01' on;
+}
+
+.mono, .data, code, kbd, samp, pre {
+  font-family: var(--font-mono);
+  font-feature-settings: 'zero' on, 'ss02' on;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+}
 
 /* --- Utilities --- */
 .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
@@ -102,27 +146,47 @@ p { color: var(--text2); }
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.65rem 1.4rem;
+  gap: 0.45rem;
+  padding: 0.7rem 1.5rem;
   border-radius: var(--radius);
+  font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.88rem;
-  letter-spacing: 0.03em;
+  font-size: 0.84rem;
+  letter-spacing: 0.04em;
   cursor: pointer;
   border: none;
-  transition: all var(--transition);
+  transition:
+    background 0.3s var(--ease-out),
+    color 0.3s var(--ease-out),
+    border-color 0.3s var(--ease-out),
+    transform 0.4s var(--ease-out),
+    box-shadow 0.4s var(--ease-out);
   text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+}
+.btn::after {
+  /* Quiet shimmer on hover — only on .btn-gold (overridden below) */
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: opacity 0.3s, transform 0.7s var(--ease-out);
 }
 .btn-gold {
   background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-  color: #000;
+  color: #100e09;
 }
 .btn-gold:hover {
   background: linear-gradient(135deg, var(--gold-light), var(--gold));
-  color: #000;
+  color: #100e09;
   box-shadow: var(--shadow-gold);
   transform: translateY(-1px);
 }
+.btn-gold:hover::after { opacity: 1; transform: translateX(100%); }
 .btn-outline {
   background: transparent;
   border: 1px solid var(--gold);
@@ -139,8 +203,8 @@ p { color: var(--text2); }
   color: var(--text2);
 }
 .btn-ghost:hover { border-color: var(--text3); color: var(--text); }
-.btn-sm { padding: 0.4rem 0.85rem; font-size: 0.8rem; }
-.btn-lg { padding: 0.9rem 2rem; font-size: 1rem; }
+.btn-sm { padding: 0.42rem 0.95rem; font-size: 0.76rem; }
+.btn-lg { padding: 0.95rem 2.1rem; font-size: 0.92rem; }
 .btn-danger { background: var(--red); color: #fff; }
 .btn-danger:hover { background: #c93333; color: #fff; }
 .btn-danger-outline { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.4); }
@@ -208,16 +272,21 @@ p { color: var(--text2); }
   gap: 0.6rem;
   text-decoration: none;
 }
-.navbar-logo .logo-svg { width: 38px; height: 38px; }
+.navbar-logo .logo-svg { width: 36px; height: 36px; }
 .navbar-logo .logo-text {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800;
-  font-size: 1.1rem;
-  letter-spacing: 0.08em;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.18rem;
+  letter-spacing: -0.01em;
   color: var(--text);
   line-height: 1;
+  font-optical-sizing: auto;
 }
-.navbar-logo .logo-text span { color: var(--gold); }
+.navbar-logo .logo-text span {
+  color: var(--gold);
+  font-style: italic;
+  font-weight: 500;
+}
 
 .navbar-nav {
   display: flex;
@@ -576,6 +645,195 @@ p { color: var(--text2); }
   font-style: italic;
   font-weight: 700;
 }
+
+/* ───────────────────────────────────────────────────────────
+   Hero Editorial Lab — variant
+   Layered: technical grid + aurora + atoms + numbered stats
+   ─────────────────────────────────────────────────────────── */
+.hero-editorial {
+  padding: 5rem 0 4.5rem;
+}
+.hero-editorial::before {
+  /* Softer aurora — let the type carry */
+  background:
+    radial-gradient(38% 48% at 22% 28%, rgba(244,228,181,0.32) 0%, transparent 70%),
+    radial-gradient(32% 42% at 78% 70%, rgba(199,154,58,0.14) 0%, transparent 70%);
+}
+.hero-grid-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(140,106,31,0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(140,106,31,0.04) 1px, transparent 1px);
+  background-size: 88px 88px;
+  /* Fade edges so it doesn't dominate */
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 35%, transparent 75%);
+          mask-image: radial-gradient(ellipse at center, #000 35%, transparent 75%);
+  opacity: 0.55;
+}
+
+.hero-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.hero-eyebrow {
+  color: #8c6a1f;
+  font-size: 0.7rem;
+}
+.hero-edition {
+  color: rgba(140,106,31,0.55);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  position: relative;
+  padding-left: 1.5rem;
+}
+.hero-edition::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  width: 1rem; height: 1px;
+  background: rgba(140,106,31,0.4);
+}
+
+.hero-headline {
+  margin: 0 auto 1.5rem;
+  max-width: 22ch;
+  color: #0d0d0d;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2.4rem, 6.5vw, 4.6rem);
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+  font-optical-sizing: auto;
+}
+.hero-highlight {
+  display: inline-block;
+  color: var(--gold);
+  font-weight: 500;
+  /* Fraunces italic at large opsz reveals beautiful swashes */
+  font-size: 1.04em;
+  letter-spacing: -0.01em;
+  background: linear-gradient(180deg, transparent 0 60%, rgba(199,154,58,0.14) 60% 100%);
+  padding: 0 0.06em;
+}
+
+.hero-lede {
+  margin: 0 auto 2rem;
+  max-width: 54ch;
+  color: #3a2f1c;
+  font-size: clamp(1rem, 1.4vw, 1.12rem);
+  line-height: 1.65;
+}
+.hero-num {
+  color: #0d0d0d;
+  font-weight: 600;
+  font-size: 0.94em;
+  background: rgba(199,154,58,0.14);
+  padding: 0.06em 0.32em;
+  border-radius: 3px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.hero-stats {
+  list-style: none;
+  margin: 3rem auto 1.5rem;
+  padding: 1.5rem 1.25rem;
+  max-width: 880px;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(140,106,31,0.22);
+  border-bottom: 1px solid rgba(140,106,31,0.22);
+  background:
+    linear-gradient(180deg, rgba(199,154,58,0.04), transparent 45%);
+}
+.hero-stat {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  padding: 0.4rem 1rem;
+}
+.hero-stat-value {
+  display: block;
+  color: #0d0d0d;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: clamp(1.9rem, 3.4vw, 2.5rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.55rem;
+}
+.hero-stat-value small {
+  font-size: 0.55em;
+  color: var(--gold-dark);
+  margin-left: 0.05em;
+  font-weight: 400;
+}
+.hero-stat-label {
+  display: block;
+  color: #5a4a2a;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+}
+.hero-stat-label em {
+  display: block;
+  color: #8c7a52;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 0.72rem;
+  margin-top: 0.15rem;
+}
+.hero-stat[aria-hidden="true"] { flex: 0 0 1px; padding: 0; }
+.hero-stat-divider {
+  display: block;
+  width: 1px;
+  height: 100%;
+  min-height: 60px;
+  background: linear-gradient(180deg, transparent, rgba(140,106,31,0.32), transparent);
+}
+@media (max-width: 720px) {
+  .hero-stats {
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1.5rem 1.25rem;
+  }
+  .hero-stat[aria-hidden="true"] { display: none; }
+  .hero-stat { padding: 1rem 0; border-bottom: 1px solid rgba(140,106,31,0.14); }
+  .hero-stat:last-child { border-bottom: 0; }
+}
+
+.hero-ruo-tag {
+  display: inline-block;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #8c6a1f;
+  background: rgba(140,106,31,0.1);
+  border: 1px solid rgba(140,106,31,0.28);
+  padding: 0.18rem 0.42rem;
+  border-radius: 3px;
+  line-height: 1;
+  margin-right: 0.6rem;
+  vertical-align: 1px;
+  text-transform: uppercase;
+}
+
+.hero-anim-stats { animation: heroFadeUp 0.75s var(--ease-out) 0.62s both; }
 .hero p {
   font-size: 1.1rem;
   max-width: 580px;
@@ -661,20 +919,47 @@ p { color: var(--text2); }
 @media (max-width: 768px)  { .products-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 480px)  { .products-grid { grid-template-columns: 1fr; } }
 
-/* --- Product Card --- */
+/* --- Product Card — Editorial Lab --- */
 .product-card {
-  background: var(--bg3);
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(199,154,58,0.02) 0%, transparent 35%),
+    var(--bg3);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: all var(--transition);
+  transition:
+    transform 0.45s var(--ease-out),
+    border-color 0.3s var(--ease-out),
+    box-shadow 0.4s var(--ease-out);
   display: flex;
   flex-direction: column;
 }
+/* Categorized left rail — a quiet vertical accent line in category color */
+.product-card::before {
+  content: '';
+  position: absolute;
+  top: 12%; left: 0;
+  width: 2px;
+  height: 76%;
+  background: linear-gradient(180deg, transparent, var(--cat-color, var(--gold)), transparent);
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-out);
+  z-index: 2;
+  pointer-events: none;
+}
+.product-card:hover::before { opacity: 0.85; }
+/* Always show a hint of the category rail on big screens */
+@media (min-width: 769px) {
+  .product-card::before { opacity: 0.25; }
+}
 .product-card:hover {
-  border-color: rgba(199,154,58,0.4);
-  box-shadow: var(--shadow-gold), 0 8px 32px rgba(0,0,0,0.4);
-  transform: translateY(-3px);
+  border-color: rgba(199,154,58,0.5);
+  box-shadow:
+    0 0 0 1px rgba(199,154,58,0.08),
+    0 12px 38px rgba(0,0,0,0.45),
+    0 0 32px rgba(199,154,58,0.12);
+  transform: translateY(-4px);
 }
 .product-visual {
   position: relative;
@@ -700,7 +985,7 @@ p { color: var(--text2); }
 }
 .product-visual-name {
   position: relative;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-display);
   font-weight: 800;
   font-size: clamp(1.2rem, 3vw, 1.8rem);
   color: var(--gold);
@@ -725,39 +1010,92 @@ p { color: var(--text2); }
 }
 
 .product-body {
-  padding: 1.1rem;
+  padding: 1.2rem 1.15rem 0.4rem;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.55rem;
+}
+.product-sku-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  color: var(--text3);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.1rem;
+}
+.product-sku {
+  color: var(--gold-dark);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.product-sku-dot { color: var(--text3); }
+.product-dose-data {
+  color: var(--text2);
+  letter-spacing: 0.04em;
 }
 .product-name {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 1rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  font-weight: 500;
+  font-optical-sizing: auto;
+  letter-spacing: -0.018em;
+  line-height: 1.18;
   color: var(--text);
   margin: 0;
 }
+/* Legacy .product-dose (still used in some views) — match new monospace style */
 .product-dose {
-  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
   color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.product-benefit {
+  font-size: 0.82rem;
+  color: var(--text3);
+  line-height: 1.5;
+  margin: 0.1rem 0 0;
+  /* Two-line ellipsis for consistent card heights */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .product-price {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--gold);
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
   margin-top: auto;
-  padding-top: 0.25rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(140,106,31,0.18);
+  margin-left: -1.15rem;
+  margin-right: -1.15rem;
+  padding-left: 1.15rem;
+  padding-right: 1.15rem;
+}
+.product-price-amount {
+  font-family: var(--font-mono);
+  font-size: 1.32rem;
+  font-weight: 500;
+  color: var(--gold);
+  letter-spacing: -0.02em;
+}
+.price-currency {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .product-footer {
-  padding: 0 1.1rem 1.1rem;
+  padding: 0.9rem 1.15rem 1.15rem;
   display: flex;
   gap: 0.5rem;
 }
-.product-footer .btn { flex: 1; font-size: 0.8rem; padding: 0.55rem 0.75rem; }
+.product-footer .btn { flex: 1; font-size: 0.8rem; padding: 0.6rem 0.75rem; }
 
 /* --- Product Detail --- */
 .product-detail { padding: 3rem 0; }
@@ -897,29 +1235,73 @@ p { color: var(--text2); }
   filter: drop-shadow(0 0 40px rgba(199,154,58,0.3));
 }
 
-.product-detail-info { display: flex; flex-direction: column; gap: 1.25rem; }
-.product-detail-sku { font-size: 0.8rem; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; }
-.product-detail-title { font-size: clamp(1.8rem, 4vw, 2.5rem); }
+.product-detail-info { display: flex; flex-direction: column; gap: 1.4rem; }
+.product-detail-sku {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--gold-dark);
+  letter-spacing: 0.1em;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 0.85rem;
+  position: relative;
+  margin: 0;
+}
+.product-detail-sku::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  width: 0.55rem;
+  height: 1px;
+  background: var(--gold-dark);
+  transform: translateY(-50%);
+}
+.product-detail-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2rem, 4.4vw, 3rem);
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+  margin-top: 0.45rem;
+}
 .product-detail-dose-price {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 1rem;
   flex-wrap: wrap;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 .product-detail-price {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 2rem;
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-size: clamp(1.8rem, 3.4vw, 2.4rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
   color: var(--gold);
 }
+.product-detail-price .price-currency {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text3);
+  letter-spacing: 0.12em;
+  margin-left: 0.4rem;
+  vertical-align: 0.45em;
+  font-weight: 400;
+}
 .product-detail-dose-tag {
-  background: var(--bg4);
+  font-family: var(--font-mono);
+  background: transparent;
   border: 1px solid var(--border);
-  padding: 0.3rem 0.8rem;
-  border-radius: 99px;
-  font-size: 0.82rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
   color: var(--text2);
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-left: auto;
 }
 .benefits-list { display: flex; flex-direction: column; gap: 0.5rem; }
 .benefit-item {
@@ -1305,10 +1687,26 @@ select.form-control { cursor: pointer; }
 
 /* --- Footer --- */
 .footer {
+  position: relative;
   background: var(--bg2);
   border-top: 1px solid var(--border);
-  padding: 3rem 0 1.5rem;
+  padding: 3.5rem 0 1.5rem;
   margin-top: auto;
+}
+/* Quiet technical hairline above the footer — editorial divider */
+.footer::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(199,154,58,0.45) 30%,
+    rgba(199,154,58,0.45) 70%,
+    transparent 100%);
+  pointer-events: none;
 }
 .footer-grid {
   display: grid;
@@ -1414,7 +1812,7 @@ select.form-control { cursor: pointer; }
   flex-shrink: 0;
 }
 .admin-sidebar-logo .logo-main {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-display);
   font-weight: 800;
   font-size: 1.05rem;
   letter-spacing: 0.1em;
@@ -1516,7 +1914,7 @@ select.form-control { cursor: pointer; }
   color: #000;
   flex-shrink: 0;
   letter-spacing: 0;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-display);
 }
 .admin-sidebar-user-info { min-width: 0; }
 .admin-sidebar-user-name {
@@ -1792,7 +2190,7 @@ select.form-control { cursor: pointer; }
   letter-spacing: 0.08em;
 }
 .metric-value {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 800;
   color: var(--text);
@@ -2211,7 +2609,7 @@ dl.info-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; 
 .pipeline-count {
   font-size: 1.75rem;
   font-weight: 800;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-display);
   color: var(--gold);
   line-height: 1;
 }
@@ -2459,7 +2857,7 @@ dl.info-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; 
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--gold);
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: var(--font-display);
 }
 
 /* --- Admin SSE metric bump --- */
@@ -2969,23 +3367,35 @@ details summary::-webkit-details-marker { display: none; }
   border-bottom: 1px solid var(--border);
   overflow: hidden;
   position: relative;
-  font-size: 0.74rem;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
   color: var(--text2);
   user-select: none;
 }
+.marquee-bar::before,
+.marquee-bar::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 80px;
+  z-index: 2;
+  pointer-events: none;
+}
+.marquee-bar::before { left: 0; background: linear-gradient(90deg, var(--bg2), transparent); }
+.marquee-bar::after  { right: 0; background: linear-gradient(-90deg, var(--bg2), transparent); }
 .marquee-track {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.75rem;
   width: max-content;
-  padding: 0.55rem 0;
+  padding: 0.6rem 0;
   animation: marqueeScroll 55s linear infinite;
   will-change: transform;
 }
 .marquee-item {
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
 }
 .marquee-sep { color: var(--gold); opacity: 0.55; font-size: 0.55rem; }

@@ -1401,48 +1401,19 @@ class _PGWrapper:
 # Database helpers
 # ---------------------------------------------------------------------------
 
-_PG_POOL = None
-_PG_POOL_LOCK = threading.Lock()
-
-
-def _pg_pool():
-    """Pool de conexiones psycopg2 a nivel proceso. Cada Vercel container
-    caliente comparte hasta 4 conexiones, evitando el handshake TLS (~250ms)
-    de cada request. Lazy init para no abrir conexiones en cold start si la
-    primera request es a /static/."""
-    global _PG_POOL
-    if _PG_POOL is not None:
-        return _PG_POOL
-    with _PG_POOL_LOCK:
-        if _PG_POOL is None:
-            from psycopg2 import pool as _psycopg2_pool
-            _PG_POOL = _psycopg2_pool.ThreadedConnectionPool(
-                minconn=1,
-                maxconn=int(os.environ.get('PG_POOL_MAX', '4')),
-                dsn=_DATABASE_URL,
-                connect_timeout=5,
-            )
-    return _PG_POOL
-
-
 def get_db():
+    """Conexión a la DB.
+    NO usamos psycopg2.pool en proceso: el connection string de Supabase
+    ya pasa por PgBouncer (puerto 6543) que es el pooler real. Un segundo
+    pool en proceso peleaba con el externo en Vercel serverless (cada
+    invocación puede ser un proceso distinto) y dejaba conexiones colgadas
+    → 500 silenciosos. connect_timeout=5 cubre lentitud del pooler sin
+    agotar el límite de Vercel (10s)."""
     db = getattr(g, '_database', None)
     if db is None:
         if _USE_POSTGRES:
-            try:
-                raw = _pg_pool().getconn()
-                # Si la conexión fue dejada en estado roto, la limpiamos
-                if raw.closed:
-                    _pg_pool().putconn(raw, close=True)
-                    raw = _pg_pool().getconn()
-                g._raw_pg = raw
-                db = g._database = _PGWrapper(raw)
-            except Exception as _e:
-                # Pool agotado o caído → fallback a connect directo
-                print(f'[DB] pool getconn falló ({type(_e).__name__}), fallback directo')
-                raw = psycopg2.connect(_DATABASE_URL, connect_timeout=5)
-                g._raw_pg = None  # no es del pool — close() en teardown
-                db = g._database = _PGWrapper(raw)
+            raw = psycopg2.connect(_DATABASE_URL, connect_timeout=5)
+            db = g._database = _PGWrapper(raw)
         else:
             os.makedirs(os.path.dirname(DATABASE), exist_ok=True)
             db = g._database = sqlite3.connect(DATABASE, check_same_thread=False)
@@ -1460,28 +1431,15 @@ def close_connection(exception):
     db = getattr(g, '_database', None)
     if db is None:
         return
-    raw_pg = getattr(g, '_raw_pg', None)
-    if raw_pg is not None:
-        # Devuelve la conexión al pool; si hubo excepción, la cerramos.
-        try:
-            if exception is not None:
-                try:
-                    raw_pg.rollback()
-                except Exception:
-                    pass
-                _pg_pool().putconn(raw_pg, close=True)
-            else:
-                _pg_pool().putconn(raw_pg)
-        except Exception:
+    try:
+        if exception is not None:
             try:
-                raw_pg.close()
+                db.rollback()
             except Exception:
                 pass
-    else:
-        try:
-            db.close()
-        except Exception:
-            pass
+        db.close()
+    except Exception:
+        pass
 
 
 def query_db(query, args=(), one=False):

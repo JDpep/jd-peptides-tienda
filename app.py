@@ -6868,6 +6868,17 @@ def contacto():
 _nav_cats_cache = {'data': [], 'ts': 0}
 _NAV_CATS_TTL = 60  # segundos
 
+# Build ID — derivado del commit SHA de Vercel (o fallback diario en dev/Railway).
+# Se usa como cache-buster en CSS/JS para que cambios de deploy invaliden la
+# entry stale-while-revalidate del Service Worker.
+_BUILD_ID = (
+    os.environ.get('VERCEL_GIT_COMMIT_SHA')
+    or os.environ.get('VERCEL_DEPLOYMENT_ID')
+    or os.environ.get('RAILWAY_DEPLOYMENT_ID')
+    or ''
+)[:12] or 'jdp-' + datetime.now().strftime('%Y%m%d')
+
+
 @app.context_processor
 def inject_globals():
     cats = []
@@ -6889,6 +6900,7 @@ def inject_globals():
         'contact_location': CONTACT_LOCATION,
         'ga_measurement_id': GA_MEASUREMENT_ID,
         'current_customer': get_current_customer(),
+        'build_id': _BUILD_ID,
     }
 
 

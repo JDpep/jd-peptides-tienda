@@ -329,21 +329,6 @@
           <input type="search" name="q" placeholder="Buscar péptido…" value="{{ request.args.get('q', '') }}"
                  autocomplete="off" maxlength="60" aria-label="Buscar">
         </form>
-        {% if current_customer %}
-          <a href="{{ url_for('cuenta_dashboard') }}" class="account-btn" aria-label="Mi cuenta" title="{{ current_customer.email }}">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <circle cx="9" cy="6" r="3" stroke="currentColor" stroke-width="1.6"/>
-              <path d="M3 16c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-            </svg>
-          </a>
-        {% else %}
-          <a href="{{ url_for('cuenta_login') }}" class="account-btn" aria-label="Iniciar sesión">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <circle cx="9" cy="6" r="3" stroke="currentColor" stroke-width="1.6"/>
-              <path d="M3 16c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-            </svg>
-          </a>
-        {% endif %}
         <a href="{{ url_for('carrito') }}" class="cart-btn">
           🛒
           <span class="cart-count cart-badge" {% if cart_count() == 0 %}style="display:none"{% endif %}>{{ cart_count() }}</span>
@@ -370,11 +355,6 @@
     <a href="{{ url_for('tracking') }}">Rastrear pedido</a>
     <a href="{{ url_for('sobre_nosotros') }}">Nosotros</a>
     <a href="{{ url_for('contacto') }}">Contacto</a>
-    {% if current_customer %}
-      <a href="{{ url_for('cuenta_dashboard') }}">Mi cuenta</a>
-    {% else %}
-      <a href="{{ url_for('cuenta_login') }}">Iniciar sesión</a>
-    {% endif %}
     <a href="{{ url_for('carrito') }}">🛒 Carrito ({{ cart_count() }})</a>
   </div>
 

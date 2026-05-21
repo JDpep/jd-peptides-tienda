@@ -21,11 +21,6 @@
           <!-- Personal info -->
           <div class="form-card">
             <h3>Información Personal</h3>
-            {% if not current_customer %}
-              <p style="font-size:0.82rem;color:var(--text3);margin:-0.25rem 0 0.75rem">
-                ¿Ya tienes cuenta? <a href="{{ url_for('cuenta_login', next=url_for('checkout')) }}" style="color:var(--gold)">Inicia sesión</a> para autocompletar.
-              </p>
-            {% endif %}
             <div class="form-group">
               <label class="form-group label">Nombre completo *</label>
               <input type="text" name="name" class="form-control" placeholder="Tu nombre" required autocomplete="name"
@@ -35,7 +30,7 @@
               <div class="form-group">
                 <label>Email *</label>
                 <input type="email" name="email" class="form-control" placeholder="tu@email.com" required autocomplete="email"
-                       value="{{ customer.email or '' }}"{% if current_customer %} readonly{% endif %}>
+                       value="{{ customer.email or '' }}">
               </div>
               <div class="form-group">
                 <label>Teléfono</label>

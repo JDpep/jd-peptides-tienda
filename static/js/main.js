@@ -24,6 +24,56 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------------------------------------------------------
+  // Mega menu — hover-first, keyboard-accessible
+  // (CSS handles the hover open; JS only wires focus/ESC/outside-click
+  //  and keeps aria-expanded + aria-hidden in sync)
+  // ---------------------------------------------------------
+  document.querySelectorAll('.nav-item-mega').forEach((item) => {
+    const trigger = item.querySelector('.nav-mega-trigger');
+    const panel   = item.querySelector('.nav-mega-wrap');
+    if (!trigger || !panel) return;
+
+    const open = () => {
+      item.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
+      panel.setAttribute('aria-hidden', 'false');
+    };
+    const close = () => {
+      item.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded', 'false');
+      panel.setAttribute('aria-hidden', 'true');
+    };
+
+    // Keyboard: open with focus on trigger, close when focus leaves the whole item
+    trigger.addEventListener('focus', open);
+    item.addEventListener('focusout', (e) => {
+      if (!item.contains(e.relatedTarget)) close();
+    });
+
+    // Pointer: sync the open class with hover so ESC/outside-click can override
+    item.addEventListener('mouseenter', open);
+    item.addEventListener('mouseleave', close);
+
+    // ESC closes and returns focus to the trigger
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { close(); trigger.focus(); }
+    });
+  });
+
+  // Click outside any mega panel closes all of them
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.nav-item-mega.is-open').forEach((item) => {
+      if (!item.contains(e.target)) {
+        item.classList.remove('is-open');
+        const t = item.querySelector('.nav-mega-trigger');
+        const p = item.querySelector('.nav-mega-wrap');
+        if (t) t.setAttribute('aria-expanded', 'false');
+        if (p) p.setAttribute('aria-hidden', 'true');
+      }
+    });
+  });
+
+  // ---------------------------------------------------------
   // Mobile menu toggle
   // ---------------------------------------------------------
   const hamburger = document.getElementById('hamburger');

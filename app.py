@@ -305,6 +305,22 @@ def _rate_limited(bucket, limit=_LOGIN_ATTEMPT_LIMIT, window=_LOGIN_ATTEMPT_WIND
         return False
 
 
+def _client_ip():
+    """IP real del cliente. En Vercel, x-vercel-forwarded-for y x-real-ip los
+    setea la plataforma con la IP real y NO son spoofeables; el leftmost de
+    X-Forwarded-For SÍ lo puede falsificar el cliente (rompía el lockout de
+    brute-force). Preferimos los headers de la plataforma; fallback al hop más
+    a la derecha de XFF (el que añade el proxy de confianza) o remote_addr."""
+    for h in ('x-vercel-forwarded-for', 'x-real-ip'):
+        v = request.headers.get(h)
+        if v:
+            return v.split(',')[0].strip()
+    xff = request.headers.get('X-Forwarded-For', '')
+    if xff:
+        return xff.split(',')[-1].strip()
+    return request.remote_addr or '?'
+
+
 def _login_rate_limited(ip):
     return _rate_limited(f'admin_login:{ip}')
 
@@ -4127,6 +4143,11 @@ def api_cart_abandon_snapshot():
     if not email or not valid_email(email):
         return jsonify({'ok': False, 'error': 'invalid_email'}), 400
 
+    # Rate-limit por IP real (además del cap por email): frena el churn de
+    # emails distintos para spamear recordatorios a terceros o meter basura.
+    if _rate_limited(f'snapshot:{_client_ip()}', limit=20, window=3600):
+        return jsonify({'ok': True, 'noop': 'rate_limit'})
+
     # Anti-spam: si en las últimas 48h ya hay un snapshot reciente con este
     # email, no creamos uno NUEVO con un email distinto al original — solo
     # actualizamos. Esto bloquea el caso "atacante envía email de víctima
@@ -4199,7 +4220,7 @@ def cron_abandoned_reminders():
     provided = (bearer
                 or request.headers.get('X-Cron-Secret', '')
                 or request.args.get('secret', ''))
-    if provided != secret:
+    if not provided or not secrets.compare_digest(provided, secret):
         return jsonify({'ok': False, 'error': 'unauthorized'}), 403
 
     lower = (datetime.now() - timedelta(hours=72)).isoformat()
@@ -4371,6 +4392,35 @@ def procesar_checkout():
     cart = get_cart()
     if not cart:
         return redirect(url_for('catalogo'))
+
+    # Rate-limit anti-spam/DoS: límite generoso por IP real (no spoofeable).
+    if _rate_limited(f'checkout:{_client_ip()}', limit=12, window=600):
+        flash('Demasiados intentos seguidos. Espera un par de minutos e intenta de nuevo.', 'error')
+        return redirect(url_for('carrito'))
+
+    # Revalidar cada línea contra la DB — NUNCA confiar en el precio guardado
+    # en la sesión. Reconstruimos precio/nombre/sku/dosis/peso desde la fuente
+    # de verdad; rechazamos productos inexistentes o inactivos. Así los totales
+    # se recalculan server-side y se bloquea cualquier manipulación de precio.
+    for _pid, _it in list(cart.items()):
+        _row = query_db(
+            "SELECT name, sku, dose, price, weight_grams, active "
+            "FROM products WHERE id=?", (_it.get('id'),), one=True
+        )
+        if not _row or not _row['active']:
+            cart.pop(_pid, None)
+            save_cart(cart)
+            flash('Un producto de tu carrito ya no está disponible; lo quitamos. Revisa tu pedido.', 'error')
+            return redirect(url_for('carrito'))
+        _it['name'] = _row['name']
+        _it['sku'] = _row['sku']
+        _it['dose'] = _row['dose']
+        _it['price'] = float(_row['price'])
+        try:
+            _it['weight_grams'] = int(_row['weight_grams'] or DEFAULT_ITEM_WEIGHT_G)
+        except (TypeError, ValueError):
+            _it['weight_grams'] = DEFAULT_ITEM_WEIGHT_G
+    save_cart(cart)
 
     name = request.form.get('name', '').strip()
     email = request.form.get('email', '').strip()
@@ -4593,8 +4643,7 @@ def pedido(order_number):
     whitelisted = order_number in (session.get('view_orders') or [])
 
     if request.method == 'POST':
-        ip = (request.headers.get('X-Forwarded-For', request.remote_addr or '?')
-              .split(',')[0].strip())
+        ip = _client_ip()
         if _pedido_rate_limited(ip):
             flash('Demasiados intentos. Espera unos minutos.', 'error')
             return render_template('pedido_lookup.html', order_number=order_number), 429
@@ -4645,7 +4694,7 @@ def pedido_factura(order_number):
 # Customer account routes (cliente final, distinto de admin)
 # ---------------------------------------------------------------------------
 
-_PASSWORD_MIN_LEN = 8
+_PASSWORD_MIN_LEN = 12
 
 
 def _safe_next(next_url, fallback):
@@ -4681,8 +4730,7 @@ def admin_login():
             abort(403, description='CSRF token missing or invalid')
 
         # Rate-limit by IP
-        ip = (request.headers.get('X-Forwarded-For', request.remote_addr or '?')
-              .split(',')[0].strip())
+        ip = _client_ip()
         if _login_rate_limited(ip):
             flash('Demasiados intentos. Espera unos minutos.', 'error')
             print(f'[Auth] Login rate-limited from ip={ip}')
@@ -4968,8 +5016,13 @@ def admin_nuevo_usuario():
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
     role = request.form.get('role', 'admin')
+    if role not in ('admin', 'superadmin'):
+        role = 'admin'
     if not username or not password:
         flash('Usuario y contraseña son requeridos.', 'error')
+        return redirect(url_for('admin_usuarios'))
+    if len(password) < _PASSWORD_MIN_LEN:
+        flash(f'La contraseña debe tener al menos {_PASSWORD_MIN_LEN} caracteres.', 'error')
         return redirect(url_for('admin_usuarios'))
     existing = query_db("SELECT id FROM admin_users WHERE username=?", (username,), one=True)
     if existing:
@@ -4989,6 +5042,9 @@ def admin_cambiar_password(uid):
     new_password = request.form.get('password', '').strip()
     if not new_password:
         flash('La nueva contraseña no puede estar vacía.', 'error')
+        return redirect(url_for('admin_usuarios'))
+    if len(new_password) < _PASSWORD_MIN_LEN:
+        flash(f'La contraseña debe tener al menos {_PASSWORD_MIN_LEN} caracteres.', 'error')
         return redirect(url_for('admin_usuarios'))
     execute_db("UPDATE admin_users SET password_hash=? WHERE id=?",
                (generate_password_hash(new_password, method='pbkdf2:sha256'), uid))
@@ -6658,8 +6714,7 @@ def tracking():
     /pedido/<num>. Sin coincidencia → mismo mensaje genérico (anti-enum) +
     rate limit reutilizado del flujo de /pedido."""
     if request.method == 'POST':
-        ip = (request.headers.get('X-Forwarded-For', request.remote_addr or '?')
-              .split(',')[0].strip())
+        ip = _client_ip()
         if _pedido_rate_limited(ip):
             flash('Demasiados intentos. Espera unos minutos.', 'error')
             return render_template('tracking.html'), 429
@@ -6689,6 +6744,9 @@ def contacto():
         nombre  = (request.form.get('name')    or '').strip()
         email   = (request.form.get('email')   or '').strip()
         mensaje = (request.form.get('message') or '').strip()
+        if _rate_limited(f'contact:{_client_ip()}', limit=5, window=600):
+            flash('Demasiados mensajes seguidos. Espera unos minutos.', 'error')
+            return redirect(url_for('contacto'))
         if nombre and email and mensaje and valid_email(email):
             try:
                 _send_email_bg(

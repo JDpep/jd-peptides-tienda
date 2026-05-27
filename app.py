@@ -2427,7 +2427,7 @@ def init_db():
         _dose_fixes = {
             'JDP-DSIP': '10 mg',   # etiqueta vial: 10 mg  (DB tenía 5 mg)
             'JDP-TA1':  '1.6 mg',  # etiqueta vial: 1.6 mg (DB tenía 10 mg)
-            'JDP-TESA': '2 mg',    # etiqueta vial: 2 mg   (DB tenía 5 mg)
+            'JDP-TESA': '5 mg',    # 5 mg — guía de precios 2026 q1
         }
         for _sku, _dose in _dose_fixes.items():
             db.execute("UPDATE products SET dose=? WHERE sku=?", (_dose, _sku))
@@ -2557,8 +2557,8 @@ def init_db():
     # reales en etiquetas. El usuario proveyó 5 mockups de vial con branding
     # JD Peptides oficial — usar como imagen principal en BPC-157, KPV, TB-500,
     # Tesam y GHK-Cu. Además 2 dosis se actualizan al label real del frasco:
-    #   - JDP-TESA: 2 mg → 10 mg   (vial label Tesam 10mg)
-    #   - JDP-GHKCU: 50 mg → 100 mg (vial label GHK-CU 100mg)
+    #   - JDP-TESA: 5 mg    (guía de precios 2026 q1)
+    #   - JDP-GHKCU: 50 mg  (guía de precios 2026 q1)
     _mig_v8_tag = 'migration:v8:jdp_official_vials_20260512'
     already_v8 = db.execute(
         "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_v8_tag,)
@@ -2573,8 +2573,8 @@ def init_db():
                 'JDP-GHKCU':  'jdp_vial_ghkcu.png',
             }
             _dose_updates = {
-                'JDP-TESA':  '10 mg',
-                'JDP-GHKCU': '100 mg',
+                'JDP-TESA':  '5 mg',
+                'JDP-GHKCU': '50 mg',
             }
             for _sku, _img in _img_updates.items():
                 # 1) image_path como portada principal

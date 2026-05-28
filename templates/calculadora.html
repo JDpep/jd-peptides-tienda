@@ -1,48 +1,59 @@
 {% extends "base.html" %}
-{% block title %}Calculadora de Dosificación de Péptidos — JD Peptides{% endblock %}
-{% block meta_description %}Calculadora de reconstitución y dosificación de péptidos: convierte mg + ml a unidades por jeringa de insulina (U-100). Herramienta para investigación.{% endblock %}
+{% block title %}Calculadora de Reconstitución de Péptidos — JD Peptides{% endblock %}
+{% block meta_description %}Calculadora de reconstitución de péptidos para investigación: convierte el contenido del vial (mg/mcg/UI) y el volumen de diluyente en volumen de extracción y unidades de jeringa U-100. Herramienta aritmética. Solo para uso en investigación (RUO).{% endblock %}
 
 {% block content %}
 <section class="section" style="padding:3.5rem 0;min-height:60vh">
   <div class="container" style="max-width:760px">
-    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem">Herramienta</p>
+    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem">Herramienta de investigación</p>
     <h1 style="font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:800;color:var(--text);margin:0 0 0.6rem">
-      Calculadora de <span style="color:var(--gold)">dosificación</span>
+      Calculadora de <span style="color:var(--gold)">reconstitución</span>
     </h1>
-    <p style="color:var(--text2);font-size:1rem;max-width:620px;margin:0 0 1.6rem">
-      Calcula el volumen de extracción de tu vial según la concentración de reconstitución.
-      Útil para protocolos de investigación in vitro.
+    <p style="color:var(--text2);font-size:1rem;max-width:620px;margin:0 0 1.4rem">
+      Convierte el contenido de un vial y el volumen de diluyente en el <strong style="color:var(--text)">volumen de extracción</strong>
+      y las <strong style="color:var(--text)">unidades de una jeringa de insulina U-100</strong> para una cantidad objetivo dada.
+      Es un cálculo <strong style="color:var(--text)">puramente aritmético</strong> de concentración y volumen.
     </p>
 
-    <div style="background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.28);padding:0.85rem 1.1rem;border-radius:6px;font-size:0.82rem;color:var(--text2);margin-bottom:1.5rem;display:flex;gap:0.75rem;align-items:flex-start">
-      <span style="flex:0 0 auto;font-size:0.58rem;font-weight:800;letter-spacing:0.08em;color:var(--gold);background:rgba(201,162,39,0.18);padding:0.25rem 0.45rem;border-radius:3px;line-height:1;margin-top:0.15rem">RUO</span>
-      <span>Herramienta educativa para uso en investigación científica. No constituye recomendación de uso humano.</span>
+    <!-- Aviso destacado RUO -->
+    <div role="note" style="background:rgba(146,64,14,0.08);border:1px solid rgba(199,154,58,0.45);padding:1rem 1.15rem;border-radius:8px;font-size:0.85rem;color:var(--text2);margin-bottom:1.6rem;display:flex;gap:0.8rem;align-items:flex-start">
+      <span style="flex:0 0 auto;font-size:0.6rem;font-weight:800;letter-spacing:0.08em;color:#1a1408;background:var(--gold);padding:0.3rem 0.5rem;border-radius:4px;line-height:1;margin-top:0.1rem">RUO</span>
+      <span style="line-height:1.6">
+        <strong style="color:var(--text)">For Research Use Only — solo para investigación.</strong>
+        Esta herramienta es un apoyo aritmético <strong>educativo</strong> para investigación científica <em>in vitro</em>.
+        <strong>No es consejo médico</strong> ni una recomendación de dosificación para humanos o animales, y
+        <strong>no sustituye</strong> el criterio de un profesional cualificado. No valida la seguridad, eficacia ni idoneidad de ninguna sustancia.
+      </span>
     </div>
 
     <div class="admin-card" style="padding:1.5rem">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1rem">
         <div>
-          <label style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:0.3rem">Contenido del vial</label>
+          <label for="content" style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:0.3rem">Contenido del vial</label>
           <div style="display:flex;gap:0.4rem;align-items:center">
-            <input type="number" id="mg" value="10" min="0.1" step="0.1" class="form-control" style="flex:1">
-            <span style="color:var(--text2)">mg</span>
-          </div>
-        </div>
-        <div>
-          <label style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:0.3rem">Volumen de reconstitución</label>
-          <div style="display:flex;gap:0.4rem;align-items:center">
-            <input type="number" id="ml" value="2" min="0.1" step="0.1" class="form-control" style="flex:1">
-            <span style="color:var(--text2)">ml de agua bacteriostática</span>
-          </div>
-        </div>
-        <div>
-          <label style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:0.3rem">Dosis objetivo</label>
-          <div style="display:flex;gap:0.4rem;align-items:center">
-            <input type="number" id="dose" value="250" min="0.1" step="0.1" class="form-control" style="flex:1">
-            <select id="dose_unit" class="form-control" style="max-width:90px">
+            <input type="number" id="content" value="10" min="0" step="any" inputmode="decimal" class="form-control" style="flex:1">
+            <select id="content_unit" class="form-control" style="max-width:92px" aria-label="Unidad del contenido del vial">
+              <option value="mg" selected>mg</option>
               <option value="mcg">mcg</option>
+              <option value="iu">UI</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="ml" style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:0.3rem">Volumen de reconstitución</label>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <input type="number" id="ml" value="2" min="0" step="any" inputmode="decimal" class="form-control" style="flex:1">
+            <span style="color:var(--text2);white-space:nowrap">ml diluyente</span>
+          </div>
+        </div>
+        <div>
+          <label for="dose" style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:0.3rem">Cantidad objetivo por extracción</label>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <input type="number" id="dose" value="250" min="0" step="any" inputmode="decimal" class="form-control" style="flex:1">
+            <select id="dose_unit" class="form-control" style="max-width:92px" aria-label="Unidad de la cantidad objetivo">
+              <option value="mcg" selected>mcg</option>
               <option value="mg">mg</option>
-              <option value="ui">UI</option>
+              <option value="iu">UI</option>
             </select>
           </div>
         </div>
@@ -52,68 +63,151 @@
         <p style="font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin:0 0 0.6rem">Resultado</p>
         <div id="result-rows" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem"></div>
         <p id="result-note" style="font-size:0.78rem;color:var(--text3);margin:1rem 0 0;line-height:1.55"></p>
+        <p id="result-warn" style="font-size:0.8rem;color:#f59e0b;margin:0.8rem 0 0;line-height:1.55;display:none"></p>
       </div>
     </div>
 
     <div style="margin-top:2rem;padding:1.2rem 1.4rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border)">
       <h3 style="font-size:0.9rem;color:var(--text);margin:0 0 0.6rem">📚 Glosario rápido</h3>
       <ul style="font-size:0.85rem;color:var(--text2);line-height:1.7;padding-left:1.2rem;margin:0">
-        <li><strong>mg/ml</strong> — concentración del péptido reconstituido en la solución.</li>
+        <li><strong>Concentración</strong> — contenido del vial dividido entre el volumen de diluyente (p. ej. mg/ml).</li>
         <li><strong>Jeringa U-100</strong> — 100 unidades = 1 ml. Cada unidad = 0.01 ml.</li>
-        <li><strong>BACH water</strong> — agua bacteriostática con 0.9% alcohol bencílico para reconstituir péptidos sensibles.</li>
-        <li><strong>Acetic water</strong> — solvente ácido para péptidos hidrofóbicos como CJC-1295.</li>
+        <li><strong>mg / mcg</strong> — unidades de masa. 1 mg = 1000 mcg.</li>
+        <li><strong>UI</strong> — unidad internacional (actividad biológica). No es convertible a masa de forma universal: la cantidad objetivo debe usar la misma unidad que el vial.</li>
+        <li><strong>Agua bacteriostática (BAC)</strong> — diluyente con 0.9% alcohol bencílico para reconstituir péptidos en investigación.</li>
       </ul>
+    </div>
+
+    <!-- Descargo de responsabilidad completo -->
+    <div style="margin-top:1.5rem;padding:1.3rem 1.5rem;background:rgba(146,64,14,0.06);border:1px solid rgba(199,154,58,0.3);border-radius:10px">
+      <h3 style="font-size:0.85rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold);margin:0 0 0.7rem">Descargo de responsabilidad</h3>
+      <ul style="font-size:0.82rem;color:var(--text2);line-height:1.65;padding-left:1.15rem;margin:0;display:flex;flex-direction:column;gap:0.5rem">
+        <li><strong style="color:var(--text)">Solo para investigación (Research Use Only).</strong> Esta calculadora y los productos de JD Peptides son exclusivamente para investigación científica <em>in vitro</em>. No son medicamentos, suplementos ni productos de uso humano o veterinario.</li>
+        <li><strong style="color:var(--text)">No es consejo médico.</strong> La información no diagnostica, trata, cura ni previene enfermedad alguna, y no debe usarse para tomar decisiones de salud. Consulta siempre a un profesional sanitario cualificado.</li>
+        <li><strong style="color:var(--text)">Solo aritmética.</strong> El resultado es una conversión matemática de concentración y volumen a partir de los valores que tú ingresas. No verifica la pureza, seguridad, dosis apropiada ni idoneidad de ninguna sustancia.</li>
+        <li><strong style="color:var(--text)">Responsabilidad del usuario.</strong> Eres el único responsable de verificar los valores, del manejo seguro de reactivos y del cumplimiento de las regulaciones aplicables en tu jurisdicción. JD Peptides no asume responsabilidad por el uso de esta herramienta.</li>
+      </ul>
+      <p style="font-size:0.78rem;color:var(--text3);margin:0.9rem 0 0">
+        Consulta los <a href="{{ url_for('terminos') }}" style="color:var(--gold)">Términos y Condiciones</a> para más información.
+      </p>
     </div>
   </div>
 </section>
 
 <script nonce="{{ csp_nonce }}">
-function fmt(n, d) {
-  if (isNaN(n) || !isFinite(n)) return '—';
-  return Number(n).toLocaleString('es-MX', {minimumFractionDigits: d, maximumFractionDigits: d});
-}
+(function () {
+  'use strict';
 
-function recalc() {
-  const mg = parseFloat(document.getElementById('mg').value) || 0;
-  const ml = parseFloat(document.getElementById('ml').value) || 0;
-  const dose = parseFloat(document.getElementById('dose').value) || 0;
-  const unit = document.getElementById('dose_unit').value;
-  if (mg <= 0 || ml <= 0 || dose <= 0) {
-    document.getElementById('result-rows').innerHTML = '<p style="color:var(--text3)">Completa los 3 campos.</p>';
-    return;
+  // Dimensión de cada unidad: 'mass' (mg/mcg, intercambiables) o 'iu' (UI, propia).
+  // Factor para convertir a la base de su dimensión (base masa = mcg; base UI = UI).
+  var UNIT = {
+    mg:  { dim: 'mass', toBase: 1000, label: 'mg' },
+    mcg: { dim: 'mass', toBase: 1,    label: 'mcg' },
+    iu:  { dim: 'iu',   toBase: 1,    label: 'UI' }
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function fmt(n, d) {
+    if (typeof n !== 'number' || isNaN(n) || !isFinite(n)) return '—';
+    return n.toLocaleString('es-MX', { minimumFractionDigits: d, maximumFractionDigits: d });
   }
 
-  const concentration_mg_per_ml = mg / ml;          // mg/ml
-  let dose_mg = dose;
-  if (unit === 'mcg') dose_mg = dose / 1000;
-  // UI lo dejamos sin conversión: se asume que el usuario sabe la equivalencia.
+  // Número de decimales adaptativo para volúmenes pequeños.
+  function fmtMl(ml) {
+    if (!isFinite(ml) || ml <= 0) return '—';
+    var d = ml < 0.01 ? 4 : (ml < 1 ? 3 : 2);
+    return fmt(ml, d);
+  }
 
-  const ml_to_extract = dose_mg / concentration_mg_per_ml;  // ml
-  const u100_units = ml_to_extract * 100;
+  function recalc() {
+    var content     = parseFloat($('content').value);
+    var ml          = parseFloat($('ml').value);
+    var dose        = parseFloat($('dose').value);
+    var contentUnit = $('content_unit').value;
+    var doseUnit    = $('dose_unit').value;
 
-  const html = `
-    <div>
-      <p style="font-size:0.74rem;color:var(--text3);margin:0">Concentración</p>
-      <p style="font-size:1.3rem;font-weight:700;color:var(--text);margin:0.2rem 0 0">${fmt(concentration_mg_per_ml, 2)} <span style="font-size:0.85rem;color:var(--text3)">mg/ml</span></p>
-    </div>
-    <div>
-      <p style="font-size:0.74rem;color:var(--text3);margin:0">Volumen a extraer</p>
-      <p style="font-size:1.3rem;font-weight:700;color:var(--gold);margin:0.2rem 0 0">${fmt(ml_to_extract, 3)} <span style="font-size:0.85rem;color:var(--text3)">ml</span></p>
-    </div>
-    <div>
-      <p style="font-size:0.74rem;color:var(--text3);margin:0">Jeringa U-100</p>
-      <p style="font-size:1.3rem;font-weight:700;color:var(--gold);margin:0.2rem 0 0">${fmt(u100_units, 1)} <span style="font-size:0.85rem;color:var(--text3)">unidades</span></p>
-    </div>
-  `;
-  document.getElementById('result-rows').innerHTML = html;
-  document.getElementById('result-note').textContent =
-    `Para extraer ${fmt(dose_mg * 1000, 0)} mcg (${fmt(dose_mg, 3)} mg) de un vial de ${mg} mg reconstituido en ${ml} ml, marca ${fmt(u100_units, 1)} unidades en una jeringa de insulina U-100.`;
-}
+    var rows  = $('result-rows');
+    var note  = $('result-note');
+    var warnE = $('result-warn');
+    note.textContent = '';
+    warnE.style.display = 'none';
+    warnE.textContent = '';
 
-['mg', 'ml', 'dose', 'dose_unit'].forEach(id => {
-  document.getElementById(id).addEventListener('input', recalc);
-  document.getElementById(id).addEventListener('change', recalc);
-});
-recalc();
+    var cu = UNIT[contentUnit], du = UNIT[doseUnit];
+
+    // Validación de entradas numéricas positivas.
+    if (!(content > 0) || !(ml > 0) || !(dose > 0)) {
+      rows.innerHTML = '<p style="color:var(--text3)">Ingresa valores mayores a cero en los tres campos.</p>';
+      return;
+    }
+
+    // Validación de compatibilidad de dimensiones (masa vs UI).
+    if (cu.dim !== du.dim) {
+      rows.innerHTML = '<p style="color:#f59e0b">La unidad de la cantidad objetivo (' + du.label +
+        ') no es compatible con la del vial (' + cu.label +
+        '). No es posible convertir entre masa (mg/mcg) y UI. Usa la misma dimensión en ambos campos.</p>';
+      return;
+    }
+
+    // Todo a la base común de la dimensión. Las unidades se cancelan en la división.
+    var contentBase = content * cu.toBase;             // mcg o UI
+    var doseBase     = dose * du.toBase;               // mcg o UI
+    var concBasePerMl = contentBase / ml;              // base por ml
+    var mlToExtract   = doseBase / concBasePerMl;      // = (dose/content) * ml
+    var u100          = mlToExtract * 100;             // unidades U-100 (1 ml = 100 U)
+
+    // Concentración mostrada en una unidad legible.
+    var concDisplay;
+    if (cu.dim === 'mass') {
+      // mostrar en mg/ml (base es mcg)
+      concDisplay = fmt(concBasePerMl / 1000, 3) + ' <span style="font-size:0.85rem;color:var(--text3)">mg/ml</span>';
+    } else {
+      concDisplay = fmt(concBasePerMl, 3) + ' <span style="font-size:0.85rem;color:var(--text3)">UI/ml</span>';
+    }
+
+    rows.innerHTML =
+      '<div>' +
+        '<p style="font-size:0.74rem;color:var(--text3);margin:0">Concentración</p>' +
+        '<p style="font-size:1.3rem;font-weight:700;color:var(--text);margin:0.2rem 0 0">' + concDisplay + '</p>' +
+      '</div>' +
+      '<div>' +
+        '<p style="font-size:0.74rem;color:var(--text3);margin:0">Volumen a extraer</p>' +
+        '<p style="font-size:1.3rem;font-weight:700;color:var(--gold);margin:0.2rem 0 0">' + fmtMl(mlToExtract) + ' <span style="font-size:0.85rem;color:var(--text3)">ml</span></p>' +
+      '</div>' +
+      '<div>' +
+        '<p style="font-size:0.74rem;color:var(--text3);margin:0">Jeringa U-100</p>' +
+        '<p style="font-size:1.3rem;font-weight:700;color:var(--gold);margin:0.2rem 0 0">' + fmt(u100, 1) + ' <span style="font-size:0.85rem;color:var(--text3)">unidades</span></p>' +
+      '</div>';
+
+    note.textContent =
+      'Para extraer ' + fmt(dose, dose < 1 ? 3 : 2) + ' ' + du.label +
+      ' de un vial de ' + fmt(content, content < 1 ? 3 : 2) + ' ' + cu.label +
+      ' reconstituido en ' + fmt(ml, ml < 1 ? 3 : 2) + ' ml, marca ' + fmt(u100, 1) +
+      ' unidades (' + fmtMl(mlToExtract) + ' ml) en una jeringa de insulina U-100.';
+
+    // Advertencias (no bloquean el cálculo, solo informan).
+    var warnings = [];
+    if (doseBase > contentBase) {
+      warnings.push('La cantidad objetivo supera el contenido total del vial: necesitarías más de un vial.');
+    }
+    if (u100 > 100) {
+      warnings.push('El volumen a extraer es mayor a 1 ml (más de 100 U): requiere más de una carga de la jeringa U-100.');
+    } else if (u100 > 0 && u100 < 1) {
+      warnings.push('El volumen es menor a 1 unidad U-100 (' + fmtMl(mlToExtract) + ' ml): difícil de medir con precisión; considera diluir en menos volumen.');
+    }
+    if (warnings.length) {
+      warnE.textContent = '⚠ ' + warnings.join(' ');
+      warnE.style.display = 'block';
+    }
+  }
+
+  ['content', 'ml', 'dose', 'content_unit', 'dose_unit'].forEach(function (id) {
+    var el = $(id);
+    el.addEventListener('input', recalc);
+    el.addEventListener('change', recalc);
+  });
+  recalc();
+})();
 </script>
 {% endblock %}

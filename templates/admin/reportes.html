@@ -140,26 +140,8 @@
   </div>
 </div>
 
-<!-- Stock bajo + Clientes top -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:1rem">
-  <div class="admin-card">
-    <div class="admin-card-header"><h3>⚠ Productos con stock bajo</h3></div>
-    <table class="admin-table">
-      <thead><tr><th>Producto</th><th style="text-align:right">Stock</th><th style="text-align:right">Umbral</th></tr></thead>
-      <tbody>
-        {% for s in low_stock %}
-          <tr>
-            <td>
-              <span class="strong">{{ s['name'] }}</span><br>
-              <span style="color:var(--text3);font-size:0.7rem">{{ s['sku'] }} · {{ s['category'] }}</span>
-            </td>
-            <td style="text-align:right;font-weight:700;color:{% if s['stock'] == 0 %}#ef4444{% else %}#f97316{% endif %}">{{ s['stock'] }}</td>
-            <td style="text-align:right;color:var(--text3)">{{ s['low_stock_alert'] }}</td>
-          </tr>
-        {% else %}<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:1.5rem">✓ Sin productos en stock bajo</td></tr>{% endfor %}
-      </tbody>
-    </table>
-  </div>
+<!-- Clientes top -->
+<div style="display:grid;grid-template-columns:1fr;gap:1rem">
   <div class="admin-card">
     <div class="admin-card-header"><h3>Top 10 — clientes</h3></div>
     <table class="admin-table">

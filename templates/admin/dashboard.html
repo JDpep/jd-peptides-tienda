@@ -4,15 +4,6 @@
 
 {% block content %}
 
-<!-- Low stock banner -->
-{% if low_stock > 0 %}
-<div class="low-stock-banner">
-  <span>⚠️</span>
-  <span>{{ low_stock }} producto{{ 's' if low_stock > 1 else '' }} con stock bajo</span>
-  <a href="{{ url_for('admin_inventario') }}?filter=bajo">Ver inventario →</a>
-</div>
-{% endif %}
-
 <!-- Metrics -->
 <div class="admin-metrics">
   <div class="metric-card">
@@ -44,16 +35,6 @@
     </div>
     <div class="metric-value">{{ active_products }}</div>
     <div class="metric-sub">En catálogo</div>
-  </div>
-  <div class="metric-card">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.5rem">
-      <div class="metric-label">Stock Bajo</div>
-      <div style="width:32px;height:32px;border-radius:8px;background:{% if low_stock > 0 %}rgba(249,115,22,0.12){% else %}rgba(34,197,94,0.1){% endif %};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{% if low_stock > 0 %}#f97316{% else %}#22c55e{% endif %}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-      </div>
-    </div>
-    <div class="metric-value {% if low_stock > 0 %}gold{% endif %}">{{ low_stock }}</div>
-    <div class="metric-sub">Productos a reabastecer</div>
   </div>
 </div>
 
@@ -221,7 +202,7 @@
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;align-items:start">
+<div style="display:grid;grid-template-columns:1fr;gap:1.5rem;align-items:start">
 
   <!-- Datos órdenes recientes para JS -->
   <script nonce="{{ csp_nonce }}">
@@ -383,36 +364,6 @@
   }
   document.getElementById('dash-modal').addEventListener('click', function(e){ if(e.target===this) this.style.display='none'; });
   </script>
-
-  <!-- Low stock -->
-  <div class="admin-card">
-    <div class="admin-card-header">
-      <h3>⚠️ Stock Bajo</h3>
-      <a href="{{ url_for('admin_inventario') }}" class="btn btn-ghost btn-sm">Gestionar</a>
-    </div>
-    <div class="admin-card-body" style="padding:0">
-      {% if low_stock_products %}
-        {% for p in low_stock_products %}
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1.25rem;border-bottom:1px solid var(--border)">
-            <div>
-              <div style="font-weight:600;font-size:0.88rem;color:var(--text)">{{ p['name'] }}</div>
-              <div style="font-size:0.75rem;color:var(--text3)">{{ p['sku'] }}</div>
-            </div>
-            <div>
-              <span class="badge {% if p['stock'] == 0 %}badge-red{% else %}badge-orange{% endif %}">
-                {{ p['stock'] }} uds
-              </span>
-            </div>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div style="text-align:center;padding:2rem;color:var(--text3)">
-          <div style="font-size:1.5rem;margin-bottom:0.5rem">✓</div>
-          Stock en niveles óptimos
-        </div>
-      {% endif %}
-    </div>
-  </div>
 
 </div>
 

@@ -1073,65 +1073,6 @@ def valid_email(email):
 VALID_PAYMENT_METHODS = {'transferencia', 'efectivo', 'criptomonedas', 'zelle', 'paypal'}
 
 
-def send_low_stock_alert(product):
-    """Envía alerta de stock bajo a los admins (máximo 1 por producto cada 24h).
-    Usa UPDATE condicional para evitar race: dos checkouts concurrentes ambos
-    leen alerted_at=null y antes mandaban dos emails; ahora solo el primer
-    UPDATE con rowcount=1 procede."""
-    now_iso = datetime.now().isoformat()
-    cutoff = (datetime.now() - timedelta(hours=24)).isoformat()
-    db = get_db()
-    cur = db.execute(
-        "UPDATE products SET low_stock_alerted_at=? "
-        "WHERE id=? AND (low_stock_alerted_at IS NULL OR low_stock_alerted_at < ?)",
-        (now_iso, product['id'], cutoff)
-    )
-    db.commit()
-    # rowcount==0 → otro proceso ya envió la alerta dentro de las 24h
-    if getattr(cur, 'rowcount', 1) == 0:
-        return
-    html = f"""
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff">
-      <div style="background:#0d0d0d;padding:24px 32px;text-align:center">
-        <h1 style="margin:0;color:#c9a227;font-size:20px;letter-spacing:2px">JD PEPTIDES</h1>
-        <p style="margin:6px 0 0;color:#999;font-size:12px">Alerta de Inventario</p>
-      </div>
-      <div style="background:#f97316;padding:14px 32px;text-align:center">
-        <span style="color:#fff;font-weight:700;font-size:16px">⚠️ Stock Bajo Detectado</span>
-      </div>
-      <div style="padding:28px 32px">
-        <p style="font-size:15px;color:#333;margin:0 0 20px">
-          El siguiente producto ha alcanzado el umbral mínimo de stock:
-        </p>
-        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:20px;margin-bottom:24px">
-          <table style="width:100%;border-collapse:collapse;font-size:14px">
-            <tr><td style="padding:6px 0;color:#666;width:160px">Producto</td>
-                <td style="padding:6px 0;font-weight:700;color:#111">{product['name']}</td></tr>
-            <tr><td style="padding:6px 0;color:#666">SKU</td>
-                <td style="padding:6px 0;color:#555;font-family:monospace">{product['sku']}</td></tr>
-            <tr><td style="padding:6px 0;color:#666">Stock actual</td>
-                <td style="padding:6px 0;font-weight:700;color:#ef4444;font-size:18px">{product['stock']} unidades</td></tr>
-            <tr><td style="padding:6px 0;color:#666">Umbral alerta</td>
-                <td style="padding:6px 0;color:#f97316">{product['low_stock_alert']} unidades</td></tr>
-            <tr><td style="padding:6px 0;color:#666">Categoría</td>
-                <td style="padding:6px 0;color:#555">{product.get('category', '')}</td></tr>
-          </table>
-        </div>
-        <p style="font-size:13px;color:#777;margin:0">
-          Considera crear una nueva orden de compra para reponer este producto.
-        </p>
-      </div>
-      <div style="background:#f9f9f9;padding:14px 32px;text-align:center;border-top:1px solid #eee">
-        <p style="margin:0;color:#999;font-size:11px">JD Peptides · Panel Admin · Alerta automática de inventario</p>
-      </div>
-    </div>"""
-
-    subject = f'⚠️ Stock bajo: {product["name"]} ({product["stock"]} uds) — JD Peptides'
-    for recipient in EMAIL_NOTIFY:
-        _send_email_bg(recipient, subject, html, email_type='low_stock')
-    print(f"[Email] Alerta stock bajo encolada (bg): {product['name']}")
-
-
 def send_po_received_email(po, items):
     """Envía confirmación de OC recibida a los admins."""
     rows = ''.join(f"""
@@ -3757,10 +3698,13 @@ def api_products_by_ids():
     placeholders = ','.join('?' * len(ids))
     rows = query_db(
         f"SELECT id, sku, name, slug, category, dose, price, image_path, "
-        f"stock FROM products WHERE active=1 AND id IN ({placeholders})",
+        f"stock, benefits, description FROM products WHERE active=1 AND id IN ({placeholders})",
         ids
     ) or []
-    return jsonify({'products': [dict(r) for r in rows]})
+    # Preservar el orden en que el cliente pidió los IDs
+    by_id = {r['id']: dict(r) for r in rows}
+    ordered = [by_id[i] for i in ids if i in by_id]
+    return jsonify({'products': ordered})
 
 
 @app.route('/calculadora')
@@ -4559,16 +4503,11 @@ def procesar_checkout():
         flash('Error al procesar el pedido. Por favor intenta de nuevo.', 'error')
         return redirect(url_for('checkout'))
 
-    # Post-commit: SSE y alertas de stock bajo (fuera de la transacción, no crítico)
+    # Post-commit: SSE de stock actualizado (fuera de la transacción, no crítico)
     for product_id in alert_product_ids:
-        updated_prod = query_db("SELECT * FROM products WHERE id=?", (product_id,), one=True)
+        updated_prod = query_db("SELECT stock FROM products WHERE id=?", (product_id,), one=True)
         if updated_prod:
             sse_bus.publish('stock_updated', {'id': product_id, 'stock': updated_prod['stock']})
-            if updated_prod['stock'] <= updated_prod['low_stock_alert']:
-                try:
-                    send_low_stock_alert(dict(updated_prod))
-                except Exception as e:
-                    print(f"[Email] Alerta stock bajo falló: {e}")
 
     sse_bus.publish('new_order', {
         'order_number': order_number,
@@ -4947,13 +4886,6 @@ def admin_reportes():
         (cutoff,)
     ) or []
 
-    # ----- Stock bajo (snapshot — no depende de la ventana) -----
-    low_stock = query_db(
-        "SELECT id, sku, name, category, stock, low_stock_alert "
-        "FROM products WHERE active=1 AND stock <= low_stock_alert "
-        "ORDER BY stock ASC LIMIT 10"
-    ) or []
-
     # ----- Clientes top -----
     top_customers = query_db(
         "SELECT customer_email, customer_name, "
@@ -4970,7 +4902,7 @@ def admin_reportes():
         kpis=kpis, status_map=status_map,
         top_units=top_units, top_revenue=top_revenue,
         by_cat=by_cat, series=series, max_rev=max_rev,
-        payments=payments, low_stock=low_stock,
+        payments=payments,
         top_customers=top_customers,
     )
 
@@ -5275,16 +5207,8 @@ def admin_dashboard():
         "SELECT COUNT(*) as c FROM products WHERE active=1", one=True
     )['c']
 
-    low_stock = query_db(
-        "SELECT COUNT(*) as c FROM products WHERE active=1 AND stock <= low_stock_alert", one=True
-    )['c']
-
     recent_orders = query_db(
         "SELECT * FROM orders ORDER BY created_at DESC LIMIT 10"
-    )
-
-    low_stock_products = query_db(
-        "SELECT * FROM products WHERE active=1 AND stock <= low_stock_alert ORDER BY stock ASC LIMIT 10"
     )
 
     # ── Comparativo mes actual: costos (OC) vs ventas ──────────────────────
@@ -5376,9 +5300,7 @@ def admin_dashboard():
                            total_sales=total_sales,
                            orders_today=orders_today,
                            active_products=active_products,
-                           low_stock=low_stock,
                            recent_orders=recent_orders,
-                           low_stock_products=low_stock_products,
                            comparativo=comparativo,
                            mes_actual=mes_actual,
                            sales_7d=sales_7d,
@@ -5675,18 +5597,10 @@ def admin_ajuste_stock(pid):
         "INSERT INTO stock_movements (product_id, type, quantity, reason) VALUES (?, ?, ?, ?)",
         (pid, mov_type, quantity, reason)
     )
-    # Notificar stock actualizado
+    # Notificar stock actualizado (SSE)
     updated = query_db("SELECT stock FROM products WHERE id=?", (pid,), one=True)
     if updated:
         sse_bus.publish('stock_updated', {'id': pid, 'stock': updated['stock']})
-        # Enviar alerta si stock bajo
-        if mov_type in ('salida', 'ajuste'):
-            prod_info = query_db("SELECT * FROM products WHERE id=?", (pid,), one=True)
-            if prod_info and prod_info['stock'] <= prod_info['low_stock_alert']:
-                try:
-                    send_low_stock_alert(dict(prod_info))
-                except Exception as e:
-                    print(f"[Email] Alerta stock bajo falló: {e}")
     flash('Ajuste de inventario realizado.', 'success')
     return redirect(url_for('admin_inventario'))
 

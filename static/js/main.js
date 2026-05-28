@@ -784,11 +784,11 @@ document.addEventListener('DOMContentLoaded', function () {
       if (btn._cBound) return; btn._cBound = true;
       btn.addEventListener('click', (e) => {
         e.preventDefault(); e.stopPropagation();
-        const added = _toggle(COMP_KEY, btn.dataset.productId, 4);
+        const added = _toggle(COMP_KEY, btn.dataset.productId, 3);
         btn.classList.toggle('is-active', added);
         const list = _getList(COMP_KEY);
-        if (list.length >= 2) {
-          if (confirm(`Ya tienes ${list.length} productos en el comparador. ¿Ver comparación?`)) {
+        if (added && list.length >= 2) {
+          if (confirm(`Tienes ${list.length} péptidos para comparar (máx. 3). ¿Ver comparación ahora?`)) {
             window.location.href = '/comparador?ids=' + list.join(',');
           }
         }

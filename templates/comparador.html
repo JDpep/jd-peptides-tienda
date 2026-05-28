@@ -1,101 +1,274 @@
 {% extends "base.html" %}
 {% block title %}Comparar péptidos — JD Peptides{% endblock %}
-{% block meta_description %}Compara hasta 4 péptidos lado a lado: precio, dosis, categoría y características.{% endblock %}
+{% block meta_description %}Compara hasta 3 péptidos lado a lado: beneficios, precio, dosis, categoría y disponibilidad. Elige el indicado para tu investigación.{% endblock %}
 
 {% block content %}
-<section class="section" style="padding:3rem 0;min-height:60vh">
+<style nonce="{{ csp_nonce }}">
+  .cmp-wrap { padding: 2.5rem 0 4rem; min-height: 70vh; }
+  .cmp-eyebrow { font-size:0.72rem; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--gold); margin:0 0 0.5rem; }
+  .cmp-title { font-size:clamp(1.9rem,4vw,2.8rem); font-weight:800; color:var(--text); margin:0 0 0.4rem; line-height:1.05; }
+  .cmp-title span { color:var(--gold); }
+  .cmp-lead { color:var(--text2); font-size:0.95rem; max-width:560px; margin:0 0 2rem; }
+
+  .cmp-bar { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+  .cmp-counter { font-size:0.82rem; color:var(--text2); display:inline-flex; align-items:center; gap:0.5rem; }
+  .cmp-counter b { color:var(--gold); font-size:1rem; }
+  .cmp-clear { background:none; border:1px solid var(--border); color:var(--text2); font-size:0.78rem; padding:0.45rem 0.9rem; border-radius:var(--radius); cursor:pointer; transition:all var(--transition); }
+  .cmp-clear:hover { border-color:#ef4444; color:#f87171; }
+
+  .cmp-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1.1rem; align-items:stretch; }
+  @media (min-width:760px){ .cmp-grid.cols-1{grid-template-columns:repeat(2,minmax(0,1fr))} .cmp-grid.cols-2{grid-template-columns:repeat(3,minmax(0,1fr))} .cmp-grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))} }
+
+  .cmp-col {
+    position:relative; display:flex; flex-direction:column;
+    background:linear-gradient(180deg, var(--bg2), var(--bg));
+    border:1px solid var(--border); border-radius:var(--radius-lg);
+    padding:1.4rem 1.25rem 1.25rem; overflow:hidden;
+    opacity:0; transform:translateY(20px) scale(.98);
+    animation:cmpIn .5s cubic-bezier(.21,.6,.35,1) forwards;
+    transition:border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+  }
+  .cmp-col:hover { transform:translateY(-5px); border-color:var(--gold-dark); box-shadow:0 18px 40px -22px rgba(199,154,58,.5); }
+  .cmp-col.is-best { border-color:var(--gold); box-shadow:0 0 0 1px rgba(199,154,58,.35), 0 18px 44px -24px rgba(199,154,58,.55); }
+  .cmp-col.leaving { animation:cmpOut .26s ease forwards; }
+
+  .cmp-best-tag { position:absolute; top:0; right:0; background:linear-gradient(135deg,var(--gold),var(--gold-dark)); color:#1a1408; font-size:0.62rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; padding:0.3rem 0.7rem; border-bottom-left-radius:10px; }
+
+  .cmp-remove { position:absolute; top:0.7rem; left:0.7rem; width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:rgba(10,9,6,.7); color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all var(--transition); z-index:2; backdrop-filter:blur(4px); }
+  .cmp-remove:hover { border-color:#ef4444; color:#f87171; transform:rotate(90deg); }
+
+  .cmp-imgwrap { width:108px; height:108px; margin:0.4rem auto 0.9rem; border-radius:12px; background:radial-gradient(circle at 50% 30%, #1c1810, var(--bg3)); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .cmp-imgwrap img { width:100%; height:100%; object-fit:cover; }
+  .cmp-imgwrap .ph { color:var(--text3); font-size:1.6rem; }
+
+  .cmp-cat { display:inline-block; align-self:center; font-size:0.64rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold); background:rgba(199,154,58,.12); border:1px solid rgba(199,154,58,.28); padding:0.22rem 0.6rem; border-radius:999px; margin-bottom:0.6rem; }
+  .cmp-name { text-align:center; font-size:1.12rem; font-weight:800; color:var(--text); margin:0 0 0.15rem; line-height:1.2; }
+  .cmp-sku { text-align:center; font-size:0.68rem; color:var(--text3); font-family:var(--mono,monospace); letter-spacing:0.04em; margin-bottom:1rem; }
+
+  .cmp-stat { display:flex; align-items:baseline; justify-content:space-between; padding:0.6rem 0; border-top:1px solid var(--border); }
+  .cmp-stat-k { font-size:0.74rem; color:var(--text3); text-transform:uppercase; letter-spacing:0.06em; }
+  .cmp-stat-v { font-size:0.9rem; color:var(--text); font-weight:600; text-align:right; }
+  .cmp-price { font-size:1.35rem; font-weight:800; color:var(--gold); }
+  .cmp-price small { font-size:0.7rem; font-weight:600; color:var(--text2); }
+  .cmp-instock { color:#4ade80; font-weight:700; }
+  .cmp-out { color:#ef4444; font-weight:700; }
+
+  .cmp-ben-title { font-size:0.72rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text2); margin:1rem 0 0.6rem; }
+  .cmp-ben { list-style:none; padding:0; margin:0 0 1.2rem; display:flex; flex-direction:column; gap:0.5rem; }
+  .cmp-ben li { display:flex; gap:0.5rem; font-size:0.82rem; color:var(--text2); line-height:1.35; opacity:0; transform:translateX(-6px); animation:cmpBenIn .4s ease forwards; }
+  .cmp-ben li svg { flex-shrink:0; margin-top:2px; color:var(--gold); }
+
+  .cmp-actions { margin-top:auto; display:flex; flex-direction:column; gap:0.55rem; }
+  .cmp-actions .btn { width:100%; justify-content:center; }
+
+  /* Slot para agregar */
+  .cmp-slot { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:0.7rem; min-height:220px; border:1.5px dashed var(--border); border-radius:var(--radius-lg); color:var(--text3); text-decoration:none; padding:2rem 1rem; transition:all .25s ease; opacity:0; transform:translateY(20px); animation:cmpIn .5s ease forwards; }
+  .cmp-slot:hover { border-color:var(--gold-dark); color:var(--gold); background:rgba(199,154,58,.04); transform:translateY(-3px); }
+  .cmp-slot .ic { width:46px; height:46px; border-radius:50%; border:1.5px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:300; }
+  .cmp-slot span { font-size:0.84rem; font-weight:600; }
+
+  /* Empty state */
+  .cmp-empty { text-align:center; padding:4rem 1rem; color:var(--text2); }
+  .cmp-empty svg { color:var(--gold); opacity:.55; margin:0 auto 1.4rem; display:block; }
+  .cmp-empty h3 { font-size:1.2rem; color:var(--text); margin-bottom:0.5rem; }
+  .cmp-empty p { font-size:0.9rem; color:var(--text3); max-width:400px; margin:0 auto 1.6rem; }
+
+  @keyframes cmpIn { to { opacity:1; transform:none; } }
+  @keyframes cmpOut { to { opacity:0; transform:translateY(10px) scale(.95); } }
+  @keyframes cmpBenIn { to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce){
+    .cmp-col,.cmp-slot,.cmp-ben li{ animation:none !important; opacity:1 !important; transform:none !important; }
+    .cmp-col:hover,.cmp-slot:hover{ transform:none; }
+  }
+</style>
+
+<section class="cmp-wrap">
   <div class="container">
-    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem">Herramienta</p>
-    <h1 style="font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:800;color:var(--text);margin:0 0 1.2rem">
-      Comparar <span style="color:var(--gold)">péptidos</span>
-    </h1>
+    <p class="cmp-eyebrow">Herramienta</p>
+    <h1 class="cmp-title">Comparar <span>péptidos</span></h1>
+    <p class="cmp-lead">Pon hasta <b style="color:var(--text)">3 péptidos</b> lado a lado y compara sus beneficios, dosis, precio y disponibilidad para elegir el indicado.</p>
 
-    <div id="comparator-empty" hidden style="text-align:center;padding:3.5rem 1rem;color:var(--text2)">
-      <svg viewBox="0 0 120 120" width="84" height="84" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold);opacity:0.55;margin:0 auto 1.25rem;display:block">
-        <polyline points="84 12 104 32 84 52"/>
-        <path d="M16 36V28a8 8 0 0 1 8-8h80"/>
-        <polyline points="36 108 16 88 36 68"/>
-        <path d="M104 84v8a8 8 0 0 1-8 8H16"/>
+    <div id="cmp-bar" class="cmp-bar" hidden>
+      <span class="cmp-counter"><b id="cmp-count">0</b> de 3 péptidos seleccionados</span>
+      <button type="button" id="cmp-clear" class="cmp-clear">Limpiar comparación</button>
+    </div>
+
+    <div id="cmp-empty" class="cmp-empty" hidden>
+      <svg viewBox="0 0 120 120" width="84" height="84" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="84 12 104 32 84 52"/><path d="M16 36V28a8 8 0 0 1 8-8h80"/>
+        <polyline points="36 108 16 88 36 68"/><path d="M104 84v8a8 8 0 0 1-8 8H16"/>
       </svg>
-      <h3 style="font-size:1.15rem;color:var(--text);margin-bottom:0.4rem">Aún no tienes productos para comparar</h3>
-      <p style="font-size:0.9rem;color:var(--text3);max-width:380px;margin:0 auto 1.5rem">Agrega hasta 4 péptidos con el botón ⇄ en cada ficha del catálogo para verlos lado a lado.</p>
-      <a href="{{ url_for('catalogo') }}" class="btn btn-gold">Ir al catálogo →</a>
+      <h3>Aún no tienes péptidos para comparar</h3>
+      <p>Agrega hasta 3 péptidos con el botón <b>⇄</b> de cada ficha del catálogo y vuelve aquí para verlos lado a lado.</p>
+      <a href="{{ url_for('catalogo') }}" class="btn btn-gold">Explorar catálogo →</a>
     </div>
 
-    <div id="comparator-table" style="overflow-x:auto;display:none">
-      <table style="width:100%;border-collapse:collapse;font-size:0.9rem">
-        <thead id="comp-head"></thead>
-        <tbody id="comp-body"></tbody>
-      </table>
-    </div>
+    <div id="cmp-grid" class="cmp-grid" hidden></div>
   </div>
 </section>
 
 <script nonce="{{ csp_nonce }}">
-(function() {
+(function () {
   const KEY = 'jdp_comparator';
-  const urlIds = "{{ ids_arg }}".split(',').filter(Boolean);
-  const stored = (function() {
-    try { return JSON.parse(localStorage.getItem(KEY) || '[]'); }
+  const MAX = 3;
+  const urlIds = "{{ ids_arg }}".split(',').map(s => s.trim()).filter(Boolean);
+
+  function getIds() {
+    try { return JSON.parse(localStorage.getItem(KEY) || '[]').map(String); }
     catch (e) { return []; }
-  })();
-  let ids = urlIds.length ? urlIds : stored;
-  if (urlIds.length) localStorage.setItem(KEY, JSON.stringify(urlIds));
-
-  const empty = document.getElementById('comparator-empty');
-  const table = document.getElementById('comparator-table');
-
-  if (!ids.length) {
-    empty.hidden = false;
-    return;
   }
+  function setIds(arr) {
+    try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+
+  if (urlIds.length) setIds(urlIds.slice(0, MAX));
+
+  const elGrid  = document.getElementById('cmp-grid');
+  const elEmpty = document.getElementById('cmp-empty');
+  const elBar   = document.getElementById('cmp-bar');
+  const elCount = document.getElementById('cmp-count');
+
+  document.getElementById('cmp-clear').addEventListener('click', function () {
+    setIds([]);
+    render([]);
+  });
+
+  const fmtMoney = n => '$' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  let cache = [];   // productos actualmente cargados
+
+  function colHTML(p, bestPrice) {
+    const benefits = (p.benefits || '').split('|').map(b => b.trim()).filter(Boolean).slice(0, 6);
+    const benHTML = benefits.length
+      ? `<div class="cmp-ben-title">Beneficios clave</div><ul class="cmp-ben">` +
+        benefits.map((b, i) => `<li style="animation-delay:${0.15 + i * 0.06}s">${CHECK}<span>${esc(b)}</span></li>`).join('') +
+        `</ul>`
+      : '';
+    const inStock = p.stock > 0;
+    const best = (p.price === bestPrice) ? 'is-best' : '';
+    const href = '/producto/' + (p.slug || p.id);
+    return `
+      <div class="cmp-col ${best}" data-id="${p.id}" style="animation-delay:var(--d,0s)">
+        ${best ? '<div class="cmp-best-tag">Mejor precio</div>' : ''}
+        <button type="button" class="cmp-remove" data-remove="${p.id}" aria-label="Quitar del comparador" title="Quitar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <a href="${href}" style="text-decoration:none">
+          <div class="cmp-imgwrap">
+            ${p.image_path ? `<img loading="lazy" src="/static/img/${esc(p.image_path)}" alt="${esc(p.name)}">` : '<span class="ph">⬡</span>'}
+          </div>
+        </a>
+        <span class="cmp-cat">${esc(p.category)}</span>
+        <h3 class="cmp-name"><a href="${href}" style="color:inherit;text-decoration:none">${esc(p.name)} ${esc(p.dose)}</a></h3>
+        <div class="cmp-sku">${esc(p.sku)}</div>
+
+        <div class="cmp-stat"><span class="cmp-stat-k">Precio</span><span class="cmp-stat-v cmp-price">${fmtMoney(p.price)} <small>MXN</small></span></div>
+        <div class="cmp-stat"><span class="cmp-stat-k">Dosis</span><span class="cmp-stat-v">${esc(p.dose)}</span></div>
+        <div class="cmp-stat"><span class="cmp-stat-k">Categoría</span><span class="cmp-stat-v">${esc(p.category)}</span></div>
+        <div class="cmp-stat"><span class="cmp-stat-k">Disponibilidad</span><span class="cmp-stat-v">${inStock ? '<span class="cmp-instock">● Disponible</span>' : '<span class="cmp-out">● Agotado</span>'}</span></div>
+
+        ${benHTML}
+
+        <div class="cmp-actions">
+          ${inStock
+            ? `<button type="button" class="btn btn-gold btn-sm cmp-add" data-add="${p.id}">+ Agregar al carrito</button>`
+            : `<button type="button" class="btn btn-sm" disabled style="opacity:.5;cursor:not-allowed">Agotado</button>`}
+          <a href="${href}" class="btn btn-outline btn-sm">Ver ficha completa →</a>
+        </div>
+      </div>`;
+  }
+
+  function slotHTML(i) {
+    return `<a href="{{ url_for('catalogo') }}" class="cmp-slot" style="animation-delay:${i * 0.08}s">
+      <span class="ic">+</span>
+      <span>Agregar péptido</span>
+    </a>`;
+  }
+
+  function render(products) {
+    cache = products;
+    const ids = getIds();
+    elCount.textContent = products.length;
+
+    if (!ids.length || !products.length) {
+      elGrid.hidden = true; elBar.hidden = true; elEmpty.hidden = false;
+      return;
+    }
+    elEmpty.hidden = true; elBar.hidden = false; elGrid.hidden = false;
+
+    const bestPrice = Math.min.apply(null, products.map(p => p.price));
+    const slots = Math.max(0, MAX - products.length);
+    elGrid.className = 'cmp-grid cols-' + products.length;
+    elGrid.innerHTML =
+      products.map((p, i) => colHTML(p, bestPrice)).join('') +
+      Array.from({ length: slots }, (_, i) => slotHTML(i)).join('');
+
+    // stagger entrance de columnas
+    Array.from(elGrid.querySelectorAll('.cmp-col')).forEach((c, i) => {
+      c.style.setProperty('--d', (i * 0.09) + 's');
+    });
+
+    bindCol();
+  }
+
+  function bindCol() {
+    elGrid.querySelectorAll('[data-remove]').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const id = this.getAttribute('data-remove');
+        const col = this.closest('.cmp-col');
+        col.classList.add('leaving');
+        setIds(getIds().filter(x => String(x) !== String(id)));
+        setTimeout(() => render(cache.filter(p => String(p.id) !== String(id))), 240);
+      });
+    });
+    elGrid.querySelectorAll('.cmp-add').forEach(btn => {
+      btn.addEventListener('click', function () { addToCart(this, this.getAttribute('data-add')); });
+    });
+  }
+
+  function addToCart(btn, id) {
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span style="display:inline-block;animation:spin .6s linear infinite">⟳</span> Agregando…';
+    fetch('/carrito/agregar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: id, quantity: 1 })
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        document.querySelectorAll('.cart-count').forEach(el => {
+          el.textContent = data.cart_count;
+          el.style.display = data.cart_count > 0 ? 'inline-flex' : 'none';
+        });
+        if (window.showToast) window.showToast(data.message || 'Agregado al carrito', 'success');
+        btn.innerHTML = '✓ Agregado';
+        setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 1700);
+      } else {
+        if (window.showToast) window.showToast(data.message || 'Error al agregar', 'error');
+        btn.innerHTML = original; btn.disabled = false;
+      }
+    }).catch(() => {
+      if (window.showToast) window.showToast('Error de conexión', 'error');
+      btn.innerHTML = original; btn.disabled = false;
+    });
+  }
+
+  // ── Carga inicial ──────────────────────────────────────────────
+  const ids = getIds().slice(0, MAX);
+  if (!ids.length) { render([]); return; }
 
   fetch('/api/products/by-ids', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ids: ids.slice(0, 4)})
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: ids })
   }).then(r => r.json()).then(data => {
-    const products = data.products || [];
-    if (!products.length) { empty.hidden = false; return; }
-    table.style.display = 'block';
-
-    // Header con productos
-    const head = '<tr><th style="text-align:left;padding:10px;color:var(--text3);font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase">Atributo</th>' +
-      products.map(p => `
-        <th style="padding:10px;border-left:1px solid var(--border);min-width:180px">
-          <a href="/producto/${p.slug || p.id}" style="text-decoration:none">
-            ${p.image_path
-              ? `<img loading="lazy" src="/static/img/${p.image_path}" alt="${p.name}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 0.5rem">`
-              : `<div style="width:80px;height:80px;background:var(--bg3);border-radius:6px;margin:0 auto 0.5rem;display:flex;align-items:center;justify-content:center;color:var(--text3)">—</div>`}
-            <strong style="color:var(--text);display:block">${p.name}</strong>
-            <span style="font-size:0.72rem;color:var(--text3)">${p.sku}</span>
-          </a>
-        </th>`).join('') + '</tr>';
-    document.getElementById('comp-head').innerHTML = head;
-
-    // Filas de atributos
-    const rows = [
-      ['Categoría',     p => p.category],
-      ['Dosis',         p => p.dose],
-      ['Precio',        p => `<strong style="color:var(--gold)">$${p.price.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong> MXN`],
-      ['Stock',         p => p.stock > 0 ? `${p.stock} uds` : '<span style="color:#ef4444">Agotado</span>'],
-      ['SKU',           p => `<code style="font-size:0.78rem;background:var(--bg3);padding:1px 6px;border-radius:3px">${p.sku}</code>`],
-    ];
-    const body = rows.map(([label, fn]) => `
-      <tr style="border-top:1px solid var(--border)">
-        <td style="padding:10px;color:var(--text3);font-size:0.82rem">${label}</td>
-        ${products.map(p => `<td style="padding:10px;border-left:1px solid var(--border)">${fn(p)}</td>`).join('')}
-      </tr>
-    `).join('');
-    document.getElementById('comp-body').innerHTML = body + `
-      <tr style="border-top:1px solid var(--border)">
-        <td style="padding:10px;color:var(--text3);font-size:0.82rem">Acción</td>
-        ${products.map(p => `<td style="padding:10px;border-left:1px solid var(--border)">
-          <a href="/producto/${p.slug || p.id}" class="btn btn-gold btn-sm">Ver ficha →</a>
-        </td>`).join('')}
-      </tr>
-    `;
-  });
+    const products = (data.products || []).slice(0, MAX);
+    // sincroniza localStorage con los que realmente existen/activos
+    setIds(products.map(p => String(p.id)));
+    render(products);
+  }).catch(() => render([]));
 })();
 </script>
 {% endblock %}

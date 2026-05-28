@@ -61,10 +61,11 @@
   .cmp-actions { margin-top:auto; display:flex; flex-direction:column; gap:0.55rem; }
   .cmp-actions .btn { width:100%; justify-content:center; }
 
-  /* Slot para agregar */
-  .cmp-slot { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:0.7rem; min-height:220px; border:1.5px dashed var(--border); border-radius:var(--radius-lg); color:var(--text3); text-decoration:none; padding:2rem 1rem; transition:all .25s ease; opacity:0; transform:translateY(20px); animation:cmpIn .5s ease forwards; }
+  /* Slot para agregar (botón, abre el selector) */
+  .cmp-slot { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:0.7rem; min-height:220px; width:100%; border:1.5px dashed var(--border); border-radius:var(--radius-lg); color:var(--text3); background:none; cursor:pointer; padding:2rem 1rem; transition:all .25s ease; opacity:0; transform:translateY(20px); animation:cmpIn .5s ease forwards; font:inherit; }
   .cmp-slot:hover { border-color:var(--gold-dark); color:var(--gold); background:rgba(199,154,58,.04); transform:translateY(-3px); }
-  .cmp-slot .ic { width:46px; height:46px; border-radius:50%; border:1.5px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:300; }
+  .cmp-slot .ic { width:46px; height:46px; border-radius:50%; border:1.5px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:300; transition:transform .25s ease; }
+  .cmp-slot:hover .ic { transform:rotate(90deg); }
   .cmp-slot span { font-size:0.84rem; font-weight:600; }
 
   /* Empty state */
@@ -72,6 +73,32 @@
   .cmp-empty svg { color:var(--gold); opacity:.55; margin:0 auto 1.4rem; display:block; }
   .cmp-empty h3 { font-size:1.2rem; color:var(--text); margin-bottom:0.5rem; }
   .cmp-empty p { font-size:0.9rem; color:var(--text3); max-width:400px; margin:0 auto 1.6rem; }
+  .cmp-empty-actions { display:flex; gap:0.7rem; justify-content:center; flex-wrap:wrap; }
+
+  /* ── Selector de productos (modal) ── */
+  .cmp-modal { position:fixed; inset:0; z-index:1000; display:none; align-items:flex-start; justify-content:center; padding:5vh 1rem 1rem; background:rgba(5,4,2,.72); backdrop-filter:blur(5px); opacity:0; transition:opacity .2s ease; }
+  .cmp-modal.open { display:flex; opacity:1; }
+  .cmp-modal-card { width:100%; max-width:560px; max-height:84vh; display:flex; flex-direction:column; background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:0 30px 80px -20px rgba(0,0,0,.7); transform:translateY(14px) scale(.98); transition:transform .22s cubic-bezier(.21,.6,.35,1); overflow:hidden; }
+  .cmp-modal.open .cmp-modal-card { transform:none; }
+  .cmp-modal-head { padding:1.1rem 1.25rem 0.9rem; border-bottom:1px solid var(--border); }
+  .cmp-modal-head .row { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:0.8rem; }
+  .cmp-modal-head h3 { font-size:1.05rem; font-weight:800; color:var(--text); margin:0; }
+  .cmp-modal-close { background:none; border:1px solid var(--border); color:var(--text2); width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all var(--transition); }
+  .cmp-modal-close:hover { border-color:var(--gold); color:var(--gold); }
+  .cmp-search { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-size:0.92rem; padding:0.7rem 0.9rem; outline:none; transition:border-color var(--transition); }
+  .cmp-search:focus { border-color:var(--gold); }
+  .cmp-list { overflow-y:auto; padding:0.5rem; }
+  .cmp-item { display:flex; align-items:center; gap:0.85rem; width:100%; text-align:left; background:none; border:1px solid transparent; border-radius:var(--radius); padding:0.6rem 0.7rem; cursor:pointer; transition:all .15s ease; font:inherit; }
+  .cmp-item:hover, .cmp-item:focus-visible { background:rgba(199,154,58,.07); border-color:rgba(199,154,58,.3); outline:none; }
+  .cmp-item-img { width:46px; height:46px; flex:0 0 auto; border-radius:8px; background:var(--bg3); object-fit:cover; display:flex; align-items:center; justify-content:center; color:var(--text3); font-size:1.1rem; }
+  .cmp-item-body { flex:1; min-width:0; }
+  .cmp-item-name { font-size:0.9rem; font-weight:700; color:var(--text); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cmp-item-meta { font-size:0.74rem; color:var(--text3); margin:0.1rem 0 0; }
+  .cmp-item-price { font-size:0.88rem; font-weight:700; color:var(--gold); white-space:nowrap; }
+  .cmp-item-add { flex:0 0 auto; width:26px; height:26px; border-radius:50%; background:rgba(199,154,58,.14); color:var(--gold); display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:600; }
+  .cmp-item.out { opacity:.55; }
+  .cmp-item.out .cmp-item-price { color:var(--text3); }
+  .cmp-list-empty { text-align:center; color:var(--text3); font-size:0.86rem; padding:2rem 1rem; }
 
   @keyframes cmpIn { to { opacity:1; transform:none; } }
   @keyframes cmpOut { to { opacity:0; transform:translateY(10px) scale(.95); } }
@@ -79,6 +106,7 @@
   @media (prefers-reduced-motion: reduce){
     .cmp-col,.cmp-slot,.cmp-ben li{ animation:none !important; opacity:1 !important; transform:none !important; }
     .cmp-col:hover,.cmp-slot:hover{ transform:none; }
+    .cmp-modal,.cmp-modal-card{ transition:none; }
   }
 </style>
 
@@ -99,13 +127,32 @@
         <polyline points="36 108 16 88 36 68"/><path d="M104 84v8a8 8 0 0 1-8 8H16"/>
       </svg>
       <h3>Aún no tienes péptidos para comparar</h3>
-      <p>Agrega hasta 3 péptidos con el botón <b>⇄</b> de cada ficha del catálogo y vuelve aquí para verlos lado a lado.</p>
-      <a href="{{ url_for('catalogo') }}" class="btn btn-gold">Explorar catálogo →</a>
+      <p>Agrega hasta 3 péptidos y míralos lado a lado: beneficios, dosis, precio y disponibilidad.</p>
+      <div class="cmp-empty-actions">
+        <button type="button" class="btn btn-gold" data-open-picker>+ Agregar péptido</button>
+        <a href="{{ url_for('catalogo') }}" class="btn btn-outline">Ver catálogo</a>
+      </div>
     </div>
 
     <div id="cmp-grid" class="cmp-grid" hidden></div>
   </div>
 </section>
+
+<!-- Selector de productos -->
+<div id="cmp-modal" class="cmp-modal" role="dialog" aria-modal="true" aria-labelledby="cmp-modal-title">
+  <div class="cmp-modal-card">
+    <div class="cmp-modal-head">
+      <div class="row">
+        <h3 id="cmp-modal-title">Agregar péptido a comparar</h3>
+        <button type="button" class="cmp-modal-close" data-close-picker aria-label="Cerrar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <input type="text" id="cmp-search" class="cmp-search" placeholder="Buscar por nombre, categoría o SKU…" autocomplete="off">
+    </div>
+    <div id="cmp-list" class="cmp-list"></div>
+  </div>
+</div>
 
 <script nonce="{{ csp_nonce }}">
 (function () {
@@ -118,7 +165,7 @@
     catch (e) { return []; }
   }
   function setIds(arr) {
-    try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch (e) {}
+    try { localStorage.setItem(KEY, JSON.stringify(arr.map(String))); } catch (e) {}
   }
 
   if (urlIds.length) setIds(urlIds.slice(0, MAX));
@@ -127,18 +174,18 @@
   const elEmpty = document.getElementById('cmp-empty');
   const elBar   = document.getElementById('cmp-bar');
   const elCount = document.getElementById('cmp-count');
-
-  document.getElementById('cmp-clear').addEventListener('click', function () {
-    setIds([]);
-    render([]);
-  });
+  const elModal = document.getElementById('cmp-modal');
+  const elList  = document.getElementById('cmp-list');
+  const elSearch= document.getElementById('cmp-search');
 
   const fmtMoney = n => '$' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 
-  let cache = [];   // productos actualmente cargados
+  let cache = [];        // productos actualmente comparados (con beneficios)
+  let catalogCache = null; // catálogo completo para el selector
 
+  // ── Render de la comparación ───────────────────────────────────
   function colHTML(p, bestPrice) {
     const benefits = (p.benefits || '').split('|').map(b => b.trim()).filter(Boolean).slice(0, 6);
     const benHTML = benefits.length
@@ -181,10 +228,10 @@
   }
 
   function slotHTML(i) {
-    return `<a href="{{ url_for('catalogo') }}" class="cmp-slot" style="animation-delay:${i * 0.08}s">
+    return `<button type="button" class="cmp-slot" data-open-picker style="animation-delay:${i * 0.08}s">
       <span class="ic">+</span>
       <span>Agregar péptido</span>
-    </a>`;
+    </button>`;
   }
 
   function render(products) {
@@ -192,7 +239,7 @@
     const ids = getIds();
     elCount.textContent = products.length;
 
-    if (!ids.length || !products.length) {
+    if (!products.length) {
       elGrid.hidden = true; elBar.hidden = true; elEmpty.hidden = false;
       return;
     }
@@ -202,14 +249,12 @@
     const slots = Math.max(0, MAX - products.length);
     elGrid.className = 'cmp-grid cols-' + products.length;
     elGrid.innerHTML =
-      products.map((p, i) => colHTML(p, bestPrice)).join('') +
+      products.map(p => colHTML(p, bestPrice)).join('') +
       Array.from({ length: slots }, (_, i) => slotHTML(i)).join('');
 
-    // stagger entrance de columnas
     Array.from(elGrid.querySelectorAll('.cmp-col')).forEach((c, i) => {
       c.style.setProperty('--d', (i * 0.09) + 's');
     });
-
     bindCol();
   }
 
@@ -226,8 +271,98 @@
     elGrid.querySelectorAll('.cmp-add').forEach(btn => {
       btn.addEventListener('click', function () { addToCart(this, this.getAttribute('data-add')); });
     });
+    elGrid.querySelectorAll('[data-open-picker]').forEach(btn => {
+      btn.addEventListener('click', openPicker);
+    });
   }
 
+  function reload() {
+    const ids = getIds().slice(0, MAX);
+    if (!ids.length) { render([]); return Promise.resolve(); }
+    return fetch('/api/products/by-ids', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: ids })
+    }).then(r => r.json()).then(data => {
+      const products = (data.products || []).slice(0, MAX);
+      setIds(products.map(p => p.id));
+      render(products);
+    }).catch(() => render(cache));
+  }
+
+  // ── Selector de productos ──────────────────────────────────────
+  function openPicker() {
+    elModal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    elSearch.value = '';
+    if (catalogCache) { renderList(''); setTimeout(() => elSearch.focus(), 60); return; }
+    elList.innerHTML = '<div class="cmp-list-empty">Cargando catálogo…</div>';
+    fetch('/api/productos?sort=name_asc')
+      .then(r => r.json())
+      .then(data => {
+        catalogCache = (data.products || []).filter(p => p.active === undefined || p.active);
+        renderList('');
+        setTimeout(() => elSearch.focus(), 60);
+      })
+      .catch(() => { elList.innerHTML = '<div class="cmp-list-empty">No se pudo cargar el catálogo. Intenta de nuevo.</div>'; });
+  }
+
+  function closePicker() {
+    elModal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function renderList(q) {
+    const current = getIds();
+    const full = getIds().length >= MAX;
+    const term = (q || '').trim().toLowerCase();
+    let items = catalogCache || [];
+    if (term) {
+      items = items.filter(p =>
+        (p.name || '').toLowerCase().includes(term) ||
+        (p.category || '').toLowerCase().includes(term) ||
+        (p.sku || '').toLowerCase().includes(term) ||
+        (p.dose || '').toLowerCase().includes(term));
+    }
+    if (full) {
+      elList.innerHTML = '<div class="cmp-list-empty">Ya tienes 3 péptidos (el máximo). Quita uno para agregar otro.</div>';
+      return;
+    }
+    // ya seleccionados al final / excluidos
+    items = items.filter(p => current.indexOf(String(p.id)) === -1);
+    if (!items.length) {
+      elList.innerHTML = '<div class="cmp-list-empty">Sin resultados para “' + esc(q) + '”.</div>';
+      return;
+    }
+    elList.innerHTML = items.map(p => {
+      const img = p.image_url ? `<img class="cmp-item-img" src="${esc(p.image_url)}" alt="" loading="lazy">` : '<span class="cmp-item-img">⬡</span>';
+      const out = p.stock > 0 ? '' : ' out';
+      return `<button type="button" class="cmp-item${out}" data-pick="${p.id}">
+        ${img}
+        <span class="cmp-item-body">
+          <span class="cmp-item-name">${esc(p.name)} ${esc(p.dose || '')}</span>
+          <span class="cmp-item-meta">${esc(p.category || '')}${p.stock > 0 ? '' : ' · agotado'}</span>
+        </span>
+        <span class="cmp-item-price">${fmtMoney(p.price)}</span>
+        <span class="cmp-item-add">+</span>
+      </button>`;
+    }).join('');
+    elList.querySelectorAll('[data-pick]').forEach(btn => {
+      btn.addEventListener('click', function () { pick(this.getAttribute('data-pick')); });
+    });
+  }
+
+  function pick(id) {
+    const ids = getIds();
+    if (ids.indexOf(String(id)) !== -1) { closePicker(); return; }
+    if (ids.length >= MAX) { renderList(elSearch.value); return; }
+    ids.push(String(id));
+    setIds(ids);
+    closePicker();
+    reload();
+  }
+
+  // ── Agregar al carrito ─────────────────────────────────────────
   function addToCart(btn, id) {
     const original = btn.innerHTML;
     btn.disabled = true;
@@ -255,20 +390,16 @@
     });
   }
 
-  // ── Carga inicial ──────────────────────────────────────────────
-  const ids = getIds().slice(0, MAX);
-  if (!ids.length) { render([]); return; }
+  // ── Listeners globales ─────────────────────────────────────────
+  document.getElementById('cmp-clear').addEventListener('click', function () { setIds([]); render([]); });
+  document.querySelectorAll('[data-open-picker]').forEach(btn => btn.addEventListener('click', openPicker));
+  document.querySelectorAll('[data-close-picker]').forEach(btn => btn.addEventListener('click', closePicker));
+  elModal.addEventListener('click', function (e) { if (e.target === elModal) closePicker(); });
+  elSearch.addEventListener('input', function () { renderList(this.value); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && elModal.classList.contains('open')) closePicker(); });
 
-  fetch('/api/products/by-ids', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids: ids })
-  }).then(r => r.json()).then(data => {
-    const products = (data.products || []).slice(0, MAX);
-    // sincroniza localStorage con los que realmente existen/activos
-    setIds(products.map(p => String(p.id)));
-    render(products);
-  }).catch(() => render([]));
+  // ── Carga inicial ──────────────────────────────────────────────
+  reload();
 })();
 </script>
 {% endblock %}

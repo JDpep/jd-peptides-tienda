@@ -3776,7 +3776,12 @@ _SORT_WHITELIST = {
     'name_desc':  'name DESC',
     'price_asc':  'price ASC',
     'price_desc': 'price DESC',
-    'stock_desc': 'stock DESC, name ASC',
+    # Más populares = más unidades vendidas (pedidos no cancelados). Subquery
+    # correlacionado, string fijo (no entra input de usuario). Sin ventas →
+    # empata en 0 y cae al desempate alfabético.
+    'popular':    ("(SELECT COALESCE(SUM(oi.quantity),0) FROM order_items oi "
+                   "JOIN orders o ON oi.order_id=o.id "
+                   "WHERE oi.product_id=products.id AND o.status != 'cancelado') DESC, name ASC"),
     'newest':     'created_at DESC, id DESC',
 }
 

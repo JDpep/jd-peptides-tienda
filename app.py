@@ -175,18 +175,21 @@ def _inject_csp_nonce():
 # ----- Security headers (defense-in-depth: CSP, X-Frame, X-CTO, HSTS) -----
 @app.after_request
 def _security_headers(response):
-    nonce = getattr(g, 'csp_nonce', '')
-    # script-src: solo scripts con este nonce O cargados desde 'self'.
-    # 'unsafe-inline' SE IGNORA en browsers CSP3 que entiendan el nonce, pero
-    # queda como compat para los pocos crawlers/clients CSP2.
-    # style-src mantiene 'unsafe-inline' porque hay style="..." inline en
-    # muchos elementos legacy (migrar requeriría refactor masivo).
+    # script-src: 'self' + 'unsafe-inline'. NO usamos nonce a propósito.
+    # Por spec CSP3, declarar un nonce ANULA 'unsafe-inline' en todos los
+    # browsers modernos — y eso bloqueaba TODOS los manejadores inline on*
+    # (oninput/onchange/onclick) del sitio: buscadores y filtros del admin,
+    # botones de consentimiento de cookies, etc. (config previa rota: tenía
+    # nonce + unsafe-inline a la vez = lo peor de ambos mundos). La defensa
+    # real contra XSS es el autoescape de Jinja, intacto en todas las plantillas
+    # (sin |safe/Markup), por lo que 'unsafe-inline' aquí es defensa-en-prof.
+    # aceptable. style-src ya usaba 'unsafe-inline' por los style="..." legacy.
     response.headers.setdefault('Content-Security-Policy',
         "default-src 'self'; "
         "img-src 'self' data: blob: https://*.openstreetmap.org; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src  'self' https://fonts.gstatic.com data:; "
-        f"script-src 'self' 'nonce-{nonce}' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
         # Nominatim para autocompletado de direcciones en checkout
         "connect-src 'self' https://nominatim.openstreetmap.org; "
         "frame-ancestors 'none'; "

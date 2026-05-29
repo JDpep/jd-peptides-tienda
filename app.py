@@ -5807,12 +5807,12 @@ def admin_ordenes_export():
     ])
     for o in orders:
         writer.writerow([
-            o['order_number'], o['created_at'][:16],
+            o['order_number'], (o['created_at'] or '')[:16],
             o['customer_name'] or '', o['customer_email'] or '',
             o['customer_phone'] or '',
             o['address'] or '', o['city'] or '',
             o['state'] or '', o['zip_code'] or '',
-            f"{o['subtotal']:.2f}", f"{o['shipping']:.2f}", f"{o['total']:.2f}",
+            f"{(o['subtotal'] or 0):.2f}", f"{(o['shipping'] or 0):.2f}", f"{(o['total'] or 0):.2f}",
             o['payment_method'] or '', o['payment_status'] or '', o['status'] or '',
             o['tracking_carrier'] or '', o['tracking_number'] or '',
             (o['admin_notes'] or '').replace('\n', ' ')
@@ -5824,6 +5824,36 @@ def admin_ordenes_export():
         mimetype='text/csv; charset=utf-8',
         headers={'Content-Disposition': f'attachment; filename="{fname}"'}
     )
+
+
+def _stock_is_free(status, payment):
+    """El stock de una orden está 'libre' (devuelto al inventario) cuando la
+    orden está cancelada o el pago fue reembolsado."""
+    return status == 'cancelado' or payment == 'reembolsado'
+
+
+def _sync_order_stock(order, old_status, old_payment, new_status, new_payment):
+    """Devuelve o re-descuenta el stock de los items de una orden cuando su
+    estado 'libre' cambia (cancelar/reembolsar → devuelve; reactivar →
+    re-descuenta). No hace nada si el estado 'libre' no cambió, así que es
+    seguro llamarlo siempre. Usado por el cambio individual y el bulk."""
+    if _stock_is_free(old_status, old_payment) == _stock_is_free(new_status, new_payment):
+        return
+    items = query_db("SELECT * FROM order_items WHERE order_id=?", (order['id'],))
+    onum = order['order_number']
+    if _stock_is_free(new_status, new_payment):
+        reason = 'Cancelación de orden' if new_status == 'cancelado' else 'Reembolso de orden'
+        for item in items:
+            execute_db("UPDATE products SET stock = stock + ? WHERE id=?",
+                       (item['quantity'], item['product_id']))
+            execute_db("INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'entrada', ?, ?, ?)",
+                       (item['product_id'], item['quantity'], reason, onum))
+    else:
+        for item in items:
+            execute_db("UPDATE products SET stock = MAX(0, stock - ?) WHERE id=?",
+                       (item['quantity'], item['product_id']))
+            execute_db("INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'salida', ?, 'Reactivación de orden', ?)",
+                       (item['product_id'], item['quantity'], onum))
 
 
 @app.route('/admin/ordenes/bulk-status', methods=['POST'])
@@ -5846,6 +5876,10 @@ def admin_ordenes_bulk_status():
             continue
         old_status = order['status']
         execute_db("UPDATE orders SET status=? WHERE id=?", (new_status, oid))
+        # Devuelve/re-descuenta stock si el cambio implica cancelar/reactivar
+        # (el pago no cambia en bulk). Antes el bulk-cancel dejaba stock fantasma.
+        _sync_order_stock(order, old_status, order['payment_status'],
+                          new_status, order['payment_status'])
         # Append a status_history para que el timeline público lo refleje.
         try:
             _hist_raw = order['status_history'] if 'status_history' in order.keys() else '[]'
@@ -6031,13 +6065,6 @@ def admin_actualizar_estado(oid):
     eff_status  = new_status  if status_changed  else old_status
     eff_payment = new_payment if payment_changed else old_payment
 
-    # Stock debe estar "libre" (devuelto) cuando la orden es cancelada O reembolsada
-    def stock_libre(status, payment):
-        return status == 'cancelado' or payment == 'reembolsado'
-
-    era_libre  = stock_libre(old_status, old_payment)
-    sera_libre = stock_libre(eff_status, eff_payment)
-
     if status_changed:
         execute_db("UPDATE orders SET status=? WHERE id=?", (new_status, oid))
     if payment_changed:
@@ -6072,28 +6099,8 @@ def admin_actualizar_estado(oid):
         except Exception as _e:
             print(f'[Orders] No se pudo actualizar status_history: {_e}')
 
-    # Mover inventario solo si cambia el estado de "libre"
-    if era_libre != sera_libre:
-        items = query_db("SELECT * FROM order_items WHERE order_id=?", (oid,))
-        if sera_libre:
-            # Orden pasa a cancelada/reembolsada → devolver stock
-            reason = 'Cancelación de orden' if eff_status == 'cancelado' else 'Reembolso de orden'
-            for item in items:
-                execute_db("UPDATE products SET stock = stock + ? WHERE id=?",
-                           (item['quantity'], item['product_id']))
-                execute_db(
-                    "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'entrada', ?, ?, ?)",
-                    (item['product_id'], item['quantity'], reason, order['order_number'])
-                )
-        else:
-            # Orden reactivada → volver a descontar stock
-            for item in items:
-                execute_db("UPDATE products SET stock = MAX(0, stock - ?) WHERE id=?",
-                           (item['quantity'], item['product_id']))
-                execute_db(
-                    "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'salida', ?, 'Reactivación de orden', ?)",
-                    (item['product_id'], item['quantity'], order['order_number'])
-                )
+    # Mover inventario si el estado "libre" cambió (devuelve o re-descuenta)
+    _sync_order_stock(order, old_status, old_payment, eff_status, eff_payment)
 
     # Notificar al cliente si hubo un cambio relevante
     notify_status = new_status if status_changed else ''

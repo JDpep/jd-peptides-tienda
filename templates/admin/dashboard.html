@@ -209,8 +209,8 @@
   var DASH_ORDENES = [
     {% for o in recent_orders %}
     { id: {{ o['id'] }}, numero: {{ o['order_number']|tojson }}, cliente: {{ o['customer_name']|tojson }},
-      email: {{ o['customer_email']|tojson }}, total: "{{ '%.2f'|format(o['total']) }}",
-      estado: {{ o['status']|tojson }}, pago: {{ o['payment_status']|tojson }}, fecha: "{{ o['created_at'][:16] }}" }{% if not loop.last %},{% endif %}
+      email: {{ o['customer_email']|tojson }}, total: "{{ '%.2f'|format(o['total'] or 0) }}",
+      estado: {{ o['status']|tojson }}, pago: {{ o['payment_status']|tojson }}, fecha: "{{ (o['created_at'] or '')[:16] }}" }{% if not loop.last %},{% endif %}
     {% endfor %}
   ];
   </script>
@@ -259,10 +259,10 @@
                 <a href="{{ url_for('admin_orden_detalle', oid=o['id']) }}" class="mono">{{ o['order_number'] }}</a>
               </td>
               <td class="strong">{{ o['customer_name'] }}</td>
-              <td style="color:var(--gold);font-weight:700">${{ "%.2f"|format(o['total']) }}</td>
+              <td style="color:var(--gold);font-weight:700">${{ "%.2f"|format(o['total'] or 0) }}</td>
               <td><span class="badge status-{{ o['status'] }}">{{ o['status'] }}</span></td>
               <td><span class="badge status-{{ o['payment_status'] }}">{{ o['payment_status'] }}</span></td>
-              <td style="font-size:0.8rem;color:var(--text3)">{{ o['created_at'][:10] }}</td>
+              <td style="font-size:0.8rem;color:var(--text3)">{{ (o['created_at'] or '')[:10] }}</td>
             </tr>
           {% else %}
             <tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">Sin órdenes aún</td></tr>

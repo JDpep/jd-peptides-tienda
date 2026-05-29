@@ -203,6 +203,12 @@ def _security_headers(response):
     if _is_prod:
         response.headers.setdefault('Strict-Transport-Security',
             'max-age=31536000; includeSubDomains')
+    # Perf: assets estáticos versionados (?v=build_id) → caché inmutable 1 año.
+    # El ?v cambia en cada deploy (commit SHA), así que es seguro y elimina la
+    # re-descarga/revalidación de CSS, JS e imágenes en CADA carga de página
+    # (antes salían con no-cache → la navegación se sentía lenta).
+    if request.path.startswith('/static/') and request.args.get('v'):
+        response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
     return response
 
 

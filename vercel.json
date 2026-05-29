@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "regions": ["pdx1"],
   "builds": [
     {
       "src": "app.py",

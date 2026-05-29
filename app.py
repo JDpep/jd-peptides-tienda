@@ -1700,7 +1700,7 @@ PRODUCTS_SEED = [
         'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas|Dosis 20 mg para investigación de protocolos de mayor intensidad',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_rt20.png',
+        'image_path': 'prod_rt20.jpg',
     },
     {
         'sku': 'JDP-RT10',
@@ -1712,7 +1712,7 @@ PRODUCTS_SEED = [
         'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_rt10.png',
+        'image_path': 'prod_rt10.jpg',
     },
     {
         'sku': 'JDP-KLOW80',
@@ -1724,7 +1724,7 @@ PRODUCTS_SEED = [
         'benefits': 'Cuatro péptidos sinérgicos en un solo vial (CU+TB+BC+KPV)|Reparación tisular y regeneración de tendones, ligamentos y músculo|Protección y reparación de mucosa gástrica e intestinal (BPC+KPV)|Estimulación de la angiogénesis y la síntesis de colágeno|Antiinflamación local y sistémica de amplio espectro|Protocolos integrales sin necesidad de múltiples reconstituciones',
         'stock': 20,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_bbkg80.png',
+        'image_path': 'prod_bbkg80.jpg',
     },
     {
         'sku': 'JDP-KPV',
@@ -1736,7 +1736,7 @@ PRODUCTS_SEED = [
         'benefits': 'Potente acción antiinflamatoria sistémica y local|Protege y repara la mucosa intestinal dañada|Modula la respuesta inmune sin causar inmunosupresión|Alivia la inflamación en modelos de enfermedad intestinal|Favorece la integridad de la barrera epitelial|Investigado en dermatitis, colitis y síndrome de intestino permeable',
         'stock': 30,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_kpv.png',
+        'image_path': 'prod_kpv.jpg',
     },
     {
         'sku': 'JDP-MOTSC',
@@ -1748,7 +1748,7 @@ PRODUCTS_SEED = [
         'benefits': 'Incrementa la sensibilidad a la insulina y la captación de glucosa|Optimiza el metabolismo energético mitocondrial|Favorece la oxidación de ácidos grasos (betaoxidación)|Efectos moleculares similares al ejercicio físico|Apoya la regulación del peso y la composición corporal|Investigado en longevidad, síndrome metabólico y anti-envejecimiento',
         'stock': 20,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_motsc.png',
+        'image_path': 'prod_motsc.jpg',
     },
     {
         'sku': 'JDP-BPC157',
@@ -1760,7 +1760,7 @@ PRODUCTS_SEED = [
         'benefits': 'Regenera y protege la mucosa gástrica e intestinal|Acelera la curación de tendones, ligamentos y músculo|Efecto antiinflamatorio potente en tejidos lesionados|Promueve la angiogénesis y vascularización|Modulación del sistema nervioso central y periférico|Amplio perfil de seguridad documentado en estudios preclínicos',
         'stock': 35,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_bpc157.png',
+        'image_path': 'prod_bpc157.jpg',
     },
     {
         'sku': 'JDP-TB500',
@@ -1772,7 +1772,7 @@ PRODUCTS_SEED = [
         'benefits': 'Acelera la recuperación de lesiones musculoesqueléticas|Promueve la regeneración tendinosa y ligamentosa|Estimula la angiogénesis y formación de nuevos vasos|Favorece la cicatrización de heridas y úlceras crónicas|Reduce la inflamación y la fibrosis en tejidos dañados|Mejora la flexibilidad articular y el rango de movimiento',
         'stock': 28,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_tb500.png',
+        'image_path': 'prod_tb500.jpg',
     },
     {
         'sku': 'JDP-GHKCU',
@@ -1784,7 +1784,7 @@ PRODUCTS_SEED = [
         'benefits': 'Estimula la síntesis de colágeno, elastina y glucosaminoglicanos|Potente efecto anti-envejecimiento en piel y tejidos|Promueve el crecimiento, densidad y engrosamiento del cabello|Acelera la cicatrización de heridas, quemaduras y úlceras|Reduce la inflamación y el daño oxidativo celular|Activa genes de reparación del ADN y procesos regenerativos',
         'stock': 40,
         'low_stock_alert': 8,
-        'image_path': 'jdp_vial_ghkcu.png',
+        'image_path': 'prod_ghkcu.jpg',
     },
     {
         'sku': 'JDP-DSIP',
@@ -1796,7 +1796,7 @@ PRODUCTS_SEED = [
         'benefits': 'Mejora la calidad y profundidad del sueño (ondas delta)|Facilita la conciliación del sueño y reduce el insomnio|Regula los ritmos circadianos y la temperatura corporal|Reduce el estrés oxidativo a nivel cerebral|Efecto ansiolítico y adaptogénico en modelos de estrés|Modulación del eje neuroendocrino hipotalámico',
         'stock': 22,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_dsip.png',
+        'image_path': 'prod_dsip.jpg',
     },
     {
         'sku': 'JDP-SEMAX',
@@ -1808,7 +1808,7 @@ PRODUCTS_SEED = [
         'benefits': 'Mejora la memoria, concentración, aprendizaje y procesamiento cognitivo|Eleva los niveles de BDNF y NGF en tejido cerebral|Neuroprotección ante isquemia, daño oxidativo y excitotoxicidad|Efectos ansiolíticos y adaptogénicos respaldados en modelos animales|Favorece la recuperación neurológica post-lesión e ictus|Alta biodisponibilidad por vía intranasal en investigación',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_semax_10.png',
+        'image_path': 'prod_semax.jpg',
     },
     {
         'sku': 'JDP-TESA',
@@ -1832,7 +1832,7 @@ PRODUCTS_SEED = [
         'benefits': 'Potencia la producción de energía celular (ATP) a nivel mitocondrial|Activa sirtuinas (SIRT1-7) relacionadas con la longevidad|Mejora la función, biogénesis y eficiencia mitocondrial|Soporte cognitivo, neuroprotección y claridad mental|Favorece la reparación del ADN y la estabilidad genómica|Reduce marcadores de inflamación crónica de bajo grado|Presentación 1000 mg para protocolos de investigación extendidos',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_nad_1000.png',
+        'image_path': 'prod_nad.jpg',
     },
     {
         'sku': 'JDP-CP',
@@ -1856,7 +1856,7 @@ PRODUCTS_SEED = [
         'benefits': 'Solvente estéril para reconstitución de péptidos liofilizados|Alcohol bencílico 0.9% como agente bacteriostático de amplio espectro|Permite múltiples extracciones con aguja manteniendo la esterilidad|pH neutro compatible con péptidos sensibles|Calidad USP para uso en investigación|Prolonga la vida útil del vial reconstituido',
         'stock': 100,
         'low_stock_alert': 20,
-        'image_path': 'jdp_vial_bach.png',
+        'image_path': 'prod_bac.jpg',
     },
     {
         'sku': 'JDP-IGF1',
@@ -1868,7 +1868,7 @@ PRODUCTS_SEED = [
         'benefits': 'Vida media extendida (~20 horas) vs. IGF-1 nativo|Estimula la síntesis proteica y la hipertrofia muscular|Mejora la sensibilidad a la insulina en tejido muscular|Promueve la regeneración tisular y la diferenciación celular|Inducción de hiperplasia (división de células satélite)|Investigación en metabolismo y composición corporal',
         'stock': 18,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_igf1.png',
+        'image_path': 'prod_igf1.jpg',
     },
     {
         'sku': 'JDP-IPA',
@@ -1880,7 +1880,7 @@ PRODUCTS_SEED = [
         'benefits': 'Liberación pulsátil y selectiva de hormona de crecimiento (GH)|Sin elevación significativa de cortisol ni prolactina|Mejora la calidad del sueño profundo (REM/SWS)|Favorece la recuperación muscular y la regeneración tisular|Apoya la composición corporal (más masa magra, menos grasa)|Sinérgico con análogos de GHRH (CJC-1295, Sermorelin)',
         'stock': 22,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_ipa.png',
+        'image_path': 'prod_ipa.jpg',
     },
     {
         'sku': 'JDP-RT5',
@@ -1892,7 +1892,7 @@ PRODUCTS_SEED = [
         'benefits': 'Reducción del apetito y disminución sostenida de la ingesta calórica|Incremento del gasto energético basal y termogénesis|Mejora profunda de la sensibilidad a la insulina|Reducción significativa de grasa visceral y total|Resultados de pérdida de peso superiores a otros GLP-1 agonistas|Dosis 5 mg para inicio de protocolos de investigación',
         'stock': 25,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_rt5.png',
+        'image_path': 'prod_rt5.jpg',
     },
     {
         'sku': 'JDP-CJC-IPA',
@@ -1904,7 +1904,7 @@ PRODUCTS_SEED = [
         'benefits': 'Sinergia de doble vía: GHRH + secretagogo de grelina|Liberación de GH amplificada vs. monoterapias|Mejora la recuperación, regeneración tisular y reparación|Apoya la composición corporal (masa magra ↑ / grasa ↓)|Mejora la calidad del sueño profundo|Perfil farmacológico limpio sin efectos hormonales colaterales',
         'stock': 24,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_cjc_ipa.png',
+        'image_path': 'prod_cjc_ipa.jpg',
     },
     {
         'sku': 'JDP-CJC-NODAC',
@@ -1928,7 +1928,7 @@ PRODUCTS_SEED = [
         'benefits': 'Acción lipolítica selectiva sin efectos anabólicos|Estimula la oxidación de grasa (β-oxidación)|No eleva la glucemia ni induce resistencia a la insulina|No afecta la liberación de IGF-1 ni de GH endógena|Investigado en obesidad y composición corporal|Vida media corta — pulsos lipolíticos focalizados',
         'stock': 22,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_hghfr.png',
+        'image_path': 'prod_hghfr.jpg',
     },
     {
         'sku': 'JDP-CGL',
@@ -1940,7 +1940,7 @@ PRODUCTS_SEED = [
         'benefits': 'Análogo de amilina con vida media extendida (~6 días)|Reduce el apetito por mecanismo complementario al GLP-1|Enlentece el vaciamiento gástrico y prolonga la saciedad|Sinergia con agonistas de GLP-1 (CagriSema)|Reducción significativa del peso corporal en ensayos clínicos|Mejora del control glucémico postprandial',
         'stock': 18,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_cgl.png',
+        'image_path': 'prod_cgl.jpg',
     },
     {
         'sku': 'JDP-PT141',
@@ -1952,7 +1952,7 @@ PRODUCTS_SEED = [
         'benefits': 'Mecanismo central — actúa a nivel hipotalámico (vs. PDE5)|Aumenta el deseo y la respuesta sexual en ambos sexos|Efectos independientes del estado vascular y la testosterona|Vida media de ≈2-7 horas — flexibilidad de protocolos|Investigación en disfunción sexual orgánica y psicogénica|Aprobación FDA como Vyleesi® (mujeres premenopáusicas)',
         'stock': 20,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_pt141.png',
+        'image_path': 'prod_pt141.jpg',
     },
     {
         'sku': 'JDP-AOD',
@@ -1964,7 +1964,7 @@ PRODUCTS_SEED = [
         'benefits': 'Lipolisis selectiva en adipocitos sin elevación de glucosa|No interfiere con la insulina ni la sensibilidad insulínica|Sin actividad anabólica — no afecta IGF-1 ni GH endógena|Investigado en obesidad, esteatosis hepática y osteoartritis|Clasificación GRAS de la FDA (uso oral en alimentos)|Estabilidad mejorada vs. el fragmento 176-191 nativo',
         'stock': 22,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_aod.png',
+        'image_path': 'prod_aod.jpg',
     },
     {
         'sku': 'JDP-HGH',
@@ -1976,7 +1976,7 @@ PRODUCTS_SEED = [
         'benefits': 'Hormona de crecimiento recombinante 191 a.a. (idéntica a endógena)|Estimula la síntesis hepática de IGF-1 sistémico|Aumenta masa magra y reduce masa grasa simultáneamente|Mejora la regeneración tisular y la cicatrización|Efectos sobre densidad ósea, piel y cabello|Patrón oro de la investigación somatotrópica',
         'stock': 12,
         'low_stock_alert': 3,
-        'image_path': 'jdp_vial_hgh.png',
+        'image_path': 'prod_hgh.jpg',
     },
     {
         'sku': 'JDP-ACETIC',
@@ -1988,7 +1988,7 @@ PRODUCTS_SEED = [
         'benefits': 'Solvente ácido para péptidos sensibles a pH neutro|Recomendada para CJC-1295, GHRH y péptidos hidrofóbicos|Mejora la solubilización de péptidos lipofílicos|Estabiliza péptidos con grupos amino libres|pH 3.5-4.5 calibrado para investigación|Calidad USP para uso en laboratorio',
         'stock': 100,
         'low_stock_alert': 20,
-        'image_path': 'jdp_vial_acetic.png',
+        'image_path': 'prod_acetic.jpg',
     },
     {
         'sku': 'JDP-SELANK',
@@ -2000,7 +2000,7 @@ PRODUCTS_SEED = [
         'benefits': 'Efecto ansiolítico sin sedación ni dependencia (vs. benzodiacepinas)|Modula los sistemas GABAérgico y serotoninérgico|Mejora la memoria, la concentración y el procesamiento mental|Inmunomodulación — modula citoquinas pro y antiinflamatorias|Reduce el estrés, la ansiedad situacional y la fatiga mental|Alta biodisponibilidad por vía intranasal en investigación',
         'stock': 22,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_selank.png',
+        'image_path': 'prod_selank.jpg',
     },
     {
         'sku': 'JDP-BBG70',
@@ -2012,7 +2012,7 @@ PRODUCTS_SEED = [
         'benefits': 'Tres péptidos sinérgicos en un solo vial (BPC+CU+TB)|Aceleración integral de la recuperación de lesiones músculo-esqueléticas|Promueve la angiogénesis y la formación de nuevos vasos|Estimula la síntesis de colágeno, elastina y matriz extracelular|Protección y reparación de mucosa gástrica e intestinal|Protocolo de recuperación intensivo sin múltiples reconstituciones',
         'stock': 20,
         'low_stock_alert': 5,
-        'image_path': 'jdp_vial_bbg70.png',
+        'image_path': 'prod_bbg70.jpg',
     },
     {
         'sku': 'JDP-TA1',

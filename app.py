@@ -5358,7 +5358,9 @@ def admin_dashboard():
 @admin_required
 def admin_productos():
     products = query_db("SELECT * FROM products ORDER BY name")
-    return render_template('admin/productos.html', products=products)
+    categories = sorted({p['category'] for p in products if p['category']})
+    return render_template('admin/productos.html', products=products,
+                           categories=categories)
 
 
 @app.route('/admin/productos/nuevo', methods=['GET', 'POST'])
@@ -5572,7 +5574,9 @@ def admin_inventario():
            JOIN products p ON sm.product_id = p.id
            ORDER BY sm.created_at DESC LIMIT 50"""
     )
-    return render_template('admin/inventario.html', products=products, movements=movements)
+    categories = sorted({p['category'] for p in products if p['category']})
+    return render_template('admin/inventario.html', products=products,
+                           movements=movements, categories=categories)
 
 
 @app.route('/admin/ordenes/eliminar', methods=['POST'])

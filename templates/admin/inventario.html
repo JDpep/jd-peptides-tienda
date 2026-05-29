@@ -18,8 +18,8 @@
   </div>
   <select id="inv-filter-cat" class="admin-input" style="width:170px" onchange="filtrarInventario()">
     <option value="">Todas las categorías</option>
-    {% for p in products %}
-      <option value="{{ p['category']|lower }}">{{ p['category'] }}</option>
+    {% for cat in categories %}
+      <option value="{{ cat|lower }}">{{ cat }}</option>
     {% endfor %}
   </select>
   <select id="inv-filter-stock" class="admin-input" style="width:150px" onchange="filtrarInventario()">

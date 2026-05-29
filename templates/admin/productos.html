@@ -14,8 +14,8 @@
   </div>
   <select id="prod-filter-cat" class="admin-input" style="width:170px" onchange="filtrarProductos()">
     <option value="">Todas las categorías</option>
-    {% for p in products %}
-      <option value="{{ p['category'] }}">{{ p['category'] }}</option>
+    {% for cat in categories %}
+      <option value="{{ cat }}">{{ cat }}</option>
     {% endfor %}
   </select>
   <select id="prod-filter-estado" class="admin-input" style="width:140px" onchange="filtrarProductos()">

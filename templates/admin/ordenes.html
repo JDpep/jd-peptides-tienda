@@ -6,12 +6,13 @@
 
 <!-- Status filter — chips con contadores. "Todas" es siempre el default. -->
 {% set sc = status_counts or {} %}
+{% set status_labels = {'nuevo':'Nuevas', 'procesando':'Procesando', 'enviado':'Enviadas', 'entregado':'Entregadas', 'cancelado':'Canceladas'} %}
 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem">
   <a href="{{ url_for('admin_ordenes') }}"
      class="pill {% if not status_filter %}active{% endif %}">
     Todas <span style="opacity:0.65">({{ sc.get('_total', 0) }})</span>
   </a>
-  {% for slug, label in [('nuevo','Nuevas'), ('procesando','Procesando'), ('enviado','Enviadas'), ('entregado','Entregadas'), ('cancelado','Canceladas')] %}
+  {% for slug, label in status_labels.items() %}
     <a href="{{ url_for('admin_ordenes', status=slug) }}"
        class="pill {% if status_filter == slug %}active{% endif %}">
       {{ label }} <span style="opacity:0.65">({{ sc.get(slug, 0) }})</span>
@@ -56,7 +57,7 @@ var ORD_DATA = [
   <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
     <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
       <h3>
-        {% if status_filter %}Órdenes: {{ status_filter }}{% else %}Todas las Órdenes{% endif %}
+        {% if status_filter %}Órdenes: {{ status_labels.get(status_filter, status_filter) }}{% else %}Todas las Órdenes{% endif %}
         <span style="color:var(--text3);font-weight:400">({{ orders|length }})</span>
       </h3>
       <div id="ord-acciones" style="display:none;align-items:center;gap:0.4rem;flex-wrap:wrap">
@@ -108,7 +109,7 @@ var ORD_DATA = [
         {% else %}
           <tr>
             <td colspan="9" style="text-align:center;color:var(--text3);padding:3rem">
-              No hay órdenes{% if status_filter %} con estado "{{ status_filter }}"{% endif %}
+              No hay órdenes{% if status_filter %} con estado «{{ status_labels.get(status_filter, status_filter) }}»{% endif %}
             </td>
           </tr>
         {% endfor %}

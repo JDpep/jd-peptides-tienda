@@ -86,6 +86,8 @@
                 <td style="text-align:right">${{ "%.2f"|format(item['unit_price']) }}</td>
                 <td style="text-align:right;color:var(--gold);font-weight:700">${{ "%.2f"|format(item['subtotal']) }}</td>
               </tr>
+            {% else %}
+              <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Esta orden no tiene productos registrados.</td></tr>
             {% endfor %}
           </tbody>
           <tfoot>

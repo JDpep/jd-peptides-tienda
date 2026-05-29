@@ -211,7 +211,7 @@
                       </div>
                       {% set _pimg = p['image_path'] or img_map.get(p['sku'], '') %}
                       {% if _pimg %}
-                        <img src="{{ url_for('static', filename='img/' + _pimg) }}"
+                        <img src="{{ url_for('static', filename='img/' + _pimg) }}?v={{ build_id }}"
                              loading="{% if loop.index <= 3 %}eager{% else %}lazy{% endif %}"
                              decoding="async"
                              {% if loop.index <= 3 %}fetchpriority="high"{% endif %}

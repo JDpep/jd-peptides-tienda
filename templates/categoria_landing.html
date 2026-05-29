@@ -69,7 +69,7 @@
             <a href="{{ _href }}" style="text-decoration:none;display:contents">
               <div class="product-visual {% if p['image_path'] %}product-visual-has-img{% endif %}">
                 {% if p['image_path'] %}
-                  <img src="{{ url_for('static', filename='img/' + p['image_path']) }}"
+                  <img src="{{ url_for('static', filename='img/' + p['image_path']) }}?v={{ build_id }}"
                        alt="{{ p['name'] }} {{ p['dose'] }} — {{ landing.title }}" class="product-card-img" loading="lazy">
                 {% else %}
                   <div class="product-visual-pattern">

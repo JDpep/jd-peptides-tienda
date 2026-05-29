@@ -3949,8 +3949,10 @@ def api_productos():
     result = []
     for p in products:
         d = dict(p)
-        img = SKU_IMAGE_MAP.get(d.get('sku', ''), '') or d.get('image_path') or ''
-        d['image_url'] = f'/media/{img}' if img else ''
+        # Preferir image_path (foto real actual) sobre el mapa legacy. Cache-bust
+        # con build_id para que el SW no sirva imágenes viejas.
+        img = d.get('image_path') or SKU_IMAGE_MAP.get(d.get('sku', ''), '') or ''
+        d['image_url'] = f'/media/{img}?v={_BUILD_ID}' if img else ''
         result.append(d)
     return jsonify({'products': result, 'count': len(result)})
 

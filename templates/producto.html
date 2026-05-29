@@ -162,7 +162,7 @@
         {% else %}
         <div class="product-detail-visual {% if prod_img %}product-detail-has-img{% endif %}">
           {% if prod_img %}
-            <img src="{{ url_for('static', filename='img/' + prod_img) }}"
+            <img src="{{ url_for('static', filename='img/' + prod_img) }}?v={{ build_id }}"
                  alt="{{ product['name'] }}"
                  class="product-detail-img{% if prod_img.endswith('.jpeg') or prod_img.endswith('.jpg') or '_frasco_' in prod_img %} img-vial-right{% endif %}">
             <span class="badge badge-cat {{ _bc.get(product['category'], 'badge-cat-default') }}" style="position:absolute;top:1rem;left:1rem;z-index:2">{{ product['category'] }}</span>
@@ -347,7 +347,7 @@
                 <div class="product-visual {% if _rimg %}product-visual-has-img{% endif %}">
                   <div class="product-visual-cat"><span class="badge badge-cat {{ _bc.get(p['category'], 'badge-cat-default') }}">{{ p['category'] }}</span></div>
                   {% if _rimg %}
-                    <img src="{{ url_for('static', filename='img/' + _rimg) }}"
+                    <img src="{{ url_for('static', filename='img/' + _rimg) }}?v={{ build_id }}"
                          alt="{{ p['name'] }}" class="product-card-img"
                          loading="lazy" decoding="async">
                   {% else %}

@@ -114,8 +114,14 @@ th.sortable.desc .sort-icon::after { content: ' ▼'; }
 <script nonce="{{ csp_nonce }}">
 var sortDir = {};
 
+// Normaliza para búsqueda: minúsculas + quita acentos ("García" → "garcia").
+function _norm(s) {
+  return (s == null ? '' : String(s)).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
 function filtrarProductos() {
-  var q    = document.getElementById('prod-search').value.toLowerCase().trim();
+  var q    = _norm(document.getElementById('prod-search').value);
   var cat  = document.getElementById('prod-filter-cat').value.toLowerCase();
   var est  = document.getElementById('prod-filter-estado').value;
   var stk  = document.getElementById('prod-filter-stock').value;
@@ -123,14 +129,14 @@ function filtrarProductos() {
   var rows = document.querySelectorAll('#prod-tbody tr[data-name]');
   var visible = 0;
   rows.forEach(function(row) {
-    var name  = row.dataset.name  || '';
-    var sku   = row.dataset.sku   || '';
-    var rcat  = row.dataset.cat   || '';
-    var dose  = row.dataset.dose  || '';
+    var name  = _norm(row.dataset.name);
+    var sku   = _norm(row.dataset.sku);
+    var rcat  = row.dataset.cat   || '';   // crudo para match exacto del filtro
+    var dose  = _norm(row.dataset.dose);
     var resto = row.dataset.estado || '';
     var rstk  = row.dataset.stockStatus || '';
 
-    var matchQ   = !q   || name.includes(q) || sku.includes(q) || rcat.includes(q) || dose.includes(q);
+    var matchQ   = !q   || name.includes(q) || sku.includes(q) || _norm(rcat).includes(q) || dose.includes(q);
     var matchCat = !cat || rcat === cat;
     var matchEst = !est || resto === est;
     var matchStk = !stk || rstk === stk;

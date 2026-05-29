@@ -1331,6 +1331,10 @@ class _PGWrapper:
     _AUTOINCR_RE = re.compile(r'\bINTEGER PRIMARY KEY AUTOINCREMENT\b', re.I)
     _DATETIME_RE = re.compile(r"DEFAULT\s*\(datetime\('now'\)\)", re.I)
     _PG_TS = "DEFAULT (to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS'))"
+    # MAX/MIN escalar (con coma de nivel superior, sin paréntesis anidados) →
+    # GREATEST/LEAST. Las agregaciones de 1 arg (MAX(price)) no llevan coma.
+    _SCALAR_MAX_RE = re.compile(r'\bMAX\(([^()]*,[^()]*)\)', re.I)
+    _SCALAR_MIN_RE = re.compile(r'\bMIN\(([^()]*,[^()]*)\)', re.I)
 
     def __init__(self, conn):
         self._conn = conn
@@ -1341,6 +1345,14 @@ class _PGWrapper:
         q = self._STRFTIME_RE.sub(r'substring(\1, 1, 7)', q)
         q = self._AUTOINCR_RE.sub('SERIAL PRIMARY KEY', q)
         q = self._DATETIME_RE.sub(self._PG_TS, q)
+        # SQLite usa MAX()/MIN() como funciones ESCALARES de varios args
+        # (p.ej. MAX(0, stock-?)); Postgres reserva MAX/MIN para agregación y
+        # el equivalente escalar es GREATEST/LEAST. Sólo traducimos las llamadas
+        # con coma de nivel superior (las agregaciones como MAX(price) no la
+        # tienen, así que quedan intactas). Sin esto, "salida" de inventario
+        # rompía con: function max(integer, integer) does not exist.
+        q = self._SCALAR_MAX_RE.sub(r'GREATEST(\1)', q)
+        q = self._SCALAR_MIN_RE.sub(r'LEAST(\1)', q)
         return q
 
     def execute(self, query, args=()):
@@ -1445,6 +1457,23 @@ def execute_db(query, args=()):
     last_id = cur.lastrowid  # antes del commit — necesario para PostgreSQL (lastval())
     db.commit()
     return last_id
+
+
+def _search_clause(term, columns):
+    """Construye un fragmento WHERE de búsqueda insensible a MAYÚSCULAS y a
+    ACENTOS sobre varias columnas. En Postgres usa unaccent()+ILIKE para que
+    'garcia' encuentre 'García' y 'jose' encuentre 'José'. En el fallback
+    SQLite degrada a LIKE simple (case-insensitive por COLLATE NOCASE de los
+    campos de texto). Devuelve (clause_str, params_list).
+    Uso:  clause, p = _search_clause(q, ['customer_name', 'customer_email'])
+          where.append(clause); params.extend(p)
+    """
+    like = f'%{term}%'
+    if _USE_POSTGRES:
+        parts = [f"unaccent({c}) ILIKE unaccent(?)" for c in columns]
+    else:
+        parts = [f"{c} LIKE ?" for c in columns]
+    return '(' + ' OR '.join(parts) + ')', [like] * len(columns)
 
 
 # ---------------------------------------------------------------------------
@@ -2057,6 +2086,15 @@ CREATE INDEX IF NOT EXISTS idx_auth_attempts_bk_ts ON auth_attempts(bucket, ts);
 
 def init_db():
     db = get_db()
+    # Búsqueda insensible a acentos en el admin (orders/clientes/emails).
+    # Sólo Postgres; SQLite no tiene extensiones y degrada a LIKE simple.
+    if _USE_POSTGRES:
+        try:
+            db.execute("CREATE EXTENSION IF NOT EXISTS unaccent")
+            db.commit()
+        except Exception as _e:
+            db.rollback()
+            print(f"[INIT] unaccent no disponible: {type(_e).__name__}")
     db.executescript(SCHEMA)
     db.executescript(INDICES)
     db.commit()
@@ -4742,9 +4780,9 @@ def admin_emails():
         where.append('email_type = ?')
         params.append(etype)
     if q:
-        where.append('(to_addr LIKE ? OR subject LIKE ?)')
-        like = f'%{q}%'
-        params.extend([like, like])
+        clause, p = _search_clause(q, ['to_addr', 'subject'])
+        where.append(clause)
+        params.extend(p)
 
     sql_where = (' WHERE ' + ' AND '.join(where)) if where else ''
     rows = query_db(
@@ -5683,14 +5721,14 @@ def admin_ordenes():
         params.append(status_filter)
     if q:
         # Busca en número de orden, nombre, email, teléfono y SKUs/productos
-        like = f'%{q}%'
-        where.append("""(
-            order_number LIKE ? OR customer_name LIKE ? OR
-            customer_email LIKE ? OR customer_phone LIKE ? OR
-            id IN (SELECT order_id FROM order_items
-                   WHERE product_sku LIKE ? OR product_name LIKE ?)
-        )""")
-        params.extend([like, like, like, like, like, like])
+        # (insensible a mayúsculas y acentos)
+        direct, p1 = _search_clause(q, ['order_number', 'customer_name',
+                                        'customer_email', 'customer_phone'])
+        sub, p2 = _search_clause(q, ['product_sku', 'product_name'])
+        where.append(
+            f"({direct} OR id IN (SELECT order_id FROM order_items WHERE {sub}))"
+        )
+        params.extend(p1 + p2)
 
     sql_where = (' WHERE ' + ' AND '.join(where)) if where else ''
     orders = query_db(
@@ -5721,9 +5759,9 @@ def admin_ordenes_export():
         where.append("status = ?")
         params.append(status_filter)
     if q:
-        like = f'%{q}%'
-        where.append("(order_number LIKE ? OR customer_name LIKE ? OR customer_email LIKE ?)")
-        params.extend([like, like, like])
+        clause, p = _search_clause(q, ['order_number', 'customer_name', 'customer_email'])
+        where.append(clause)
+        params.extend(p)
     sql_where = (' WHERE ' + ' AND '.join(where)) if where else ''
     orders = query_db(
         f"SELECT * FROM orders{sql_where} ORDER BY created_at DESC",
@@ -5841,9 +5879,9 @@ def admin_clientes():
     where = "WHERE status NOT IN ('cancelado')"
     params = []
     if q:
-        where += " AND (customer_email LIKE ? OR customer_name LIKE ? OR customer_phone LIKE ?)"
-        like = f'%{q}%'
-        params.extend([like, like, like])
+        clause, p = _search_clause(q, ['customer_email', 'customer_name', 'customer_phone'])
+        where += " AND " + clause
+        params.extend(p)
 
     rows = query_db(
         f"""SELECT

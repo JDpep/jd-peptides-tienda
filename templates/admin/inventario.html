@@ -389,20 +389,30 @@ function confirmarEliminar() {
 <script nonce="{{ csp_nonce }}">
 var invSortDir = {};
 
+// Normaliza para búsqueda: minúsculas + quita acentos ("García" → "garcia").
+function _normInv(s) {
+  return (s == null ? '' : String(s)).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
 function filtrarInventario() {
-  var q   = (document.getElementById('inv-search').value || '').toLowerCase().trim();
+  var q   = _normInv(document.getElementById('inv-search').value);
   var cat = (document.getElementById('inv-filter-cat').value || '').toLowerCase();
   var stk = document.getElementById('inv-filter-stock').value;
 
   var rows = document.querySelectorAll('tr[data-inv-sku]');
   var visible = 0;
   rows.forEach(function(row) {
-    var adjRow = document.getElementById('adjustment-form-' + (row.querySelector('[id]') ? '' : ''));
-    var matchQ   = !q   || row.dataset.invSku.includes(q) || row.dataset.invName.includes(q) || row.dataset.invCat.includes(q);
+    var matchQ   = !q   || _normInv(row.dataset.invSku).includes(q)
+                        || _normInv(row.dataset.invName).includes(q)
+                        || _normInv(row.dataset.invCat).includes(q);
     var matchCat = !cat || row.dataset.invCat === cat;
     var matchStk = !stk || row.dataset.invStock === stk;
     var show = matchQ && matchCat && matchStk;
     row.style.display = show ? '' : 'none';
+    // Oculta también la fila del formulario de ajuste de este producto.
+    var adjRow = document.getElementById('adjustment-form-' + row.dataset.pid);
+    if (adjRow && !show) adjRow.style.display = 'none';
     if (show) visible++;
   });
   var countEl = document.getElementById('inv-count');

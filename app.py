@@ -5363,65 +5363,101 @@ def admin_productos():
                            categories=categories)
 
 
+def _product_form_data(form):
+    """Extrae y normaliza los campos del formulario de producto. Clampa
+    precio/stock/alerta a >= 0 (el min= del HTML es solo client-side y se
+    puede saltar con un POST directo) y limpia benefits/tags."""
+    return {
+        'sku': form.get('sku', '').strip(),
+        'name': form.get('name', '').strip(),
+        'category': form.get('category', '').strip(),
+        'dose': form.get('dose', '').strip(),
+        'price': max(0.0, safe_float(form.get('price', 0))),
+        'stock': max(0, safe_int(form.get('stock', 0))),
+        'low_stock_alert': max(0, safe_int(form.get('low_stock_alert', 5), 5)),
+        'weight_grams': max(1, safe_int(form.get('weight_grams', DEFAULT_ITEM_WEIGHT_G), DEFAULT_ITEM_WEIGHT_G)),
+        'description': form.get('description', '').strip(),
+        'benefits': '|'.join(l.strip() for l in form.get('benefits', '').strip().splitlines() if l.strip()),
+        'tags': '|'.join(t for t in parse_tags(form.get('tags', '').strip()) if t in TAG_LABELS),
+        'active': 1 if form.get('active') else 0,
+    }
+
+
+def _validate_product(d, pid=None):
+    """Valida campos obligatorios y unicidad del SKU. Devuelve mensaje de
+    error (str) o None si todo OK. Evita el 500 con mensaje técnico de
+    Postgres por NOT NULL / UNIQUE."""
+    if not d['name'] or not d['sku'] or not d['category'] or not d['dose']:
+        return 'Nombre, SKU, categoría y dosis son obligatorios.'
+    if pid is None:
+        dup = query_db("SELECT 1 FROM products WHERE sku=?", (d['sku'],), one=True)
+    else:
+        dup = query_db("SELECT 1 FROM products WHERE sku=? AND id!=?", (d['sku'], pid), one=True)
+    if dup:
+        return f'Ya existe un producto con el SKU «{d["sku"]}».'
+    return None
+
+
+def _save_product_images(pid, start_order=0):
+    """Guarda las imágenes subidas validando tipo/magic-bytes. Devuelve el
+    filename de la primera imagen válida subida (o None)."""
+    first_uploaded = None
+    for i, file in enumerate(request.files.getlist('images')):
+        if not (file and file.filename and allowed_file(file.filename)):
+            continue
+        mime, err = _validate_image_upload(file)
+        if err:
+            flash(f'Archivo {file.filename}: {err}', 'error')
+            continue
+        base = secure_filename(file.filename) or 'image'  # anti path-traversal
+        filename = f'{uuid.uuid4().hex[:10]}_{base}'
+        file.save(os.path.join(UPLOAD_FOLDER, filename))
+        execute_db("INSERT INTO product_images (product_id, filename, sort_order) VALUES (?, ?, ?)",
+                   (pid, filename, start_order + i))
+        if first_uploaded is None:
+            first_uploaded = filename
+    return first_uploaded
+
+
 @app.route('/admin/productos/nuevo', methods=['GET', 'POST'])
 @admin_required
 def admin_nuevo_producto():
-    if request.method == 'POST':
-        sku = request.form.get('sku', '').strip()
-        name = request.form.get('name', '').strip()
-        category = request.form.get('category', '').strip()
-        dose = request.form.get('dose', '').strip()
-        price = safe_float(request.form.get('price', 0))
-        stock = safe_int(request.form.get('stock', 0))
-        low_stock_alert = safe_int(request.form.get('low_stock_alert', 5), 5)
-        weight_grams = max(1, safe_int(request.form.get('weight_grams', DEFAULT_ITEM_WEIGHT_G), DEFAULT_ITEM_WEIGHT_G))
-        description = request.form.get('description', '').strip()
-        benefits_raw = request.form.get('benefits', '').strip()
-        benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
-        # Tags whitelist contra TAG_LABELS
-        tags_raw = request.form.get('tags', '').strip()
-        tags = '|'.join(t for t in parse_tags(tags_raw) if t in TAG_LABELS)
-        active = 1 if request.form.get('active') else 0
-
-        try:
-            # Genera slug único; si colisiona con producto existente, sufija con SKU/uuid
-            _base = _make_slug(name) or _make_slug(sku) or 'producto'
-            _slug = _base
-            if query_db("SELECT 1 FROM products WHERE slug=?", (_slug,), one=True):
-                _slug = f"{_base}-{_make_slug(sku)}" if sku else f"{_base}-{secrets.token_hex(3)}"
-                _sfx = 2
-                while query_db("SELECT 1 FROM products WHERE slug=?", (_slug,), one=True):
-                    _slug = f"{_base}-{_sfx}"
-                    _sfx += 1
-            pid = execute_db(
-                """INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, image_path, slug, tags)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)""",
-                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, _slug, tags)
-            )
-            files = request.files.getlist('images')
-            first_uploaded = None
-            for i, file in enumerate(files):
-                if not (file and file.filename and allowed_file(file.filename)):
-                    continue
-                mime, err = _validate_image_upload(file)
-                if err:
-                    flash(f'Archivo {file.filename}: {err}', 'error')
-                    continue
-                # Use UUID prefix to prevent overwrites & path-traversal residue
-                base = secure_filename(file.filename) or 'image'
-                filename = f'{uuid.uuid4().hex[:10]}_{base}'
-                file.save(os.path.join(UPLOAD_FOLDER, filename))
-                execute_db("INSERT INTO product_images (product_id, filename, sort_order) VALUES (?, ?, ?)", (pid, filename, i))
-                if first_uploaded is None:
-                    first_uploaded = filename
-            if first_uploaded:
-                execute_db("UPDATE products SET image_path=? WHERE id=?", (first_uploaded, pid))
-            flash('Producto creado exitosamente.', 'success')
-            return redirect(url_for('admin_productos'))
-        except Exception as e:
-            flash(f'Error al crear producto: {e}', 'error')
-
     categories = [r['category'] for r in query_db("SELECT DISTINCT category FROM products ORDER BY category")]
+    if request.method == 'POST':
+        d = _product_form_data(request.form)
+        err = _validate_product(d)
+        if not err:
+            try:
+                # Slug único; si colisiona, sufija con SKU/uuid
+                _base = _make_slug(d['name']) or _make_slug(d['sku']) or 'producto'
+                _slug = _base
+                if query_db("SELECT 1 FROM products WHERE slug=?", (_slug,), one=True):
+                    _slug = f"{_base}-{_make_slug(d['sku'])}" if d['sku'] else f"{_base}-{secrets.token_hex(3)}"
+                    _sfx = 2
+                    while query_db("SELECT 1 FROM products WHERE slug=?", (_slug,), one=True):
+                        _slug = f"{_base}-{_sfx}"
+                        _sfx += 1
+                pid = execute_db(
+                    """INSERT INTO products (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, image_path, slug, tags)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)""",
+                    (d['sku'], d['name'], d['category'], d['dose'], d['price'], d['stock'],
+                     d['low_stock_alert'], d['weight_grams'], d['description'], d['benefits'], d['active'], _slug, d['tags'])
+                )
+                first_uploaded = _save_product_images(pid, 0)
+                if first_uploaded:
+                    execute_db("UPDATE products SET image_path=? WHERE id=?", (first_uploaded, pid))
+                flash('Producto creado exitosamente.', 'success')
+                return redirect(url_for('admin_productos'))
+            except Exception as e:
+                app.logger.exception('admin_nuevo_producto')
+                err = 'No se pudo crear el producto. Revisa los datos e intenta de nuevo.'
+        flash(err, 'error')
+        # Re-render conservando lo que el admin escribió (antes se perdía todo)
+        return render_template('admin/producto_form.html',
+                               product={**d, 'id': None, 'image_path': '', 'slug': ''},
+                               benefits_text=d['benefits'].replace('|', '\n'),
+                               categories=categories, action='nuevo')
+
     return render_template('admin/producto_form.html', product=None, categories=categories, action='nuevo')
 
 
@@ -5433,74 +5469,58 @@ def admin_editar_producto(pid):
         flash('Producto no encontrado.', 'error')
         return redirect(url_for('admin_productos'))
 
-    if request.method == 'POST':
-        sku = request.form.get('sku', '').strip()
-        name = request.form.get('name', '').strip()
-        category = request.form.get('category', '').strip()
-        dose = request.form.get('dose', '').strip()
-        price = safe_float(request.form.get('price', 0))
-        stock = safe_int(request.form.get('stock', 0))
-        low_stock_alert = safe_int(request.form.get('low_stock_alert', 5), 5)
-        weight_grams = max(1, safe_int(request.form.get('weight_grams', DEFAULT_ITEM_WEIGHT_G), DEFAULT_ITEM_WEIGHT_G))
-        description = request.form.get('description', '').strip()
-        benefits_raw = request.form.get('benefits', '').strip()
-        benefits = '|'.join(line.strip() for line in benefits_raw.splitlines() if line.strip())
-        tags_raw = request.form.get('tags', '').strip()
-        tags = '|'.join(t for t in parse_tags(tags_raw) if t in TAG_LABELS)
-        active = 1 if request.form.get('active') else 0
-
-        try:
-            # Regenera slug si cambió el nombre o si está vacío
-            _cur_slug = (product['slug'] if 'slug' in product.keys() and product['slug'] else '')
-            _name_changed = (name.strip().lower() != (product['name'] or '').strip().lower())
-            if not _cur_slug or _name_changed:
-                _base = _make_slug(name) or _make_slug(sku) or 'producto'
-                _slug = _base
-                if query_db("SELECT 1 FROM products WHERE slug=? AND id!=?", (_slug, pid), one=True):
-                    _slug = f"{_base}-{_make_slug(sku)}" if sku else f"{_base}-{pid}"
-                    _sfx = 2
-                    while query_db("SELECT 1 FROM products WHERE slug=? AND id!=?", (_slug, pid), one=True):
-                        _slug = f"{_base}-{_sfx}"
-                        _sfx += 1
-            else:
-                _slug = _cur_slug
-            execute_db(
-                """UPDATE products SET sku=?, name=?, category=?, dose=?, price=?, stock=?,
-                   low_stock_alert=?, weight_grams=?, description=?, benefits=?, active=?, slug=?, tags=? WHERE id=?""",
-                (sku, name, category, dose, price, stock, low_stock_alert, weight_grams, description, benefits, active, _slug, tags, pid)
-            )
-            files = request.files.getlist('images')
-            existing_count = query_db("SELECT COUNT(*) as c FROM product_images WHERE product_id=?", (pid,), one=True)['c']
-            first_uploaded = None
-            for i, file in enumerate(files):
-                if not (file and file.filename and allowed_file(file.filename)):
-                    continue
-                mime, err = _validate_image_upload(file)
-                if err:
-                    flash(f'Archivo {file.filename}: {err}', 'error')
-                    continue
-                base = secure_filename(file.filename) or 'image'
-                filename = f'{uuid.uuid4().hex[:10]}_{base}'
-                file.save(os.path.join(UPLOAD_FOLDER, filename))
-                execute_db("INSERT INTO product_images (product_id, filename, sort_order) VALUES (?, ?, ?)", (pid, filename, existing_count + i))
-                if first_uploaded is None:
-                    first_uploaded = filename
-            # Siempre actualizar image_path con la primera imagen subida
-            if first_uploaded:
-                execute_db("UPDATE products SET image_path=? WHERE id=?", (first_uploaded, pid))
-            # Notificar en tiempo real a la tienda
-            sse_bus.publish('product_updated', {
-                'id': pid, 'name': name, 'price': price,
-                'stock': stock, 'active': active
-            })
-            flash('Producto actualizado.', 'success')
-            return redirect(url_for('admin_productos'))
-        except Exception as e:
-            flash(f'Error al actualizar: {e}', 'error')
-
-    benefits_text = (product['benefits'] or '').replace('|', '\n')
     categories = [r['category'] for r in query_db("SELECT DISTINCT category FROM products ORDER BY category")]
     product_images = query_db("SELECT * FROM product_images WHERE product_id=? ORDER BY sort_order, id", (pid,))
+
+    if request.method == 'POST':
+        d = _product_form_data(request.form)
+        err = _validate_product(d, pid=pid)
+        if not err:
+            try:
+                # Regenera slug si cambió el nombre o si está vacío
+                _cur_slug = (product['slug'] if 'slug' in product.keys() and product['slug'] else '')
+                _name_changed = (d['name'].lower() != (product['name'] or '').strip().lower())
+                if not _cur_slug or _name_changed:
+                    _base = _make_slug(d['name']) or _make_slug(d['sku']) or 'producto'
+                    _slug = _base
+                    if query_db("SELECT 1 FROM products WHERE slug=? AND id!=?", (_slug, pid), one=True):
+                        _slug = f"{_base}-{_make_slug(d['sku'])}" if d['sku'] else f"{_base}-{pid}"
+                        _sfx = 2
+                        while query_db("SELECT 1 FROM products WHERE slug=? AND id!=?", (_slug, pid), one=True):
+                            _slug = f"{_base}-{_sfx}"
+                            _sfx += 1
+                else:
+                    _slug = _cur_slug
+                execute_db(
+                    """UPDATE products SET sku=?, name=?, category=?, dose=?, price=?, stock=?,
+                       low_stock_alert=?, weight_grams=?, description=?, benefits=?, active=?, slug=?, tags=? WHERE id=?""",
+                    (d['sku'], d['name'], d['category'], d['dose'], d['price'], d['stock'],
+                     d['low_stock_alert'], d['weight_grams'], d['description'], d['benefits'], d['active'], _slug, d['tags'], pid)
+                )
+                existing_count = query_db("SELECT COUNT(*) as c FROM product_images WHERE product_id=?", (pid,), one=True)['c']
+                first_uploaded = _save_product_images(pid, existing_count)
+                if first_uploaded:
+                    execute_db("UPDATE products SET image_path=? WHERE id=?", (first_uploaded, pid))
+                sse_bus.publish('product_updated', {
+                    'id': pid, 'name': d['name'], 'price': d['price'],
+                    'stock': d['stock'], 'active': d['active']
+                })
+                flash('Producto actualizado.', 'success')
+                return redirect(url_for('admin_productos'))
+            except Exception as e:
+                app.logger.exception('admin_editar_producto')
+                err = 'No se pudo actualizar el producto. Revisa los datos e intenta de nuevo.'
+        flash(err, 'error')
+        # Re-render conservando lo escrito + la imagen/slug actuales del producto
+        return render_template('admin/producto_form.html',
+                               product={**d, 'id': pid,
+                                        'image_path': product['image_path'],
+                                        'slug': product['slug'] if 'slug' in product.keys() else ''},
+                               benefits_text=d['benefits'].replace('|', '\n'),
+                               categories=categories, action='editar',
+                               product_images=product_images)
+
+    benefits_text = (product['benefits'] or '').replace('|', '\n')
     return render_template('admin/producto_form.html', product=product,
                            benefits_text=benefits_text, categories=categories,
                            action='editar', product_images=product_images)

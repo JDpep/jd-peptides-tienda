@@ -9,10 +9,46 @@
     <h1 style="font-size:clamp(2rem,4vw,3rem);font-weight:800;color:#111;line-height:1.15;margin-bottom:0.75rem">
       Centro de <span style="color:#c9a227">Información</span>
     </h1>
-    <p style="font-size:1rem;color:#666;line-height:1.75;margin-bottom:3rem;max-width:600px">
+    <p style="font-size:1rem;color:#666;line-height:1.75;margin-bottom:2.5rem;max-width:600px">
       Recursos y conceptos básicos para entender los péptidos de investigación
       desde una perspectiva educativa. <em>For research use only.</em>
     </p>
+
+    <!-- Alianza Peptide Ed — banner destacado -->
+    <a href="{{ peptide_ed_url }}" target="_blank" rel="noopener"
+       style="display:block;text-decoration:none;margin-bottom:3rem;border-radius:14px;overflow:hidden;
+              background:linear-gradient(135deg,#111 0%,#1c1c1c 100%);border:1px solid rgba(201,162,39,0.35);
+              transition:box-shadow .25s,transform .25s"
+       onmouseover="this.style.boxShadow='0 12px 40px rgba(201,162,39,0.22)';this.style.transform='translateY(-2px)'"
+       onmouseout="this.style.boxShadow='none';this.style.transform='none'">
+      <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;padding:2rem 2.25rem">
+        <div style="flex-shrink:0;width:56px;height:56px;border-radius:13px;background:rgba(201,162,39,0.12);
+                    border:1.5px solid rgba(201,162,39,0.4);display:flex;align-items:center;justify-content:center">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a227" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+        </div>
+        <div style="flex:1;min-width:240px">
+          <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#c9a227;margin:0 0 0.5rem">
+            En alianza con · Plataforma educativa
+          </p>
+          <h2 style="font-size:1.5rem;font-weight:800;color:#fff;margin:0 0 0.5rem;line-height:1.2">
+            Peptide&nbsp;Ed
+          </h2>
+          <p style="font-size:0.9rem;color:#bbb;line-height:1.65;margin:0;max-width:460px">
+            ¿Quieres profundizar? Nuestro socio educativo reúne guías, ciencia y
+            fundamentos sobre péptidos de investigación, explicados a detalle y sin tecnicismos.
+          </p>
+        </div>
+        <span style="flex-shrink:0;display:inline-flex;align-items:center;gap:0.5rem;padding:0.8rem 1.6rem;
+                     background:#c9a227;border-radius:8px;color:#111;font-size:0.9rem;font-weight:700;white-space:nowrap">
+          Aprender en Peptide Ed
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17L17 7M9 7h8v8"/>
+          </svg>
+        </span>
+      </div>
+    </a>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem" class="info-grid">
 
@@ -91,13 +127,18 @@
       </p>
     </div>
 
-    <div style="margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap">
+    <div style="margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
       <a href="{{ url_for('catalogo') }}"
          style="display:inline-flex;align-items:center;gap:0.45rem;padding:0.65rem 1.4rem;background:#c9a227;border-radius:7px;color:#111;font-size:0.85rem;font-weight:700;text-decoration:none">
         Ver catálogo →
       </a>
-      <a href="/sobre-nosotros"
+      <a href="{{ peptide_ed_url }}" target="_blank" rel="noopener"
          style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.65rem 1.4rem;border:1.5px solid #c9a227;border-radius:7px;color:#c9a227;font-size:0.85rem;font-weight:600;text-decoration:none">
+        Aprender en Peptide Ed
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>
+      </a>
+      <a href="/sobre-nosotros"
+         style="display:inline-flex;align-items:center;gap:0.4rem;font-size:0.85rem;font-weight:600;color:#666;text-decoration:none">
         Sobre nosotros
       </a>
     </div>

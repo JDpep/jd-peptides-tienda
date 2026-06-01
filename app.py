@@ -577,6 +577,8 @@ EMAIL_BCC = (os.environ.get('EMAIL_BCC', 'jdpeptides@gmail.com') or '').strip()
 WHATSAPP_NUMBER  = os.environ.get('WHATSAPP_NUMBER', '').strip()
 CONTACT_EMAIL    = os.environ.get('CONTACT_EMAIL', 'info@jdpeptides.com').strip()
 CONTACT_LOCATION = os.environ.get('CONTACT_LOCATION', 'México').strip()
+# Plataforma educativa aliada (sitio externo, sólo informativo)
+PEPTIDE_ED_URL   = os.environ.get('PEPTIDE_ED_URL', 'https://peptideed.net').strip()
 
 import html as _html_mod
 def _h(v):
@@ -6800,6 +6802,7 @@ def inject_globals():
         'contact_location': CONTACT_LOCATION,
         'ga_measurement_id': GA_MEASUREMENT_ID,
         'build_id': _BUILD_ID,
+        'peptide_ed_url': PEPTIDE_ED_URL,
     }
 
 

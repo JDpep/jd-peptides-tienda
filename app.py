@@ -2237,37 +2237,12 @@ def init_db():
         for _sku, _cat in _cat_fixes:
             db.execute("UPDATE products SET category=? WHERE sku=?", (_cat, _sku))
         db.commit()
-    # Migration v1 (2026-04-28): stock recepción de inventario + eliminar producto test
-    # Usamos stock_movements como log — sólo corre una vez
-    _mig_tag = 'migration:v1:stock_recepcion_20260428'
-    already = db.execute(
-        "SELECT 1 FROM stock_movements WHERE reason=? LIMIT 1", (_mig_tag,)
-    ).fetchone()
-    if not already:
-        _stock_in = [
-            ('JDP-RT20',   200), ('JDP-RT10',   200), ('JDP-KLOW80', 200),
-            ('JDP-MOTSC',  200), ('JDP-DSIP',   200), ('JDP-SEMAX',  200),
-            ('JDP-NAD',    400), ('JDP-BPC157', 200), ('JDP-KPV',    200),
-            ('JDP-TB500',  200), ('JDP-CP',     200), ('JDP-TESA',   200),
-            ('JDP-GHKCU',  200), ('JDP-BAC',    400),
-        ]
-        _now = datetime.now().isoformat()
-        for _sku, _qty in _stock_in:
-            _row = db.execute('SELECT id, stock FROM products WHERE sku=?', (_sku,)).fetchone()
-            if _row:
-                db.execute('UPDATE products SET stock=? WHERE id=?',
-                           (_row['stock'] + _qty, _row['id']))
-                db.execute(
-                    'INSERT INTO stock_movements (product_id, type, quantity, reason, created_at) VALUES (?,?,?,?,?)',
-                    (_row['id'], 'entrada', _qty, _mig_tag, _now)
-                )
-        # Eliminar producto de prueba si existe
-        _test = db.execute("SELECT id FROM products WHERE sku='test'").fetchone()
-        if _test:
-            db.execute("DELETE FROM product_images WHERE product_id=?", (_test['id'],))
-            db.execute("DELETE FROM stock_movements WHERE product_id=?", (_test['id'],))
-            db.execute("DELETE FROM products WHERE id=?", (_test['id'],))
-        db.commit()
+    # Migration v1 (2026-04-28): recepción de inventario inicial — DESACTIVADA 2026-06-01.
+    # ⚠️ Esta migración sumaba +200/+400 al stock por SKU. Volvió a ejecutarse DESPUÉS de que
+    # el stock se recargó manualmente desde el conteo físico (PDF), inflando los productos
+    # id 1-14 (RT20 28→228, NAD+ 49→448, BAC 27→427, etc.). El stock se gestiona ahora desde
+    # el admin / ajustes directos, así que esta recepción histórica NO debe volver a aplicarse.
+    # Se deja como no-op a propósito; no borrar la lógica de SKU para conservar el historial.
 
     # Migration v2 (2026-04-28): descripciones y beneficios completos para los 18 productos
     _mig_v2_tag = 'migration:v2:descriptions_20260428'

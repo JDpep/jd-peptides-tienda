@@ -3267,7 +3267,7 @@ html { scroll-behavior: smooth; }
 }
 
 /* =========================================================
-   PRICE CURRENCY SUFFIX  (e.g. "$89.99 USD")
+   PRICE CURRENCY SUFFIX  (e.g. "$3,000.00 MXN")
    ========================================================= */
 .price-currency {
   font-size: 0.62em;

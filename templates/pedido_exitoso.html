@@ -129,7 +129,28 @@
 
     <!-- Payment instructions (datos editables desde /admin/pagos) -->
     <div class="payment-instructions">
-      {% if payment %}
+      {% if payment and payment.slug == 'paypal' %}
+        {# PayPal: CTA destacado para completar el pago. #}
+        {% set _pp_url = paypal_pay_url(payment.fields['link'], order['total']) %}
+        <h4>{{ payment.icon }} Completa tu pago con PayPal</h4>
+        <p style="margin-bottom:0.5rem">Importe a pagar: <strong style="color:var(--gold);font-size:1.05rem">${{ "%.2f"|format(order['total']) }} MXN</strong></p>
+        <p style="margin:0 0 1rem;font-size:0.85rem;color:var(--text2)">Referencia del pedido: <strong style="color:var(--text)">{{ order['order_number'] }}</strong></p>
+        {% if _pp_url %}
+          <a href="{{ _pp_url }}" target="_blank" rel="noopener"
+             class="btn btn-gold btn-lg" style="display:inline-flex;align-items:center;gap:0.5rem">
+            Pagar ${{ "%.2f"|format(order['total']) }} MXN con PayPal ↗
+          </a>
+          <p style="margin-top:0.75rem;font-size:0.8rem;color:var(--text3)">Se abrirá PayPal en una nueva pestaña. Puedes pagar con tarjeta de crédito/débito o tu saldo PayPal.</p>
+        {% elif payment.fields['email'] %}
+          <p style="margin:0">Envía tu pago por PayPal a: <strong style="color:var(--text)">{{ payment.fields['email'] }}</strong></p>
+          <p style="margin-top:0.5rem;font-size:0.82rem;color:var(--text3)">Indica la referencia <strong>{{ order['order_number'] }}</strong> en la nota del pago.</p>
+        {% else %}
+          <p>Te enviaremos las instrucciones de pago de PayPal por correo en breve.</p>
+        {% endif %}
+        {% if payment.fields['note'] %}
+          <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text2)">{{ payment.fields['note'] }}</p>
+        {% endif %}
+      {% elif payment %}
         <h4>{{ payment.icon }} Instrucciones de Pago — {{ payment.label }}</h4>
         {% if payment.has_details %}
           <p style="margin-bottom:0.75rem">Realiza tu pago con los siguientes datos:</p>

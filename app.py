@@ -612,6 +612,27 @@ def _payment_instructions_email_html(order):
                 f'de ${total:.2f} MXN.</p>')
     note = (method['fields'].get('note') or '').strip()
     note_html = f'<p style="margin:10px 0 0;font-size:12px;color:#777">{_h(note)}</p>' if note else ''
+    ref = _h(order.get('order_number') or '')
+
+    # PayPal: botón/enlace para completar el pago (caso especial del único
+    # método activo). Si hay enlace configurado, lo construimos con monto MXN.
+    if method['slug'] == 'paypal':
+        pp_url = paypal_pay_url(method['fields'].get('link'), total)
+        email = (method['fields'].get('email') or '').strip()
+        if pp_url:
+            cta = (f'<a href="{_h(pp_url)}" style="display:inline-block;background:#c9a227;color:#fff;'
+                   f'text-decoration:none;font-weight:700;padding:11px 22px;border-radius:6px;font-size:14px">'
+                   f'Pagar ${total:.2f} MXN con PayPal</a>'
+                   f'<p style="margin:10px 0 0;font-size:12px;color:#777">Referencia: <strong>{ref}</strong> · '
+                   f'Puedes pagar con tarjeta o tu saldo PayPal.</p>')
+        elif email:
+            cta = (f'<p style="margin:0">Envía tu pago por PayPal a <strong style="color:#111">{_h(email)}</strong> '
+                   f'(${total:.2f} MXN). Indica la referencia <strong>{ref}</strong> en la nota del pago.</p>')
+        else:
+            cta = (f'<p style="margin:0">Te enviaremos en breve el enlace para pagar '
+                   f'<strong style="color:#c9a227">${total:.2f} MXN</strong> con PayPal.</p>')
+        return f'<div style="{box}">{cta}{note_html}</div>'
+
     if not method['has_details']:
         return (f'<p style="{box}">Tu pedido fue reservado. Te contactaremos para coordinar '
                 f'el pago de <strong style="color:#c9a227">${total:.2f} MXN</strong>.</p>{note_html}')
@@ -1544,9 +1565,12 @@ PAYMENT_METHODS_META = [
                 ('note', 'Nota / instrucciones para el cliente')]},
 ]
 
-# Métodos activos por defecto si la tabla store_settings aún no tiene el flag
-# (replica el comportamiento histórico: transferencia/efectivo/cripto ON).
-_DEFAULT_ENABLED_METHODS = {'transferencia', 'efectivo', 'criptomonedas'}
+# Métodos activos por defecto si la tabla store_settings aún no tiene el flag.
+# Decisión 2026-06-03: la tienda SOLO acepta PayPal. Por eso el default es
+# {'paypal'} — así, aunque la DB no tenga flags (cold start / fallback SQLite),
+# el checkout muestra únicamente PayPal y el backend rechaza cualquier otro.
+# El admin puede reactivar otros desde /admin/pagos si algún día lo decide.
+_DEFAULT_ENABLED_METHODS = {'paypal'}
 
 # Cache muy ligero de settings (la config de pagos se lee en CADA checkout /
 # pedido exitoso / email). TTL corto para que un cambio en el admin se vea casi
@@ -3381,6 +3405,34 @@ def carrier_tracking_url(carrier, number):
 
 # Disponible en templates
 app.jinja_env.globals['carrier_tracking_url'] = carrier_tracking_url
+
+
+def paypal_pay_url(link, total):
+    """Construye la URL para pagar por PayPal a partir de lo configurado en
+    /admin/pagos (campo 'Enlace de pago' del método PayPal).
+    - Si es un handle/enlace de PayPal.me SIN monto, le agrega el total en MXN
+      (PayPal.me soporta /<monto><moneda>, p.ej. /3150MXN) → el cliente ve el
+      importe ya prellenado.
+    - Si es cualquier otro enlace (botón hospedado, etc.), se usa tal cual.
+    NO hace conversión de moneda: el total ya está en MXN.
+    Devuelve '' si no hay enlace configurado."""
+    link = (link or '').strip()
+    if not link:
+        return ''
+    # Monto en MXN: entero si es exacto, si no 2 decimales.
+    amt = f'{total:.0f}' if float(total) == int(total) else f'{total:.2f}'
+    low = link.lower()
+    # Handle suelto (sin http): tratarlo como usuario de PayPal.me
+    if not low.startswith('http'):
+        handle = link.lstrip('@/').strip('/')
+        return f'https://www.paypal.com/paypalme/{handle}/{amt}MXN'
+    # Enlace paypal.me / paypalme SIN monto al final → agregar monto
+    m = re.search(r'(paypal\.me|paypalme)/[^/?#]+/?$', low)
+    if m:
+        return link.rstrip('/') + f'/{amt}MXN'
+    return link
+
+app.jinja_env.globals['paypal_pay_url'] = paypal_pay_url
 
 
 # ---------------------------------------------------------------------------

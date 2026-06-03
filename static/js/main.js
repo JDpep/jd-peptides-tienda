@@ -590,7 +590,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <h3 class="product-name">${escHtml(p.name)}</h3>
             <p class="product-dose">${escHtml(p.sku || '')} · ${escHtml(p.dose)}</p>
             ${tagsBlock}
-            <div class="product-price" style="color:var(--gold)">$${parseFloat(p.price).toFixed(2)} <span class="price-currency">USD</span></div>
+            <div class="product-price" style="color:var(--gold)">$${parseFloat(p.price).toFixed(2)} <span class="price-currency">MXN</span></div>
             <div style="margin-top:0.5rem">${stockBadge}</div>
           </div>
           <div class="product-footer">
@@ -692,7 +692,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <h2 id="qvTitle">${escHtmlQV(p.name)}</h2>
           <div class="qv-meta">${escHtmlQV(p.sku || '')} · ${escHtmlQV(p.dose)} · ${escHtmlQV(p.category)}</div>
           ${tagsHtml ? `<div class="card-tags">${tagsHtml}</div>` : ''}
-          <div class="qv-price">$${parseFloat(p.price).toFixed(2)} <span class="price-currency">USD</span></div>
+          <div class="qv-price">$${parseFloat(p.price).toFixed(2)} <span class="price-currency">MXN</span></div>
           ${p.description ? `<p class="qv-desc">${escHtmlQV(p.description)}</p>` : ''}
           ${benefitsList}
           <div class="qv-actions">

@@ -98,6 +98,18 @@
           <!-- Payment -->
           <div class="form-card">
             <h3>Método de Pago</h3>
+            {% if payment_methods|length == 1 %}
+              {# Un solo método habilitado: se preselecciona, sin dropdown. #}
+              {% set _m = payment_methods[0] %}
+              <input type="hidden" name="payment_method" value="{{ _m.slug }}">
+              <div style="display:flex;align-items:center;gap:0.6rem;padding:0.85rem 1rem;border:1px solid rgba(201,162,39,0.35);border-radius:8px;background:rgba(201,162,39,0.06)">
+                <span style="font-size:1.4rem">{{ _m.icon }}</span>
+                <div>
+                  <div style="font-weight:700;color:var(--text)">{{ _m.label }}</div>
+                  <div style="font-size:0.8rem;color:var(--text3)">Completarás el pago de forma segura con {{ _m.label }}.</div>
+                </div>
+              </div>
+            {% else %}
             <div class="form-group">
               <label>Selecciona tu método de pago *</label>
               <select name="payment_method" class="form-control" required>
@@ -107,6 +119,7 @@
                 {% endfor %}
               </select>
             </div>
+            {% endif %}
             <div class="form-group">
               <label>Notas adicionales</label>
               <textarea name="notes" class="form-control" placeholder="Instrucciones especiales, referencias, etc."></textarea>

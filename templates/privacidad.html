@@ -1,55 +1,61 @@
 {% extends "base.html" %}
-{% block title %}Política de Privacidad — JD Peptides{% endblock %}
+{% block title %}Aviso de Privacidad — JD Peptides{% endblock %}
 
 {% block content %}
 <div style="background:#fff;min-height:70vh;padding:5rem 0">
   <div class="container" style="max-width:780px">
     <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c9a227;margin-bottom:0.75rem">Legal</p>
     <h1 style="font-size:clamp(2rem,4vw,3rem);font-weight:800;color:#111;line-height:1.15;margin-bottom:2rem">
-      Política de <span style="color:#c9a227">Privacidad</span>
+      Aviso de <span style="color:#c9a227">Privacidad</span>
     </h1>
 
     <div style="display:flex;flex-direction:column;gap:1.4rem;font-size:1rem;color:#444;line-height:1.85">
 
-      <p>En JD Peptides nos comprometemos a proteger tu información personal conforme a la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares</strong> (LFPDPPP, México) y su Reglamento. Esta política describe cómo recopilamos, usamos y resguardamos los datos que nos compartes.</p>
+      <p style="font-size:0.85rem;color:#888">Última actualización: 3 de junio de 2026</p>
+
+      <p>En cumplimiento de la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares</strong> (LFPDPPP, México), su Reglamento y los Lineamientos aplicables, <strong>IUWAM, S.A. de C.V.</strong> («la Tienda»), operadora del sitio <strong>www.jdpeptides.mx</strong>, pone a tu disposición el presente Aviso de Privacidad, que describe cómo recopilamos, usamos, protegemos y compartimos tus datos personales.</p>
 
       <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">1. Responsable del tratamiento</h2>
-      <p><strong>JD Peptides</strong>, con domicilio en México, es el responsable del tratamiento de tus datos personales. Para cualquier asunto relacionado con esta política, escríbenos a <a href="mailto:jdpeptides@gmail.com" style="color:#c9a227">jdpeptides@gmail.com</a>.</p>
+      <p><strong>IUWAM, S.A. de C.V.</strong>, con domicilio en los Estados Unidos Mexicanos, es la responsable del tratamiento de tus datos personales. Para cualquier asunto relacionado con este Aviso, escríbenos a <a href="mailto:{{ contact_email }}" style="color:#c9a227">{{ contact_email }}</a>.</p>
 
-      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">2. Información que recopilamos</h2>
-      <p>Al realizar un pedido, recopilamos: nombre completo, correo electrónico, teléfono, dirección de envío y datos del método de pago elegido. <strong>No almacenamos datos de tarjetas de crédito</strong>; los pagos se procesan a través de plataformas seguras (transferencia SPEI, criptomonedas, etc.). Tampoco recopilamos información sensible (CURP, RFC, datos biométricos).</p>
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">2. Datos personales que recopilamos</h2>
+      <p>Al realizar un pedido recopilamos los datos necesarios para procesarlo: <strong>nombre completo, correo electrónico, teléfono y dirección de envío</strong>. <strong>No almacenamos datos de tarjetas bancarias:</strong> los pagos se procesan de forma íntegra y segura a través de <strong>PayPal</strong>, plataforma que recibe directamente los datos de pago bajo sus propias políticas y estándares de seguridad (PCI-DSS). Tampoco recopilamos datos personales sensibles (CURP, datos de salud o biométricos).</p>
 
-      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">3. Finalidades primarias</h2>
-      <p>Utilizamos tu información para: (i) procesar y dar seguimiento a tus pedidos, (ii) enviarte confirmaciones y actualizaciones de estado, (iii) coordinar envíos con las paqueterías, (iv) atender consultas de servicio al cliente. No vendemos ni cedemos tus datos a terceros con fines comerciales.</p>
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">3. Finalidades del tratamiento</h2>
+      <p><strong>Finalidades primarias</strong> (necesarias para la relación de compraventa): (i) procesar, confirmar y dar seguimiento a tus pedidos; (ii) coordinar el envío y la entrega con las paqueterías; (iii) emitir comprobantes y atender aclaraciones; (iv) brindar servicio y soporte al cliente; (v) cumplir obligaciones legales y fiscales aplicables.</p>
+      <p><strong>Finalidades secundarias</strong> (no necesarias, requieren tu consentimiento y puedes oponerte sin afectar tu pedido): envío de promociones, novedades y comunicaciones sobre nuevos productos. Si no deseas recibirlas, escríbenos a <a href="mailto:{{ contact_email }}" style="color:#c9a227">{{ contact_email }}</a>.</p>
+      <p>No vendemos, cedemos ni comercializamos tus datos personales con terceros para fines distintos a los aquí descritos.</p>
 
-      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">4. Prestadores de servicios</h2>
-      <p>Para operar el sitio compartimos datos estrictamente necesarios con los siguientes proveedores, sujetos a sus propias políticas:</p>
-      <ul style="padding-left:1.5rem;color:#444;margin:0">
-        <li><strong>Vercel</strong> (hosting del sitio, EEUU)</li>
-        <li><strong>Supabase</strong> (base de datos, EEUU)</li>
-        <li><strong>Resend</strong> (envío de correos transaccionales, EEUU)</li>
-        <li><strong>Paqueterías</strong> (DHL, Estafeta, FedEx) para entrega de pedidos</li>
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">4. Transferencias y encargados</h2>
+      <p>Para operar el Sitio y cumplir las finalidades anteriores, compartimos únicamente los datos estrictamente necesarios con los siguientes prestadores de servicios (encargados), sujetos a sus propias políticas de privacidad y a obligaciones de confidencialidad:</p>
+      <ul style="padding-left:1.5rem;color:#444;margin:0;line-height:1.8">
+        <li><strong>PayPal</strong> — procesamiento de pagos.</li>
+        <li><strong>Vercel</strong> — alojamiento (hosting) del Sitio.</li>
+        <li><strong>Supabase</strong> — base de datos.</li>
+        <li><strong>Resend</strong> — envío de correos transaccionales (confirmaciones y avisos de pedido).</li>
+        <li><strong>Paqueterías</strong> (DHL, Estafeta, FedEx u otras) — entrega de pedidos.</li>
       </ul>
+      <p>Estas transferencias se realizan al amparo del artículo 37 de la LFPDPPP, por ser necesarias para el mantenimiento o cumplimiento de la relación jurídica entre tú y la Tienda. No requieren tu consentimiento adicional.</p>
 
-      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">5. Derechos ARCO</h2>
-      <p>Tienes derecho a <strong>A</strong>cceder, <strong>R</strong>ectificar, <strong>C</strong>ancelar u <strong>O</strong>ponerte al tratamiento de tus datos personales (ARCO), así como revocar tu consentimiento. Para ejercer cualquiera de estos derechos, envía tu solicitud al correo <a href="mailto:jdpeptides@gmail.com" style="color:#c9a227">jdpeptides@gmail.com</a> incluyendo: tu nombre completo, identificación oficial vigente y descripción del derecho que deseas ejercer. Responderemos en un plazo máximo de 20 días hábiles.</p>
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">5. Medios para ejercer tus Derechos ARCO</h2>
+      <p>Tienes derecho a <strong>A</strong>cceder, <strong>R</strong>ectificar, <strong>C</strong>ancelar u <strong>O</strong>ponerte al tratamiento de tus datos personales (Derechos ARCO), así como a revocar el consentimiento otorgado. Para ejercerlos, envía tu solicitud a <a href="mailto:{{ contact_email }}" style="color:#c9a227">{{ contact_email }}</a> incluyendo: (i) tu nombre completo y medio para recibir respuesta; (ii) copia de una identificación oficial vigente; (iii) descripción clara del derecho que deseas ejercer y de los datos involucrados. Daremos respuesta en un plazo máximo de <strong>20 días hábiles</strong> conforme a la ley.</p>
 
-      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">6. Retención de datos</h2>
-      <p>Conservamos tus datos personales mientras mantengas un historial activo de compras y por un periodo adicional de cinco años para fines fiscales y de comprobación, conforme a la legislación aplicable. Después de ese plazo procedemos a su eliminación segura.</p>
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">6. Conservación de los datos</h2>
+      <p>Conservamos tus datos personales mientras exista una relación comercial activa y, posteriormente, por el plazo necesario para cumplir obligaciones legales y fiscales (de manera general, hasta <strong>cinco años</strong> con fines de comprobación). Concluido dicho plazo, los datos se bloquean y se eliminan de forma segura.</p>
 
-      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">7. Cookies</h2>
-      <p>Utilizamos cookies de sesión estrictamente necesarias para mantener tu carrito activo y la sesión de administrador. No usamos cookies de publicidad ni de tracking de terceros sin tu consentimiento explícito.</p>
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">7. Uso de cookies</h2>
+      <p>El Sitio utiliza <strong>cookies estrictamente necesarias</strong> para mantener tu carrito de compras y la sesión activa. No empleamos cookies de publicidad ni de rastreo de terceros con fines comerciales sin tu consentimiento. Puedes deshabilitar las cookies desde tu navegador, considerando que ello puede afectar el funcionamiento del carrito y del proceso de compra.</p>
 
-      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">8. Seguridad</h2>
-      <p>Tu información se transmite mediante conexiones cifradas (HTTPS / TLS 1.3). Las contraseñas se almacenan con hashing PBKDF2-SHA256. Implementamos rate limiting, protección CSRF y headers de seguridad (CSP, HSTS, X-Frame-Options) para proteger tus datos contra accesos no autorizados.</p>
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">8. Medidas de seguridad</h2>
+      <p>Tu información se transmite mediante conexiones cifradas (HTTPS / TLS). Las contraseñas se almacenan con funciones de derivación seguras (PBKDF2-SHA256). Implementamos control de acceso, limitación de intentos (<em>rate limiting</em>), protección contra CSRF y cabeceras de seguridad (CSP, HSTS, X-Frame-Options) para resguardar tus datos frente a accesos no autorizados, pérdida, alteración o divulgación indebida.</p>
 
-      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">9. Cambios al aviso</h2>
-      <p>Nos reservamos el derecho de modificar esta política en cualquier momento. Los cambios entrarán en vigor al publicarse en este sitio. Las actualizaciones significativas serán notificadas por correo a los clientes con cuenta activa.</p>
+      <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">9. Cambios al Aviso de Privacidad</h2>
+      <p>Nos reservamos el derecho de actualizar este Aviso en cualquier momento para reflejar cambios legales, operativos o en nuestras prácticas. Las modificaciones surtirán efecto a partir de su publicación en esta misma página. Te recomendamos revisarla periódicamente; las actualizaciones relevantes podrán notificarse por correo a los clientes con relación activa.</p>
 
       <h2 style="font-size:1.2rem;font-weight:700;color:#111;margin-top:0.5rem">10. Contacto y autoridad reguladora</h2>
-      <p>Para preguntas sobre esta política, contáctanos en <a href="mailto:jdpeptides@gmail.com" style="color:#c9a227">jdpeptides@gmail.com</a>. Si consideras que tu derecho a la protección de datos fue vulnerado, puedes acudir al <strong>INAI</strong> (Instituto Nacional de Transparencia, Acceso a la Información y Protección de Datos Personales) — <a href="https://www.inai.org.mx" target="_blank" rel="noopener" style="color:#c9a227">inai.org.mx</a>.</p>
+      <p>Para dudas o aclaraciones sobre este Aviso, contáctanos en <a href="mailto:{{ contact_email }}" style="color:#c9a227">{{ contact_email }}</a>. Si consideras que tu derecho a la protección de datos personales ha sido vulnerado, puedes acudir al <strong>INAI</strong> (Instituto Nacional de Transparencia, Acceso a la Información y Protección de Datos Personales) — <a href="https://www.inai.org.mx" target="_blank" rel="noopener" style="color:#c9a227">inai.org.mx</a>.</p>
 
-      <p style="font-size:0.85rem;color:#888;margin-top:1rem">Última actualización: {{ now.strftime('%B %Y') }}</p>
+      <p style="font-size:0.85rem;color:#888;margin-top:1rem">Este Aviso de Privacidad complementa los <a href="{{ url_for('terminos') }}" style="color:#c9a227">Términos y Condiciones</a> de la Tienda. Última actualización: 3 de junio de 2026.</p>
     </div>
   </div>
 </div>

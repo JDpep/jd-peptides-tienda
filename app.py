@@ -599,6 +599,40 @@ def _payment_label(method):
     return {'transferencia':'Transferencia Bancaria','efectivo':'Efectivo',
             'criptomonedas':'Criptomonedas','zelle':'Zelle','paypal':'PayPal'}.get(method, method)
 
+
+def _payment_instructions_email_html(order):
+    """Bloque HTML con los datos REALES de pago para el email de confirmación
+    del cliente (editables desde /admin/pagos). Email-safe: estilos inline,
+    todo valor escapado con _h()."""
+    box = 'background:#fffbea;border-left:4px solid #c9a227;padding:14px 18px;margin:0;font-size:13px;color:#555'
+    method = payment_method_by_slug(order.get('payment_method') or '')
+    total = order.get('total') or 0
+    if not method:
+        return (f'<p style="{box}">Te contactaremos en breve para coordinar el pago '
+                f'de ${total:.2f} MXN.</p>')
+    note = (method['fields'].get('note') or '').strip()
+    note_html = f'<p style="margin:10px 0 0;font-size:12px;color:#777">{_h(note)}</p>' if note else ''
+    if not method['has_details']:
+        return (f'<p style="{box}">Tu pedido fue reservado. Te contactaremos para coordinar '
+                f'el pago de <strong style="color:#c9a227">${total:.2f} MXN</strong>.</p>{note_html}')
+    rows = []
+    for fk, flabel in method['fields_meta']:
+        if fk == 'note':
+            continue
+        val = (method['fields'].get(fk) or '').strip()
+        if val:
+            rows.append(
+                f'<tr><td style="padding:3px 14px 3px 0;color:#888;white-space:nowrap;vertical-align:top">{_h(flabel)}</td>'
+                f'<td style="padding:3px 0;color:#111;font-weight:600;word-break:break-all">{_h(val)}</td></tr>')
+    rows.append(f'<tr><td style="padding:3px 14px 3px 0;color:#888">Monto</td>'
+                f'<td style="padding:3px 0;color:#c9a227;font-weight:700">${total:.2f} MXN</td></tr>')
+    rows.append(f'<tr><td style="padding:3px 14px 3px 0;color:#888">Referencia</td>'
+                f'<td style="padding:3px 0;color:#111;font-weight:600">{_h(order.get("order_number") or "")}</td></tr>')
+    return (f'<div style="{box}">'
+            f'<table style="border-collapse:collapse;font-size:13px">{"".join(rows)}</table>'
+            f'<p style="margin:10px 0 0;font-size:12px;color:#777">Una vez realizado el pago, envíanos tu '
+            f'comprobante por WhatsApp o email para procesar tu pedido.</p>{note_html}</div>')
+
 def _format_address(order):
     """Construye la dirección completa con número exterior/interior si existen."""
     parts = [(order.get('address') or '').strip()]
@@ -676,13 +710,7 @@ def _customer_html(order, items):
     """Email de confirmación para el cliente — tono amigable y profesional."""
     pl = _payment_label(order['payment_method'])
     rows = _build_items_rows(items)
-    payment_instructions = {
-        'transferencia': '<p style="background:#fffbea;border-left:4px solid #c9a227;padding:12px 16px;margin:0;font-size:13px;color:#555">Realiza tu transferencia y envíanos el comprobante por WhatsApp o email para procesar tu pedido.</p>',
-        'zelle':         '<p style="background:#fffbea;border-left:4px solid #c9a227;padding:12px 16px;margin:0;font-size:13px;color:#555">Envía el pago por Zelle y comparte el comprobante con nosotros para confirmar tu pedido.</p>',
-        'paypal':        '<p style="background:#fffbea;border-left:4px solid #c9a227;padding:12px 16px;margin:0;font-size:13px;color:#555">Completa el pago por PayPal. Te contactaremos en breve para confirmar.</p>',
-        'efectivo':      '<p style="background:#fffbea;border-left:4px solid #c9a227;padding:12px 16px;margin:0;font-size:13px;color:#555">Te contactaremos pronto para coordinar la entrega y el pago en efectivo.</p>',
-        'criptomonedas': '<p style="background:#fffbea;border-left:4px solid #c9a227;padding:12px 16px;margin:0;font-size:13px;color:#555">Envíanos el hash de tu transacción para confirmar tu pedido.</p>',
-    }.get(order['payment_method'], '')
+    payment_instructions = _payment_instructions_email_html(order)
 
     return f"""
     <div style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;background:#fff">
@@ -1488,6 +1516,119 @@ def _search_clause(term, columns):
 
 
 # ---------------------------------------------------------------------------
+# Store settings (clave-valor) + configuración de métodos de pago
+# ---------------------------------------------------------------------------
+
+# Definición de los métodos de pago y sus campos editables. El orden aquí es el
+# orden en que se muestran (admin, checkout). Cada campo se persiste con la clave
+# `pay_<slug>_<field>`; el switch on/off es `pay_<slug>_enabled`.
+# 'note' siempre es el último campo y se trata como instrucción libre (no es
+# un "dato de pago" para efectos de has_details).
+PAYMENT_METHODS_META = [
+    {'slug': 'transferencia', 'label': 'Transferencia Bancaria', 'icon': '🏦',
+     'fields': [('bank', 'Banco'), ('holder', 'Titular de la cuenta'),
+                ('account', 'Número de cuenta'), ('clabe', 'CLABE'),
+                ('note', 'Nota / instrucciones para el cliente')]},
+    {'slug': 'efectivo', 'label': 'Efectivo', 'icon': '💵',
+     'fields': [('note', 'Instrucciones (cómo se coordina el pago/entrega)')]},
+    {'slug': 'criptomonedas', 'label': 'Criptomonedas', 'icon': '₿',
+     'fields': [('btc', 'Dirección BTC'), ('usdt_trc20', 'USDT (red TRC20)'),
+                ('usdt_erc20', 'USDT (red ERC20)'),
+                ('note', 'Nota / instrucciones para el cliente')]},
+    {'slug': 'zelle', 'label': 'Zelle', 'icon': '💳',
+     'fields': [('email', 'Correo / teléfono Zelle'), ('holder', 'Nombre del titular'),
+                ('note', 'Nota / instrucciones para el cliente')]},
+    {'slug': 'paypal', 'label': 'PayPal', 'icon': '🅿️',
+     'fields': [('email', 'Correo / usuario PayPal'),
+                ('link', 'Enlace de pago (opcional)'),
+                ('note', 'Nota / instrucciones para el cliente')]},
+]
+
+# Métodos activos por defecto si la tabla store_settings aún no tiene el flag
+# (replica el comportamiento histórico: transferencia/efectivo/cripto ON).
+_DEFAULT_ENABLED_METHODS = {'transferencia', 'efectivo', 'criptomonedas'}
+
+# Cache muy ligero de settings (la config de pagos se lee en CADA checkout /
+# pedido exitoso / email). TTL corto para que un cambio en el admin se vea casi
+# de inmediato sin pegarle a la DB en cada request.
+_settings_cache = {'data': None, 'ts': 0.0}
+_SETTINGS_CACHE_TTL = 30  # segundos
+
+
+def _invalidate_settings_cache():
+    _settings_cache['data'] = None
+    _settings_cache['ts'] = 0.0
+
+
+def get_all_settings():
+    """Devuelve TODAS las settings como dict {key: value}. Cacheado ~30s.
+    Si la tabla no existe aún (cold start raro) devuelve {} sin reventar."""
+    now_ts = time.time()
+    if _settings_cache['data'] is not None and (now_ts - _settings_cache['ts']) < _SETTINGS_CACHE_TTL:
+        return _settings_cache['data']
+    data = {}
+    try:
+        for r in query_db("SELECT key, value FROM store_settings"):
+            data[r['key']] = r['value']
+    except Exception:
+        data = {}
+    _settings_cache['data'] = data
+    _settings_cache['ts'] = now_ts
+    return data
+
+
+def save_settings(items, by=None):
+    """Upsert de múltiples settings en una sola transacción, dialect-safe.
+    NO usamos `datetime('now')` inline (el wrapper PG solo lo traduce en DDL):
+    el timestamp se calcula en Python y se pasa como parámetro."""
+    db = get_db()
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    existing = {r['key'] for r in db.execute("SELECT key FROM store_settings").fetchall()}
+    for k, v in items.items():
+        if k in existing:
+            db.execute("UPDATE store_settings SET value=?, updated_at=?, updated_by=? WHERE key=?",
+                       (v, ts, by, k))
+        else:
+            db.execute("INSERT INTO store_settings (key, value, updated_at, updated_by) VALUES (?, ?, ?, ?)",
+                       (k, v, ts, by))
+    db.commit()
+    _invalidate_settings_cache()
+
+
+def get_payment_config(settings=None):
+    """Construye la lista estructurada de métodos de pago a partir de settings.
+    Cada item: slug, label, icon, enabled (bool), fields (dict field→valor),
+    fields_meta (lista (key,label) para render del form), has_details (bool:
+    tiene al menos un dato de pago no vacío, ignorando 'note')."""
+    s = settings if settings is not None else get_all_settings()
+    methods = []
+    for meta in PAYMENT_METHODS_META:
+        slug = meta['slug']
+        flag = s.get(f'pay_{slug}_enabled')
+        enabled = (slug in _DEFAULT_ENABLED_METHODS) if flag is None else (flag == '1')
+        fields = {fk: (s.get(f'pay_{slug}_{fk}') or '') for fk, _ in meta['fields']}
+        has_details = any(v.strip() for fk, v in fields.items() if fk != 'note')
+        methods.append({
+            'slug': slug, 'label': meta['label'], 'icon': meta['icon'],
+            'enabled': enabled, 'fields': fields, 'fields_meta': meta['fields'],
+            'has_details': has_details,
+        })
+    return methods
+
+
+def enabled_payment_methods(settings=None):
+    """Solo los métodos activos (para mostrar en checkout)."""
+    return [m for m in get_payment_config(settings) if m['enabled']]
+
+
+def payment_method_by_slug(slug, settings=None):
+    for m in get_payment_config(settings):
+        if m['slug'] == slug:
+            return m
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Schema & seed
 # ---------------------------------------------------------------------------
 
@@ -1694,6 +1835,17 @@ CREATE TABLE IF NOT EXISTS abandoned_carts (
     reminded_at TEXT,
     recovered_order_id INTEGER,
     FOREIGN KEY (recovered_order_id) REFERENCES orders(id)
+);
+
+-- Configuración editable de la tienda (clave-valor). Hoy: datos de los métodos
+-- de pago (cuentas bancarias, CLABE, wallets, Zelle, PayPal) que el admin edita
+-- desde /admin/pagos sin tocar código. Los valores NO son secretos: se le
+-- muestran al cliente en checkout / pedido exitoso / email de confirmación.
+CREATE TABLE IF NOT EXISTS store_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    updated_at TEXT DEFAULT (datetime('now')),
+    updated_by TEXT
 );
 """
 
@@ -4359,6 +4511,7 @@ def checkout():
     checkout_token = secrets.token_urlsafe(24)
     return render_template('checkout.html', cart=cart, subtotal=subtotal,
                            shipping=shipping, total=total, customer={},
+                           payment_methods=enabled_payment_methods(),
                            checkout_token=checkout_token)
 
 
@@ -4428,7 +4581,10 @@ def procesar_checkout():
             flash('El teléfono no tiene un formato válido (10 dígitos).', 'error')
             return redirect(url_for('checkout'))
 
-    if payment_method not in VALID_PAYMENT_METHODS:
+    # Solo se aceptan métodos que estén ACTIVOS en /admin/pagos (no solo
+    # conocidos). Así desactivar un método en el admin lo bloquea de inmediato.
+    _enabled_slugs = {m['slug'] for m in enabled_payment_methods()}
+    if payment_method not in VALID_PAYMENT_METHODS or payment_method not in _enabled_slugs:
         flash('Método de pago no válido.', 'error')
         return redirect(url_for('checkout'))
 
@@ -4584,7 +4740,8 @@ def procesar_checkout():
     except Exception as e:
         print(f"[abandoned_carts] mark recovered failed: {e}")
 
-    return render_template('pedido_exitoso.html', order=order, items=items)
+    return render_template('pedido_exitoso.html', order=order, items=items,
+                           payment=payment_method_by_slug(order['payment_method']))
 
 
 # Anti-enumeration: /pedido/ lookup attempts (8 per 10min) — SQL persistente
@@ -4641,7 +4798,8 @@ def pedido(order_number):
         return redirect(url_for('index'))
 
     items = query_db("SELECT * FROM order_items WHERE order_id=?", (order['id'],))
-    return render_template('pedido_exitoso.html', order=order, items=items)
+    return render_template('pedido_exitoso.html', order=order, items=items,
+                           payment=payment_method_by_slug(order['payment_method']))
 
 
 @app.route('/pedido/<order_number>/factura')
@@ -4960,6 +5118,29 @@ def admin_logout():
     session.pop('admin_role', None)
     flash('Sesión cerrada.', 'success')
     return redirect(url_for('admin_login'))
+
+
+# ---------------------------------------------------------------------------
+# Configuración de métodos de pago
+# ---------------------------------------------------------------------------
+
+@app.route('/admin/pagos', methods=['GET', 'POST'])
+@superadmin_required
+def admin_pagos():
+    """Editar los métodos de pago y sus datos (cuentas, CLABE, wallets, etc.).
+    Lo que se guarda aquí es lo que ve el cliente en checkout, en la página de
+    pedido exitoso y en el email de confirmación."""
+    if request.method == 'POST':
+        updates = {}
+        for meta in PAYMENT_METHODS_META:
+            slug = meta['slug']
+            updates[f'pay_{slug}_enabled'] = '1' if request.form.get(f'pay_{slug}_enabled') else '0'
+            for fk, _label in meta['fields']:
+                updates[f'pay_{slug}_{fk}'] = (request.form.get(f'pay_{slug}_{fk}') or '').strip()[:500]
+        save_settings(updates, by=session.get('admin_user'))
+        flash('Métodos de pago actualizados.', 'success')
+        return redirect(url_for('admin_pagos'))
+    return render_template('admin/pagos.html', methods=get_payment_config())
 
 
 # ---------------------------------------------------------------------------

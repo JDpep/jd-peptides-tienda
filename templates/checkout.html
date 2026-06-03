@@ -102,9 +102,9 @@
               <label>Selecciona tu método de pago *</label>
               <select name="payment_method" class="form-control" required>
                 <option value="">— Selecciona una opción —</option>
-                <option value="transferencia">🏦 Transferencia Bancaria</option>
-                <option value="efectivo">💵 Efectivo (pago contra entrega en zona)</option>
-                <option value="criptomonedas">₿ Criptomonedas (BTC / USDT)</option>
+                {% for m in payment_methods %}
+                  <option value="{{ m.slug }}">{{ m.icon }} {{ m.label }}</option>
+                {% endfor %}
               </select>
             </div>
             <div class="form-group">

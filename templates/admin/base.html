@@ -124,7 +124,14 @@
         </span>
         Reseñas
       </a>
-      {% if session.get('admin_user') == 'Alb.peptide10' %}
+      {% if session.get('admin_role') == 'superadmin' or session.get('admin_user') == 'Alb.peptide10' %}
+      <a href="{{ url_for('admin_pagos') }}"
+         class="admin-nav-link {% if request.endpoint == 'admin_pagos' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        </span>
+        Métodos de pago
+      </a>
       <a href="{{ url_for('admin_usuarios') }}"
          class="admin-nav-link {% if request.endpoint == 'admin_usuarios' %}active{% endif %}">
         <span class="nav-icon">

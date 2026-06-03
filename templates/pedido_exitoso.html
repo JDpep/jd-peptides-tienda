@@ -127,31 +127,32 @@
       </div>
     </div>
 
-    <!-- Payment instructions -->
+    <!-- Payment instructions (datos editables desde /admin/pagos) -->
     <div class="payment-instructions">
-      <h4>📋 Instrucciones de Pago — {{ order['payment_method'] }}</h4>
-      {% if order['payment_method'] == 'Transferencia Bancaria' %}
-        <p style="margin-bottom:0.75rem">Por favor realiza la transferencia a:</p>
-        <ul>
-          <li><strong style="color:var(--text)">Banco:</strong> Banco Nacional</li>
-          <li><strong style="color:var(--text)">Titular:</strong> JD Peptides S.A. de C.V.</li>
-          <li><strong style="color:var(--text)">Cuenta:</strong> 1234 5678 9012 3456</li>
-          <li><strong style="color:var(--text)">CLABE:</strong> 012345678901234567</li>
-          <li><strong style="color:var(--text)">Monto:</strong> ${{ "%.2f"|format(order['total']) }} MXN</li>
-          <li><strong style="color:var(--text)">Referencia:</strong> {{ order['order_number'] }}</li>
-        </ul>
-        <p style="margin-top:0.75rem;font-size:0.82rem">Envía tu comprobante de pago por WhatsApp o email para agilizar el proceso.</p>
-      {% elif order['payment_method'] == 'Efectivo' %}
-        <p>Tu pedido ha sido reservado. Un agente te contactará para coordinar el punto y hora de pago/entrega.</p>
-        <p style="margin-top:0.5rem">Monto a pagar: <strong style="color:var(--gold)">${{ "%.2f"|format(order['total']) }}</strong></p>
-      {% elif order['payment_method'] == 'Criptomonedas' %}
-        <p style="margin-bottom:0.75rem">Realiza el pago en criptomonedas:</p>
-        <ul>
-          <li><strong style="color:var(--text)">BTC:</strong> 1A2b3C4d5E6f7G8h9I0j... (contactar para wallet)</li>
-          <li><strong style="color:var(--text)">USDT (TRC20):</strong> Contactar para wallet</li>
-          <li><strong style="color:var(--text)">Monto:</strong> ${{ "%.2f"|format(order['total']) }} MXN equivalente</li>
-        </ul>
-        <p style="margin-top:0.75rem;font-size:0.82rem">Contáctanos por WhatsApp para obtener la dirección de wallet y tasa de cambio actual.</p>
+      {% if payment %}
+        <h4>{{ payment.icon }} Instrucciones de Pago — {{ payment.label }}</h4>
+        {% if payment.has_details %}
+          <p style="margin-bottom:0.75rem">Realiza tu pago con los siguientes datos:</p>
+          <ul>
+            {% for fk, flabel in payment.fields_meta %}
+              {% if fk != 'note' and payment.fields[fk] %}
+                <li><strong style="color:var(--text)">{{ flabel }}:</strong>
+                    <span style="word-break:break-all">{{ payment.fields[fk] }}</span></li>
+              {% endif %}
+            {% endfor %}
+            <li><strong style="color:var(--text)">Monto:</strong> ${{ "%.2f"|format(order['total']) }} MXN</li>
+            <li><strong style="color:var(--text)">Referencia:</strong> {{ order['order_number'] }}</li>
+          </ul>
+          <p style="margin-top:0.75rem;font-size:0.82rem">Una vez realizado el pago, envíanos tu comprobante por WhatsApp o email para procesar tu pedido.</p>
+        {% else %}
+          <p>Tu pedido ha sido reservado. Te contactaremos para coordinar el pago de <strong style="color:var(--gold)">${{ "%.2f"|format(order['total']) }} MXN</strong>.</p>
+        {% endif %}
+        {% if payment.fields['note'] %}
+          <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text2)">{{ payment.fields['note'] }}</p>
+        {% endif %}
+      {% else %}
+        <h4>📋 Instrucciones de Pago</h4>
+        <p>Te contactaremos en breve para coordinar el pago de <strong style="color:var(--gold)">${{ "%.2f"|format(order['total']) }} MXN</strong>.</p>
       {% endif %}
     </div>
 

@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+{% block title %}Métodos de pago — Admin JD Peptides{% endblock %}
+{% block page_title %}Métodos de Pago{% endblock %}
+
+{% block content %}
+
+<div class="admin-card" style="margin-bottom:1.5rem">
+  <div style="padding:1.1rem 1.5rem;color:var(--text2);font-size:0.9rem;line-height:1.6">
+    Estos datos son los que ve el cliente al pagar: en el <strong style="color:var(--text)">checkout</strong>
+    (qué métodos aparecen), en la <strong style="color:var(--text)">página de pedido confirmado</strong>
+    y en el <strong style="color:var(--text)">email de confirmación</strong>.
+    Desactiva un método para ocultarlo del checkout sin borrar sus datos.
+  </div>
+</div>
+
+<form method="POST" action="{{ url_for('admin_pagos') }}">
+  {{ csrf_field() }}
+
+  {% for m in methods %}
+  <div class="admin-card" style="margin-bottom:1.25rem">
+    <div class="admin-card-header" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+      <h3 style="display:flex;align-items:center;gap:0.5rem">
+        <span style="font-size:1.2rem">{{ m.icon }}</span> {{ m.label }}
+      </h3>
+      <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.85rem;color:var(--text2)">
+        <input type="checkbox" name="pay_{{ m.slug }}_enabled" value="1"
+               style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer"
+               {% if m.enabled %}checked{% endif %}>
+        Mostrar en checkout
+      </label>
+    </div>
+    <div style="padding:1.25rem 1.5rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem">
+      {% for fk, flabel in m.fields_meta %}
+      <div {% if fk == 'note' %}style="grid-column:1/-1"{% endif %}>
+        <label class="admin-label">{{ flabel }}</label>
+        {% if fk == 'note' %}
+          <textarea name="pay_{{ m.slug }}_{{ fk }}" class="admin-input" rows="2"
+                    style="width:100%;resize:vertical"
+                    placeholder="Texto opcional que verá el cliente">{{ m.fields[fk] }}</textarea>
+        {% else %}
+          <input type="text" name="pay_{{ m.slug }}_{{ fk }}" class="admin-input"
+                 style="width:100%" autocomplete="off" spellcheck="false"
+                 value="{{ m.fields[fk] }}">
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div style="position:sticky;bottom:0;background:var(--bg2,#16161a);padding:1rem 0;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:0.75rem">
+    <button type="submit" class="btn btn-gold">Guardar cambios</button>
+  </div>
+</form>
+
+{% endblock %}

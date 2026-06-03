@@ -182,7 +182,14 @@
               <span>${{ "%.2f"|format(total) }} <span class="price-currency">MXN</span></span>
             </div>
             <div style="margin-top:1.25rem">
-              <button type="submit" class="btn btn-gold btn-block btn-lg">
+              {% if paypal_embedded %}
+                <div id="paypal-error" style="display:none;color:#e23b3b;font-size:0.85rem;margin-bottom:0.6rem;text-align:center"></div>
+                <div id="paypal-button-container" style="display:none"></div>
+                <p id="paypal-hint" style="display:none;font-size:0.72rem;color:var(--text3);text-align:center;margin:0.5rem 0 0">
+                  Pago seguro con PayPal · tarjeta de crédito/débito o saldo PayPal
+                </p>
+              {% endif %}
+              <button type="submit" class="btn btn-gold btn-block btn-lg" id="checkoutSubmitBtn">
                 Confirmar Pedido →
               </button>
             </div>
@@ -305,6 +312,80 @@ document.getElementById('checkoutForm').addEventListener('submit', function(e) {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 })();
 </script>
+
+{% if paypal_embedded %}
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id|e }}&currency=MXN&intent=capture&disable-funding=credit"></script>
+<script>
+/* Cobro embebido con PayPal. Si el SDK no carga (typeof paypal undefined),
+   se deja visible el botón normal → fallback al flujo manual (/checkout/procesar). */
+(function () {
+  const form = document.getElementById('checkoutForm');
+  const container = document.getElementById('paypal-button-container');
+  const normalBtn = document.getElementById('checkoutSubmitBtn');
+  const hint = document.getElementById('paypal-hint');
+  const errBox = document.getElementById('paypal-error');
+  if (!form || !container || typeof paypal === 'undefined' || !paypal.Buttons) return;
+
+  // SDK OK → mostrar botones PayPal, ocultar el submit normal y evitar que
+  // Enter mande el form al flujo manual.
+  if (normalBtn) normalBtn.style.display = 'none';
+  container.style.display = 'block';
+  if (hint) hint.style.display = 'block';
+  form.addEventListener('submit', function (e) { e.preventDefault(); });
+
+  function showErr(m) { if (errBox) { errBox.textContent = m; errBox.style.display = 'block'; } }
+  function clearErr() { if (errBox) { errBox.textContent = ''; errBox.style.display = 'none'; } }
+
+  function gatherForm() {
+    const f = new FormData(form), o = {};
+    ['name','email','phone','address','address_ext','address_int','city','state','zip_code','notes']
+      .forEach(k => { o[k] = (f.get(k) || '').toString(); });
+    return o;
+  }
+
+  paypal.Buttons({
+    style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'paypal' },
+    onClick: function (data, actions) {
+      clearErr();
+      // Validar TODO el formulario (incluida la casilla RUO) antes de cobrar.
+      if (!form.reportValidity()) { return actions.reject(); }
+      return actions.resolve();
+    },
+    createOrder: function () {
+      return fetch('/checkout/paypal/create-order', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gatherForm())
+      }).then(r => r.json().then(j => { if (!r.ok) throw new Error(j.error || 'Error'); return j; }))
+        .then(j => j.id)
+        .catch(e => {
+          // Si PayPal no responde (credenciales/API), reaparece el botón normal
+          // como respaldo para que el cliente igual pueda completar el pedido.
+          showErr(e.message || 'No se pudo iniciar el pago. Usa el botón de abajo.');
+          if (normalBtn) normalBtn.style.display = '';
+          throw e;
+        });
+    },
+    onApprove: function (data) {
+      return fetch('/checkout/paypal/capture-order', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderID: data.orderID })
+      }).then(r => r.json().then(j => { if (!r.ok) throw new Error(j.error || 'Error'); return j; }))
+        .then(j => { if (j.redirect) { window.location.href = j.redirect; } })
+        .catch(e => { showErr(e.message || 'No se pudo confirmar el pago. Si se te cobró, contáctanos.'); });
+    },
+    onError: function (err) {
+      showErr('Ocurrió un error con PayPal. Intenta de nuevo.');
+      try { console.error(err); } catch (e) {}
+    }
+  }).render('#paypal-button-container').catch(function () {
+    // Si falla el render, mostramos de nuevo el botón normal (fallback).
+    if (normalBtn) normalBtn.style.display = '';
+    container.style.display = 'none';
+    if (hint) hint.style.display = 'none';
+  });
+})();
+</script>
+{% endif %}
 <style>
 .addr-suggest {
   position: absolute;

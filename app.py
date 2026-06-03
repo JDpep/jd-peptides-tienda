@@ -186,20 +186,29 @@ def _security_headers(response):
     # aceptable. style-src ya usaba 'unsafe-inline' por los style="..." legacy.
     response.headers.setdefault('Content-Security-Policy',
         "default-src 'self'; "
-        "img-src 'self' data: blob: https://*.openstreetmap.org; "
+        "img-src 'self' data: blob: https://*.openstreetmap.org "
+            "https://www.paypalobjects.com https://t.paypal.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src  'self' https://fonts.gstatic.com data:; "
-        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
-        # Nominatim para autocompletado de direcciones en checkout
-        "connect-src 'self' https://nominatim.openstreetmap.org; "
+        # PayPal SDK (cobro embebido en checkout)
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com "
+            "https://www.paypal.com https://www.paypalobjects.com; "
+        # Nominatim (autocompletado de direcciones) + APIs de PayPal
+        "connect-src 'self' https://nominatim.openstreetmap.org "
+            "https://www.paypal.com https://www.sandbox.paypal.com "
+            "https://api-m.paypal.com https://api-m.sandbox.paypal.com; "
+        # PayPal renderiza sus botones/checkout en un iframe propio
+        "frame-src https://www.paypal.com https://www.sandbox.paypal.com; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
         "form-action 'self' https://wa.me;")
     response.headers.setdefault('X-Frame-Options', 'DENY')
     response.headers.setdefault('X-Content-Type-Options', 'nosniff')
     response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    # payment=(self) permite la Payment Request API en nuestro propio origen
+    # (PayPal puede usarla); el resto deshabilitado.
     response.headers.setdefault('Permissions-Policy',
-        'geolocation=(), camera=(), microphone=(), payment=()')
+        'geolocation=(), camera=(), microphone=(), payment=(self)')
     if _is_prod:
         response.headers.setdefault('Strict-Transport-Security',
             'max-age=31536000; includeSubDomains')
@@ -1719,6 +1728,7 @@ CREATE TABLE IF NOT EXISTS orders (
     total REAL,
     status TEXT DEFAULT 'nuevo',
     payment_status TEXT DEFAULT 'pendiente',
+    payment_reference TEXT DEFAULT '',
     created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -2319,6 +2329,11 @@ def init_db():
         db.commit()
     if 'customer_id' not in _order_cols:
         db.execute("ALTER TABLE orders ADD COLUMN customer_id INTEGER")
+        db.commit()
+    if 'payment_reference' not in _order_cols:
+        # Referencia del proveedor de pago (ej. ID de captura de PayPal) para
+        # conciliación. Se llena en el cobro embebido de PayPal.
+        db.execute("ALTER TABLE orders ADD COLUMN payment_reference TEXT DEFAULT ''")
         db.commit()
 
     # Migrate supplier_documents table
@@ -3433,6 +3448,72 @@ def paypal_pay_url(link, total):
     return link
 
 app.jinja_env.globals['paypal_pay_url'] = paypal_pay_url
+
+
+# ---------------------------------------------------------------------------
+# PayPal Checkout (Orders v2) — cobro embebido en el checkout
+# ---------------------------------------------------------------------------
+PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', '').strip()
+PAYPAL_SECRET    = os.environ.get('PAYPAL_SECRET', '').strip()
+PAYPAL_ENV       = (os.environ.get('PAYPAL_ENV', 'live').strip().lower() or 'live')
+
+
+def paypal_enabled():
+    """True si hay credenciales → el checkout usa el cobro embebido de PayPal.
+    Sin credenciales, el checkout cae al flujo manual (form + enlace PayPal.me)."""
+    return bool(PAYPAL_CLIENT_ID and PAYPAL_SECRET)
+
+
+def _paypal_api_base():
+    return 'https://api-m.paypal.com' if PAYPAL_ENV == 'live' else 'https://api-m.sandbox.paypal.com'
+
+
+_pp_token_cache = {'token': None, 'exp': 0.0}
+
+
+def _paypal_access_token():
+    """Token OAuth2 (client_credentials). Cacheado en memoria hasta ~60s antes
+    de expirar para no pedir uno por request."""
+    now = time.time()
+    if _pp_token_cache['token'] and now < _pp_token_cache['exp']:
+        return _pp_token_cache['token']
+    import base64
+    cred = base64.b64encode(f'{PAYPAL_CLIENT_ID}:{PAYPAL_SECRET}'.encode()).decode()
+    req = urllib.request.Request(
+        _paypal_api_base() + '/v1/oauth2/token',
+        data=b'grant_type=client_credentials',
+        headers={
+            'Authorization': f'Basic {cred}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'jdpeptides.mx/1.0 (+https://jdpeptides.mx)',
+            'Accept': 'application/json',
+        },
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        data = json.loads(resp.read().decode('utf-8', 'replace'))
+    tok = data['access_token']
+    _pp_token_cache['token'] = tok
+    _pp_token_cache['exp'] = now + max(60, int(data.get('expires_in', 3000)) - 60)
+    return tok
+
+
+def _paypal_request(method, path, body=None):
+    """Llamada autenticada a la API de PayPal. Devuelve (status, dict).
+    Lanza urllib.error.HTTPError en respuestas de error (el caller maneja)."""
+    token = _paypal_access_token()
+    payload = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(
+        _paypal_api_base() + path, data=payload, method=method,
+        headers={
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',
+            'User-Agent': 'jdpeptides.mx/1.0 (+https://jdpeptides.mx)',
+            'Accept': 'application/json',
+        },
+    )
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        raw = resp.read().decode('utf-8', 'replace')
+        return resp.status, (json.loads(raw) if raw.strip() else {})
 
 
 # ---------------------------------------------------------------------------
@@ -4561,10 +4642,132 @@ def checkout():
     # Token de idempotencia: el POST sólo crea pedido si el token aún no se
     # registró en session['used_checkout_tokens']. Doble submit → mismo pedido.
     checkout_token = secrets.token_urlsafe(24)
+    _methods = enabled_payment_methods()
+    # Cobro embebido de PayPal: activo si hay credenciales Y PayPal está entre
+    # los métodos habilitados. Si no, el checkout usa el flujo manual (form).
+    _pp_embedded = paypal_enabled() and any(m['slug'] == 'paypal' for m in _methods)
     return render_template('checkout.html', cart=cart, subtotal=subtotal,
                            shipping=shipping, total=total, customer={},
-                           payment_methods=enabled_payment_methods(),
+                           payment_methods=_methods,
+                           paypal_embedded=_pp_embedded,
+                           paypal_client_id=PAYPAL_CLIENT_ID,
                            checkout_token=checkout_token)
+
+
+def _finalize_order(*, name, email, phone, address, address_ext, address_int,
+                    city, state, zip_code, notes, cart, payment_method,
+                    payment_status='pendiente', payment_reference='',
+                    subtotal=None, shipping=None, total=None,
+                    allow_oversell=False):
+    """Crea orden + items + descuento de stock en UNA transacción atómica y hace
+    los efectos post-commit (SSE, limpia carrito de sesión, whitelist para ver
+    el pedido sin re-login, email de confirmación, marca abandoned_carts
+    recuperados). Devuelve (order, items) como filas.
+
+    - `cart` debe venir YA revalidado contra la DB por el caller.
+    - subtotal/shipping/total: si no se pasan, se recalculan server-side.
+    - allow_oversell=True (pago YA capturado, ej. PayPal): descuenta stock SIN
+      el guard `stock>=?` para no perder una orden ya pagada (el stock puede
+      quedar negativo y el admin lo ajusta). Con False, lanza
+      RuntimeError('oversell-<pid>') si falta stock.
+    """
+    if subtotal is None:
+        subtotal = sum(it['quantity'] * it['price'] for it in cart.values())
+    if shipping is None:
+        shipping = compute_shipping(subtotal)
+    if total is None:
+        total = subtotal + shipping
+
+    db = get_db()
+    order_id = None
+    order_number = None
+    alert_product_ids = []
+    try:
+        # customer_id queda NULL (sistema de cuentas removido 2026-05-21).
+        cur = db.execute(
+            """INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
+               address, address_ext, address_int, city, state, zip_code,
+               payment_method, notes, subtotal, shipping, total,
+               payment_status, payment_reference, customer_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ('TEMP', name, email, phone, address, address_ext, address_int,
+             city, state, zip_code, payment_method, notes, subtotal, shipping, total,
+             payment_status, payment_reference, None)
+        )
+        order_id = cur.lastrowid
+        _suffix = secrets.token_urlsafe(6).replace('-', 'A').replace('_', 'B')
+        order_number = f'JD-{datetime.now().strftime("%y%m%d")}-{_suffix}'
+        db.execute("UPDATE orders SET order_number=? WHERE id=?", (order_number, order_id))
+
+        for pid, item in cart.items():
+            db.execute(
+                """INSERT INTO order_items
+                   (order_id, product_id, product_name, product_sku, dose, quantity, unit_price, subtotal)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (order_id, item['id'], item['name'], item['sku'], item['dose'],
+                 item['quantity'], item['price'], item['quantity'] * item['price'])
+            )
+            if allow_oversell:
+                db.execute(
+                    "UPDATE products SET stock = stock - ? WHERE id=? AND active=1",
+                    (item['quantity'], item['id'])
+                )
+            else:
+                up = db.execute(
+                    "UPDATE products SET stock = stock - ? "
+                    "WHERE id=? AND active=1 AND stock >= ?",
+                    (item['quantity'], item['id'], item['quantity'])
+                )
+                affected = getattr(up, 'rowcount', None)
+                if affected is None:
+                    _r = db.execute("SELECT stock FROM products WHERE id=?", (item['id'],)).fetchone()
+                    if _r is None or _r['stock'] < 0:
+                        raise RuntimeError(f'oversell-{item["id"]}')
+                elif affected == 0:
+                    raise RuntimeError(f'oversell-{item["id"]}')
+            db.execute(
+                "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'salida', ?, 'Venta', ?)",
+                (item['id'], item['quantity'], order_number)
+            )
+            alert_product_ids.append(item['id'])
+        db.commit()  # Un solo commit — atómico
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        raise
+
+    # Post-commit (fuera de la transacción, no crítico)
+    for product_id in alert_product_ids:
+        updated_prod = query_db("SELECT stock FROM products WHERE id=?", (product_id,), one=True)
+        if updated_prod:
+            sse_bus.publish('stock_updated', {'id': product_id, 'stock': updated_prod['stock']})
+    sse_bus.publish('new_order', {
+        'order_number': order_number, 'customer_name': name,
+        'total': total, 'time': datetime.now().strftime('%H:%M'),
+    })
+    session.pop('cart', None)
+    order = query_db("SELECT * FROM orders WHERE id=?", (order_id,), one=True)
+    items = query_db("SELECT * FROM order_items WHERE order_id=?", (order_id,))
+    _whitelisted = session.get('view_orders') or []
+    if order_number not in _whitelisted:
+        _whitelisted.append(order_number)
+        session['view_orders'] = _whitelisted[-10:]
+    try:
+        send_order_email(dict(order), [dict(i) for i in items])
+    except Exception as e:
+        print(f"[Email] Error al enviar: {e}")
+    try:
+        cutoff = (datetime.now() - timedelta(hours=72)).isoformat()
+        execute_db(
+            "UPDATE abandoned_carts SET recovered_order_id=? "
+            "WHERE customer_email=? AND recovered_order_id IS NULL AND created_at >= ?",
+            (order['id'], (order['customer_email'] or '').lower(), cutoff)
+        )
+    except Exception as e:
+        print(f"[abandoned_carts] mark recovered failed: {e}")
+    return order, items
 
 
 @app.route('/checkout/procesar', methods=['POST'])
@@ -4656,73 +4859,16 @@ def procesar_checkout():
                 session.pop('cart', None)
                 return redirect(url_for('pedido', order_number=prev['order_number']))
 
-    db = get_db()
-    order_id = None
-    order_number = None
-    alert_product_ids = []
-
     try:
-        # NOTA: psycopg2 abre transacción implícita al primer cursor; sqlite3
-        # con isolation_level por defecto también la abre antes del primer
-        # write. Un único db.commit() al final → atómico. Por eso quitamos el
-        # antiguo "BEGIN EXCLUSIVE" que el wrapper de Postgres ignoraba.
-
-        # Insertar orden primero (asegura order_id para los items).
-        # customer_id queda NULL: el sistema de cuentas se removió 2026-05-21;
-        # la columna se preserva por compatibilidad con pedidos históricos.
-        _cust_id = None
-        cur = db.execute(
-            """INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
-               address, address_ext, address_int, city, state, zip_code,
-               payment_method, notes, subtotal, shipping, total, customer_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            ('TEMP', name, email, phone, address, address_ext, address_int,
-             city, state, zip_code, payment_method, notes, subtotal, shipping, total, _cust_id)
+        order, items = _finalize_order(
+            name=name, email=email, phone=phone, address=address,
+            address_ext=address_ext, address_int=address_int, city=city,
+            state=state, zip_code=zip_code, notes=notes, cart=cart,
+            payment_method=payment_method, payment_status='pendiente',
+            subtotal=subtotal, shipping=shipping, total=total,
+            allow_oversell=False,
         )
-        order_id = cur.lastrowid
-        # Non-predictable order number: JD-YYMMDD-<8 random base64url chars>
-        _suffix = secrets.token_urlsafe(6).replace('-', 'A').replace('_', 'B')
-        order_number = f'JD-{datetime.now().strftime("%y%m%d")}-{_suffix}'
-        db.execute("UPDATE orders SET order_number=? WHERE id=?", (order_number, order_id))
-
-        # Insertar ítems y descontar stock atómicamente. Si UPDATE con guard
-        # `stock >= ?` afecta 0 filas, otro pedido nos ganó — abortar.
-        for pid, item in cart.items():
-            db.execute(
-                """INSERT INTO order_items
-                   (order_id, product_id, product_name, product_sku, dose, quantity, unit_price, subtotal)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                (order_id, item['id'], item['name'], item['sku'], item['dose'],
-                 item['quantity'], item['price'], item['quantity'] * item['price'])
-            )
-            up = db.execute(
-                "UPDATE products SET stock = stock - ? "
-                "WHERE id=? AND active=1 AND stock >= ?",
-                (item['quantity'], item['id'], item['quantity'])
-            )
-            # rowcount: psycopg2 cursor lo soporta vía _PGCursor; sqlite también
-            affected = getattr(up, 'rowcount', None)
-            if affected is None:
-                # Wrappers viejos no exponen rowcount — re-leer stock
-                _r = db.execute("SELECT stock FROM products WHERE id=?", (item['id'],)).fetchone()
-                if _r is None or _r['stock'] < 0:
-                    raise RuntimeError(f'oversell-{item["id"]}')
-            elif affected == 0:
-                # Sin stock o producto inactivo → abortar pedido entero
-                raise RuntimeError(f'oversell-{item["id"]}')
-            db.execute(
-                "INSERT INTO stock_movements (product_id, type, quantity, reason, reference) VALUES (?, 'salida', ?, 'Venta', ?)",
-                (item['id'], item['quantity'], order_number)
-            )
-            alert_product_ids.append(item['id'])
-
-        db.commit()  # Un solo commit — atómico
-
-    except Exception as e:
-        try:
-            db.rollback()
-        except Exception:
-            pass
+    except RuntimeError as e:
         msg = str(e)
         if msg.startswith('oversell-'):
             try:
@@ -4741,59 +4887,191 @@ def procesar_checkout():
         print(f"[Checkout] Error en transacción: {e}")
         flash('Error al procesar el pedido. Por favor intenta de nuevo.', 'error')
         return redirect(url_for('checkout'))
+    except Exception as e:
+        print(f"[Checkout] Error en transacción: {e}")
+        flash('Error al procesar el pedido. Por favor intenta de nuevo.', 'error')
+        return redirect(url_for('checkout'))
 
-    # Post-commit: SSE de stock actualizado (fuera de la transacción, no crítico)
-    for product_id in alert_product_ids:
-        updated_prod = query_db("SELECT stock FROM products WHERE id=?", (product_id,), one=True)
-        if updated_prod:
-            sse_bus.publish('stock_updated', {'id': product_id, 'stock': updated_prod['stock']})
-
-    sse_bus.publish('new_order', {
-        'order_number': order_number,
-        'customer_name': name,
-        'total': total,
-        'time': datetime.now().strftime('%H:%M'),
-    })
-
-    session.pop('cart', None)
     # Marcar token de idempotencia como consumido (cap a 5 entradas)
     if checkout_token:
         used = session.get('used_checkout_tokens') or {}
-        used[checkout_token] = order_id
+        used[checkout_token] = order['id']
         if len(used) > 5:
             used = dict(list(used.items())[-5:])
         session['used_checkout_tokens'] = used
-    order = query_db("SELECT * FROM orders WHERE id=?", (order_id,), one=True)
-    items = query_db("SELECT * FROM order_items WHERE order_id=?", (order_id,))
-
-    # Whitelist this order in the user's session so they can revisit /pedido/<num>
-    # without re-entering their email (gate IDOR fix below).
-    _whitelisted = session.get('view_orders') or []
-    if order_number not in _whitelisted:
-        _whitelisted.append(order_number)
-        # Cap to last 10 to avoid unbounded session growth
-        session['view_orders'] = _whitelisted[-10:]
-
-    try:
-        send_order_email(dict(order), [dict(i) for i in items])
-    except Exception as e:
-        print(f"[Email] Error al enviar: {e}")
-
-    # Marcar como recuperado cualquier abandoned_cart con este email
-    # (en las últimas 72 h) para no enviarle reminder al cliente que ya compró.
-    try:
-        cutoff = (datetime.now() - timedelta(hours=72)).isoformat()
-        execute_db(
-            "UPDATE abandoned_carts SET recovered_order_id=? "
-            "WHERE customer_email=? AND recovered_order_id IS NULL "
-            "AND created_at >= ?",
-            (order['id'], (order['customer_email'] or '').lower(), cutoff)
-        )
-    except Exception as e:
-        print(f"[abandoned_carts] mark recovered failed: {e}")
 
     return render_template('pedido_exitoso.html', order=order, items=items,
                            payment=payment_method_by_slug(order['payment_method']))
+
+
+def _validate_checkout_fields(data):
+    """Valida los campos del checkout (dict, mismas reglas que el flujo manual).
+    Devuelve (form_dict, None) si OK, o (None, mensaje_error)."""
+    name = (data.get('name') or '').strip()
+    email = (data.get('email') or '').strip()
+    phone = (data.get('phone') or '').strip()
+    address = (data.get('address') or '').strip()
+    address_ext = (data.get('address_ext') or '').strip()[:20]
+    address_int = (data.get('address_int') or '').strip()[:20]
+    city = (data.get('city') or '').strip()
+    state = (data.get('state') or '').strip()
+    zip_code = (data.get('zip_code') or '').strip()
+    notes = (data.get('notes') or '').strip()
+    if not all([name, email, address, address_ext, city]):
+        return None, 'Completa todos los campos requeridos (incluido el número exterior).'
+    if not valid_email(email):
+        return None, 'El email ingresado no es válido.'
+    if zip_code and not re.match(r'^\d{5}$', zip_code):
+        return None, 'El código postal debe tener 5 dígitos.'
+    if phone:
+        _d = re.sub(r'\D', '', phone)
+        if not (10 <= len(_d) <= 13):
+            return None, 'El teléfono no tiene un formato válido (10 dígitos).'
+    return {'name': name, 'email': email, 'phone': phone, 'address': address,
+            'address_ext': address_ext, 'address_int': address_int, 'city': city,
+            'state': state, 'zip_code': zip_code, 'notes': notes}, None
+
+
+def _revalidate_cart_inplace(cart):
+    """Revalida cada línea contra la DB (precio/nombre/activo). Muta `cart`.
+    Devuelve None si OK, o un mensaje de error si algo ya no está disponible."""
+    for _pid, _it in list(cart.items()):
+        _row = query_db(
+            "SELECT name, sku, dose, price, weight_grams, active FROM products WHERE id=?",
+            (_it.get('id'),), one=True)
+        if not _row or not _row['active']:
+            cart.pop(_pid, None)
+            save_cart(cart)
+            return 'Un producto de tu carrito ya no está disponible; revísalo.'
+        _it['name'] = _row['name']; _it['sku'] = _row['sku']; _it['dose'] = _row['dose']
+        _it['price'] = float(_row['price'])
+        try:
+            _it['weight_grams'] = int(_row['weight_grams'] or DEFAULT_ITEM_WEIGHT_G)
+        except (TypeError, ValueError):
+            _it['weight_grams'] = DEFAULT_ITEM_WEIGHT_G
+    save_cart(cart)
+    return None
+
+
+@app.route('/checkout/paypal/create-order', methods=['POST'])
+def paypal_create_order():
+    """Crea una orden de PayPal (Orders v2) por el total del carrito en MXN.
+    Valida carrito + datos del cliente ANTES de cobrar y guarda lo necesario en
+    sesión para finalizar la orden local en la captura. Devuelve {id}."""
+    if not paypal_enabled():
+        return jsonify({'error': 'PayPal no está configurado.'}), 400
+    if _rate_limited(f'paypal_create:{_client_ip()}', limit=15, window=600):
+        return jsonify({'error': 'Demasiados intentos. Espera un momento.'}), 429
+    cart = get_cart()
+    if not cart:
+        return jsonify({'error': 'Tu carrito está vacío.'}), 400
+    err = _revalidate_cart_inplace(cart)
+    if err:
+        return jsonify({'error': err}), 400
+    form, ferr = _validate_checkout_fields(request.get_json(silent=True) or {})
+    if ferr:
+        return jsonify({'error': ferr}), 400
+    subtotal = cart_total()
+    shipping = compute_shipping(subtotal)
+    total = subtotal + shipping
+    try:
+        _status, resp = _paypal_request('POST', '/v2/checkout/orders', {
+            'intent': 'CAPTURE',
+            'purchase_units': [{
+                'amount': {'currency_code': 'MXN', 'value': f'{total:.2f}'},
+                'description': 'Pedido JD Peptides',
+            }],
+            'application_context': {
+                'brand_name': 'JD Peptides',
+                'shipping_preference': 'NO_SHIPPING',
+                'user_action': 'PAY_NOW',
+            },
+        })
+    except urllib.error.HTTPError as e:
+        _b = e.read().decode('utf-8', 'replace') if hasattr(e, 'read') else ''
+        print(f"[PayPal] create HTTPError {getattr(e,'code','?')}: {_b[:300]}")
+        return jsonify({'error': 'No se pudo iniciar el pago con PayPal.'}), 502
+    except Exception as e:
+        print(f"[PayPal] create order falló: {type(e).__name__}: {e}")
+        return jsonify({'error': 'No se pudo iniciar el pago con PayPal.'}), 502
+    pp_id = resp.get('id')
+    if not pp_id:
+        return jsonify({'error': 'Respuesta inválida de PayPal.'}), 502
+    pend = session.get('pp_pending') or {}
+    pend[pp_id] = {'form': form, 'cart': cart,
+                   'subtotal': subtotal, 'shipping': shipping, 'total': total}
+    if len(pend) > 3:
+        pend = dict(list(pend.items())[-3:])
+    session['pp_pending'] = pend
+    return jsonify({'id': pp_id})
+
+
+@app.route('/checkout/paypal/capture-order', methods=['POST'])
+def paypal_capture_order():
+    """Captura el pago de PayPal y crea la orden local marcada como PAGADA.
+    Idempotente: si ya existe una orden con esa referencia, redirige a ella."""
+    if not paypal_enabled():
+        return jsonify({'error': 'PayPal no está configurado.'}), 400
+    data = request.get_json(silent=True) or {}
+    pp_id = (data.get('orderID') or '').strip()
+    if not pp_id:
+        return jsonify({'error': 'Falta el ID de la orden.'}), 400
+    # Idempotencia: guardamos el ID de la ORDEN de PayPal dentro de
+    # payment_reference, así que buscamos por él (LIKE; el id de PayPal es
+    # alfanumérico, sin comodines). Si ya se registró, redirigimos a esa orden.
+    existing = query_db(
+        "SELECT order_number FROM orders WHERE payment_reference LIKE ?",
+        (f'%{pp_id}%',), one=True)
+    if existing:
+        return jsonify({'redirect': url_for('pedido', order_number=existing['order_number'])})
+    pend = (session.get('pp_pending') or {}).get(pp_id)
+    if not pend:
+        return jsonify({'error': 'Tu sesión de pago expiró. Vuelve a intentar el pago.'}), 400
+    try:
+        _status, resp = _paypal_request('POST', f'/v2/checkout/orders/{pp_id}/capture')
+    except urllib.error.HTTPError as e:
+        _b = e.read().decode('utf-8', 'replace') if hasattr(e, 'read') else ''
+        # 422 con issue ORDER_ALREADY_CAPTURED → ya estaba capturada
+        if 'ALREADY_CAPTURED' in _b and existing:
+            return jsonify({'redirect': url_for('pedido', order_number=existing['order_number'])})
+        print(f"[PayPal] capture HTTPError {getattr(e,'code','?')}: {_b[:300]}")
+        return jsonify({'error': 'No se pudo confirmar el pago con PayPal.'}), 502
+    except Exception as e:
+        print(f"[PayPal] capture falló: {type(e).__name__}: {e}")
+        return jsonify({'error': 'No se pudo confirmar el pago con PayPal.'}), 502
+    if (resp.get('status') or '').upper() != 'COMPLETED':
+        print(f"[PayPal] capture no COMPLETED para {pp_id}: status={resp.get('status')}")
+        return jsonify({'error': 'El pago no se completó. Si se te cobró, contáctanos.'}), 402
+    # ID de la captura (transacción) para conciliación en PayPal. Guardamos
+    # también el ID de la orden de PayPal en el mismo campo para idempotencia.
+    cap_id = pp_id
+    try:
+        cap_id = resp['purchase_units'][0]['payments']['captures'][0]['id'] or pp_id
+    except Exception:
+        pass
+    payment_reference = f'{cap_id} · order {pp_id}'
+    form = pend['form']
+    cart = pend['cart']
+    try:
+        order, _items = _finalize_order(
+            name=form['name'], email=form['email'], phone=form.get('phone', ''),
+            address=form['address'], address_ext=form['address_ext'],
+            address_int=form.get('address_int', ''), city=form['city'],
+            state=form.get('state', ''), zip_code=form.get('zip_code', ''),
+            notes=form.get('notes', ''), cart=cart, payment_method='paypal',
+            payment_status='pagado', payment_reference=payment_reference,
+            subtotal=pend['subtotal'], shipping=pend['shipping'], total=pend['total'],
+            allow_oversell=True,
+        )
+    except Exception as e:
+        # Pago YA capturado pero falló crear la orden → crítico, conciliación manual.
+        print(f"[PayPal] CRÍTICO: pago capturado {cap_id} pero _finalize_order falló: {type(e).__name__}: {e}")
+        return jsonify({'error': f'Tu pago se procesó pero hubo un problema al registrar el pedido. '
+                                 f'Contáctanos con este código: {cap_id}'}), 500
+    pend_all = session.get('pp_pending') or {}
+    pend_all.pop(pp_id, None)
+    session['pp_pending'] = pend_all
+    return jsonify({'redirect': url_for('pedido', order_number=order['order_number'])})
 
 
 # Anti-enumeration: /pedido/ lookup attempts (8 per 10min) — SQL persistente

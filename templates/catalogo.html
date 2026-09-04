@@ -221,11 +221,11 @@
                       {% else %}
                         <div class="product-visual-pattern">
                           <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="100" cy="100" r="12" fill="#c9a227"/>
-                            <circle cx="40"  cy="60"  r="8"  fill="#c9a227" opacity="0.6"/>
-                            <circle cx="160" cy="60"  r="8"  fill="#c9a227" opacity="0.6"/>
-                            <circle cx="40"  cy="140" r="8"  fill="#c9a227" opacity="0.6"/>
-                            <circle cx="160" cy="140" r="8"  fill="#c9a227" opacity="0.6"/>
+                            <circle cx="100" cy="100" r="12" fill="#c79a3a"/>
+                            <circle cx="40"  cy="60"  r="8"  fill="#c79a3a" opacity="0.6"/>
+                            <circle cx="160" cy="60"  r="8"  fill="#c79a3a" opacity="0.6"/>
+                            <circle cx="40"  cy="140" r="8"  fill="#c79a3a" opacity="0.6"/>
+                            <circle cx="160" cy="140" r="8"  fill="#c79a3a" opacity="0.6"/>
                           </svg>
                         </div>
                         <div class="product-visual-name">{{ p['name'] }}</div>
@@ -253,7 +253,7 @@
                       <p class="product-benefit">{{ benefits[0] }}</p>
                     {% endif %}
                     <div class="product-price">
-                      <span class="product-price-amount">${{ "%.2f"|format(p['price']) }}</span>
+                      <span class="product-price-amount">${{ p['price']|money }}</span>
                       <span class="price-currency">MXN</span>
                     </div>
                     {% set _low = p['low_stock_alert'] if p['low_stock_alert'] is not none else 5 %}
@@ -265,7 +265,6 @@
                       {% else %}
                         <span class="stock-badge out">Agotado</span>
                       {% endif %}
-                      <span class="ruo-badge" title="For research use only — no apto para consumo humano">RUO · Solo investigación</span>
                     </div>
                   </div>
                   <div class="product-footer">

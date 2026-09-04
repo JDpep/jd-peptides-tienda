@@ -263,8 +263,8 @@
           </td>
           <td class="td-center">{{ item['dose'] }}</td>
           <td class="td-center">{{ item['quantity'] }}</td>
-          <td class="td-right">${{ "%.2f"|format(item['unit_cost']) }}</td>
-          <td class="td-right" style="font-weight:700;color:#c9a227">${{ "%.2f"|format(item['subtotal']) }}</td>
+          <td class="td-right">${{ item['unit_cost']|money }}</td>
+          <td class="td-right" style="font-weight:700;color:#c9a227">${{ item['subtotal']|money }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -278,7 +278,7 @@
       </div>
       <div class="totals-total">
         <span class="label">TOTAL</span>
-        <span class="value">${{ "%.2f"|format(po['total']) }}</span>
+        <span class="value">${{ po['total']|money }}</span>
       </div>
     </div>
 

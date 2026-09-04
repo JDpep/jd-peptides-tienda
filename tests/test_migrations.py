@@ -18,12 +18,17 @@ def test_db_has_expected_tables(db):
 
 
 def test_all_migrations_applied(db):
-    """v1..v15 deben tener al menos un marker en stock_movements.
-    (Algunas migraciones tempranas insertan un marker por SKU, así que
-    usamos >= 1 en lugar de == 1.)"""
-    expected_versions = list(range(1, 16))  # v1..v15
-    # v6 fue saltada en el código (no existe)
-    expected_versions.remove(6)
+    """Toda migración que el código etiqueta debe dejar marker en stock_movements.
+
+    Las versiones se leen de app.py en vez de fijarse a mano: un rango
+    hardcodeado se desfasa solo (pedía v1, que ya no existe, e ignoraba
+    v16-v18). Algunas migraciones insertan un marker por SKU → `>= 1`.
+    """
+    import pathlib, re
+    src = (pathlib.Path(__file__).resolve().parent.parent / 'app.py').read_text(encoding='utf-8')
+    expected_versions = sorted({int(v) for v in re.findall(r"migration:v(\d+):", src)})
+    assert expected_versions, "No se encontró ninguna etiqueta migration:vN: en app.py"
+
     for v in expected_versions:
         n = db.execute(
             "SELECT COUNT(*) AS c FROM stock_movements "

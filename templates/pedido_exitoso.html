@@ -82,7 +82,7 @@
     <!-- Tracking de guía -->
     {% if order['tracking_number'] %}
       {% set _turl = carrier_tracking_url(order['tracking_carrier'], order['tracking_number']) %}
-      <div style="background:rgba(201,162,39,0.08);border:1px solid rgba(201,162,39,0.3);padding:1.2rem 1.4rem;border-radius:8px;margin:1rem 0">
+      <div style="background:rgba(var(--gold-rgb),0.08);border:1px solid rgba(var(--gold-rgb),0.3);padding:1.2rem 1.4rem;border-radius:8px;margin:1rem 0">
         <p style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin:0 0 0.6rem">Envío en curso</p>
         <p style="margin:0 0 0.4rem;font-size:0.95rem;color:var(--text)"><strong>{{ order['tracking_carrier'] }}</strong></p>
         <p style="margin:0;font-family:monospace;font-size:0.9rem;color:var(--text2)">Guía: <code style="background:var(--bg3);padding:2px 8px;border-radius:4px">{{ order['tracking_number'] }}</code></p>
@@ -108,20 +108,20 @@
             <div class="success-item-name">{{ item['product_name'] }}</div>
             <div class="success-item-dose">{{ item['dose'] }} · Cant: {{ item['quantity'] }}</div>
           </div>
-          <div class="success-item-total">${{ "%.2f"|format(item['subtotal']) }}</div>
+          <div class="success-item-total">${{ item['subtotal']|money }}</div>
         </div>
       {% endfor %}
-      <div class="success-item" style="background:rgba(201,162,39,0.04)">
+      <div class="success-item" style="background:rgba(var(--gold-rgb),0.04)">
         <div style="display:flex;flex-direction:column;gap:0.2rem;width:100%">
           <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--text2)">
-            <span>Subtotal</span><span>${{ "%.2f"|format(order['subtotal']) }}</span>
+            <span>Subtotal</span><span>${{ order['subtotal']|money }}</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--text2)">
             <span>Envío</span>
-            <span>{% if order['shipping'] == 0 %}Gratis{% else %}${{ "%.2f"|format(order['shipping']) }}{% endif %}</span>
+            <span>{% if order['shipping'] == 0 %}Gratis{% else %}${{ order['shipping']|money }}{% endif %}</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-weight:800;color:var(--gold);font-size:1.05rem;margin-top:0.25rem;padding-top:0.25rem;border-top:1px solid var(--border)">
-            <span>Total</span><span>${{ "%.2f"|format(order['total']) }}</span>
+            <span>Total</span><span>${{ order['total']|money }}</span>
           </div>
         </div>
       </div>
@@ -133,12 +133,12 @@
         {# PayPal: CTA destacado para completar el pago. #}
         {% set _pp_url = paypal_pay_url(payment.fields['link'], order['total']) %}
         <h4>{{ payment.icon }} Completa tu pago con PayPal</h4>
-        <p style="margin-bottom:0.5rem">Importe a pagar: <strong style="color:var(--gold);font-size:1.05rem">${{ "%.2f"|format(order['total']) }} MXN</strong></p>
+        <p style="margin-bottom:0.5rem">Importe a pagar: <strong style="color:var(--gold);font-size:1.05rem">${{ order['total']|money }} MXN</strong></p>
         <p style="margin:0 0 1rem;font-size:0.85rem;color:var(--text2)">Referencia del pedido: <strong style="color:var(--text)">{{ order['order_number'] }}</strong></p>
         {% if _pp_url %}
           <a href="{{ _pp_url }}" target="_blank" rel="noopener"
              class="btn btn-gold btn-lg" style="display:inline-flex;align-items:center;gap:0.5rem">
-            Pagar ${{ "%.2f"|format(order['total']) }} MXN con PayPal ↗
+            Pagar ${{ order['total']|money }} MXN con PayPal ↗
           </a>
           <p style="margin-top:0.75rem;font-size:0.8rem;color:var(--text3)">Se abrirá PayPal en una nueva pestaña. Puedes pagar con tarjeta de crédito/débito o tu saldo PayPal.</p>
         {% elif payment.fields['email'] %}
@@ -161,19 +161,19 @@
                     <span style="word-break:break-all">{{ payment.fields[fk] }}</span></li>
               {% endif %}
             {% endfor %}
-            <li><strong style="color:var(--text)">Monto:</strong> ${{ "%.2f"|format(order['total']) }} MXN</li>
+            <li><strong style="color:var(--text)">Monto:</strong> ${{ order['total']|money }} MXN</li>
             <li><strong style="color:var(--text)">Referencia:</strong> {{ order['order_number'] }}</li>
           </ul>
           <p style="margin-top:0.75rem;font-size:0.82rem">Una vez realizado el pago, envíanos tu comprobante por WhatsApp o email para procesar tu pedido.</p>
         {% else %}
-          <p>Tu pedido ha sido reservado. Te contactaremos para coordinar el pago de <strong style="color:var(--gold)">${{ "%.2f"|format(order['total']) }} MXN</strong>.</p>
+          <p>Tu pedido ha sido reservado. Te contactaremos para coordinar el pago de <strong style="color:var(--gold)">${{ order['total']|money }} MXN</strong>.</p>
         {% endif %}
         {% if payment.fields['note'] %}
           <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text2)">{{ payment.fields['note'] }}</p>
         {% endif %}
       {% else %}
         <h4>📋 Instrucciones de Pago</h4>
-        <p>Te contactaremos en breve para coordinar el pago de <strong style="color:var(--gold)">${{ "%.2f"|format(order['total']) }} MXN</strong>.</p>
+        <p>Te contactaremos en breve para coordinar el pago de <strong style="color:var(--gold)">${{ order['total']|money }} MXN</strong>.</p>
       {% endif %}
     </div>
 
@@ -187,7 +187,7 @@
     </div>
 
     <div class="detail-disclaimer" style="margin-bottom:2rem;display:flex;gap:0.8rem;align-items:flex-start">
-      <span style="flex:0 0 auto;font-size:0.6rem;font-weight:800;letter-spacing:0.08em;color:var(--gold);background:rgba(201,162,39,0.18);padding:0.25rem 0.45rem;border-radius:3px;line-height:1">RUO</span>
+      <span style="flex:0 0 auto;font-size:0.6rem;font-weight:800;letter-spacing:0.08em;color:var(--gold);background:rgba(var(--gold-rgb),0.18);padding:0.25rem 0.45rem;border-radius:3px;line-height:1">RUO</span>
       <span><strong style="color:var(--text)">For Research Use Only.</strong> Los productos adquiridos son exclusivamente para uso en investigación científica <em>in vitro</em>.</span>
     </div>
 
@@ -238,7 +238,7 @@
               target.value = v;
               group.querySelectorAll('span').forEach(x => {
                 x.textContent = parseInt(x.dataset.v, 10) <= v ? '★' : '☆';
-                x.style.color = parseInt(x.dataset.v, 10) <= v ? '#c9a227' : '#666';
+                x.style.color = parseInt(x.dataset.v, 10) <= v ? 'var(--gold)' : '#666';
               });
             });
           });

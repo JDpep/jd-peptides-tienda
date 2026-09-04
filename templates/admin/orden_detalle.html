@@ -83,8 +83,8 @@
                 <td class="strong">{{ item['product_name'] }}</td>
                 <td style="font-size:0.85rem;color:var(--text2)">{{ item['dose'] }}</td>
                 <td style="text-align:center">{{ item['quantity'] }}</td>
-                <td style="text-align:right">${{ "%.2f"|format(item['unit_price']) }}</td>
-                <td style="text-align:right;color:var(--gold);font-weight:700">${{ "%.2f"|format(item['subtotal']) }}</td>
+                <td style="text-align:right">${{ item['unit_price']|money }}</td>
+                <td style="text-align:right;color:var(--gold);font-weight:700">${{ item['subtotal']|money }}</td>
               </tr>
             {% else %}
               <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Esta orden no tiene productos registrados.</td></tr>
@@ -93,18 +93,18 @@
           <tfoot>
             <tr style="border-top:2px solid var(--border)">
               <td colspan="5" style="text-align:right;padding:0.75rem 0.85rem;font-size:0.82rem;color:var(--text3)">Subtotal</td>
-              <td style="text-align:right;padding:0.75rem 0.85rem;color:var(--text)">${{ "%.2f"|format(order['subtotal']) }}</td>
+              <td style="text-align:right;padding:0.75rem 0.85rem;color:var(--text)">${{ order['subtotal']|money }}</td>
             </tr>
             <tr>
               <td colspan="5" style="text-align:right;padding:0.4rem 0.85rem;font-size:0.82rem;color:var(--text3)">Envío</td>
               <td style="text-align:right;padding:0.4rem 0.85rem;color:var(--text)">
-                {% if order['shipping'] == 0 %}Gratis{% else %}${{ "%.2f"|format(order['shipping']) }}{% endif %}
+                {% if order['shipping'] == 0 %}Gratis{% else %}${{ order['shipping']|money }}{% endif %}
               </td>
             </tr>
             <tr>
               <td colspan="5" style="text-align:right;padding:0.75rem 0.85rem;font-weight:700">Total</td>
               <td style="text-align:right;padding:0.75rem 0.85rem;color:var(--gold);font-weight:800;font-size:1.05rem">
-                ${{ "%.2f"|format(order['total']) }}
+                ${{ order['total']|money }}
               </td>
             </tr>
           </tfoot>
@@ -199,15 +199,15 @@
           <div style="display:flex;flex-direction:column;gap:0.4rem;font-size:0.88rem">
             <div style="display:flex;justify-content:space-between">
               <span style="color:var(--text3)">Subtotal</span>
-              <span>${{ "%.2f"|format(order['subtotal']) }}</span>
+              <span>${{ order['subtotal']|money }}</span>
             </div>
             <div style="display:flex;justify-content:space-between">
               <span style="color:var(--text3)">Envío</span>
-              <span>{% if order['shipping'] == 0 %}Gratis{% else %}${{ "%.2f"|format(order['shipping']) }}{% endif %}</span>
+              <span>{% if order['shipping'] == 0 %}Gratis{% else %}${{ order['shipping']|money }}{% endif %}</span>
             </div>
             <div style="display:flex;justify-content:space-between;font-weight:800;color:var(--gold);margin-top:0.25rem;padding-top:0.5rem;border-top:1px solid var(--border)">
               <span>Total</span>
-              <span>${{ "%.2f"|format(order['total']) }}</span>
+              <span>${{ order['total']|money }}</span>
             </div>
           </div>
         </div>

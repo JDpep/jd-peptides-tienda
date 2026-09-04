@@ -35,7 +35,7 @@
                         <div class="cart-product-name">{{ item['name'] }}</div>
                         <div class="cart-product-dose">{{ item['dose'] }} · {{ item['sku'] }}</div>
                       </td>
-                      <td data-price="{{ item['price'] }}">${{ "%.2f"|format(item['price']) }} <span class="price-currency">MXN</span></td>
+                      <td data-price="{{ item['price'] }}">${{ item['price']|money }} <span class="price-currency">MXN</span></td>
                       <td style="text-align:center">
                         <input
                           type="number"
@@ -48,7 +48,7 @@
                         >
                       </td>
                       <td style="text-align:right;color:var(--gold);font-weight:700" class="line-subtotal">
-                        ${{ "%.2f"|format(item['quantity'] * item['price']) }}
+                        ${{ (item['quantity'] * item['price'])|money }}
                       </td>
                       <td>
                         <button type="button" class="remove-btn remove-from-cart" data-pid="{{ pid }}" title="Eliminar">✕</button>
@@ -71,13 +71,13 @@
               <h3>Resumen del Pedido</h3>
               <div class="summary-row">
                 <span>Subtotal</span>
-                <span id="cart-subtotal">${{ "%.2f"|format(subtotal) }}</span>
+                <span id="cart-subtotal">${{ subtotal|money }}</span>
               </div>
               {% set _wgrams = cart_total_weight() %}
               <div class="summary-row" style="font-size:0.85rem;color:var(--text2)">
                 <span>Peso total</span>
                 <span>
-                  {% if _wgrams >= 1000 %}{{ "%.2f"|format(_wgrams / 1000) }} kg{% else %}{{ _wgrams }} g{% endif %}
+                  {% if _wgrams >= 1000 %}{{ (_wgrams / 1000)|money }} kg{% else %}{{ _wgrams }} g{% endif %}
                 </span>
               </div>
               <div class="summary-row">
@@ -86,18 +86,18 @@
                   {% if shipping == 0 %}
                     <span class="free-shipping">Gratis</span>
                   {% else %}
-                    ${{ "%.2f"|format(shipping) }} <span class="price-currency">MXN</span>
+                    ${{ shipping|money }} <span class="price-currency">MXN</span>
                   {% endif %}
                 </span>
               </div>
               {% if subtotal < FREE_SHIPPING_MIN_MXN %}
                 <p style="font-size:0.78rem;color:var(--text3);margin-top:0.25rem">
-                  Agrega <strong style="color:var(--gold)">${{ "%.2f"|format(FREE_SHIPPING_MIN_MXN - subtotal) }} MXN</strong> más para envío gratis
+                  Agrega <strong style="color:var(--gold)">${{ (FREE_SHIPPING_MIN_MXN - subtotal)|money }} MXN</strong> más para envío gratis
                 </p>
               {% endif %}
               <div class="summary-row total">
                 <span>Total</span>
-                <span id="cart-total">${{ "%.2f"|format(total) }} <span class="price-currency">MXN</span></span>
+                <span id="cart-total">${{ total|money }} <span class="price-currency">MXN</span></span>
               </div>
               <div style="margin-top:1.25rem">
                 <a href="{{ url_for('checkout') }}" class="btn btn-gold btn-block btn-lg">
@@ -123,7 +123,7 @@
                 </div>
               {% endif %}
               <div class="detail-disclaimer" style="margin-top:1rem;display:flex;gap:0.7rem;align-items:flex-start">
-                <span style="flex:0 0 auto;font-size:0.58rem;font-weight:800;letter-spacing:0.08em;color:var(--gold);background:rgba(201,162,39,0.18);padding:0.22rem 0.4rem;border-radius:3px;line-height:1;margin-top:0.1rem">RUO</span>
+                <span style="flex:0 0 auto;font-size:0.58rem;font-weight:800;letter-spacing:0.08em;color:var(--gold);background:rgba(var(--gold-rgb),0.18);padding:0.22rem 0.4rem;border-radius:3px;line-height:1;margin-top:0.1rem">RUO</span>
                 <span><strong style="color:var(--text)">For Research Use Only.</strong> Al proceder confirmas que los productos son para uso exclusivo de investigación científica <em>in vitro</em>.</span>
               </div>
             </div>

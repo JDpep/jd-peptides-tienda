@@ -50,9 +50,9 @@
 {% block content %}
 <div style="background:#fff;min-height:70vh;padding:5rem 0">
   <div class="container" style="max-width:780px">
-    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c9a227;margin-bottom:0.75rem">Soporte</p>
+    <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.75rem">Soporte</p>
     <h1 style="font-size:clamp(2rem,4vw,3rem);font-weight:800;color:#111;line-height:1.15;margin-bottom:2rem">
-      Preguntas <span style="color:#c9a227">Frecuentes</span>
+      Preguntas <span style="color:var(--gold)">Frecuentes</span>
     </h1>
 
     <div style="display:flex;flex-direction:column;gap:0.5rem">
@@ -61,7 +61,7 @@
       <details style="border:1px solid #e8e0d0;border-radius:10px;overflow:hidden">
         <summary style="padding:1.1rem 1.3rem;font-weight:600;color:#111;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;user-select:none">
           {{ question }}
-          <span style="color:#c9a227;font-size:1.3rem;transition:transform 0.2s">+</span>
+          <span style="color:var(--gold);font-size:1.3rem;transition:transform 0.2s">+</span>
         </summary>
         <p style="padding:0 1.3rem 1.1rem;color:#555;line-height:1.75;margin:0">{{ answer }}</p>
       </details>

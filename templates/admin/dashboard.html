@@ -9,11 +9,11 @@
   <div class="metric-card">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.5rem">
       <div class="metric-label">Total Ventas</div>
-      <div style="width:32px;height:32px;border-radius:8px;background:rgba(201,162,39,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a227" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(var(--gold-rgb),0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c79a3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       </div>
     </div>
-    <div class="metric-value gold">${{ "%.2f"|format(total_sales) }}</div>
+    <div class="metric-value gold">${{ total_sales|money }}</div>
     <div class="metric-sub">Todas las órdenes activas</div>
   </div>
   <div class="metric-card">
@@ -221,7 +221,7 @@
       <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
         <h3>Órdenes Recientes</h3>
         <div id="dash-acciones" style="display:none;align-items:center;gap:0.4rem;flex-wrap:wrap">
-          <span id="dash-count" style="color:var(--gold,#c9a227);font-size:0.82rem;font-weight:600"></span>
+          <span id="dash-count" style="color:var(--gold);font-size:0.82rem;font-weight:600"></span>
           <button class="btn btn-ghost btn-sm" onclick="dashVer()">👁 Ver</button>
           <button class="btn btn-ghost btn-sm" onclick="dashPDF()">📄 PDF</button>
           <button class="btn btn-sm" style="background:#c0392b;color:#fff;border:none;cursor:pointer" onclick="dashEliminar()">🗑 Eliminar</button>
@@ -253,13 +253,13 @@
           {% for o in recent_orders %}
             <tr>
               <td style="text-align:center;vertical-align:middle">
-                <input type="checkbox" name="order_ids" value="{{ o['id'] }}" class="dash-cb" onchange="dashActualizar()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold,#c9a227)">
+                <input type="checkbox" name="order_ids" value="{{ o['id'] }}" class="dash-cb" onchange="dashActualizar()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold)">
               </td>
               <td>
                 <a href="{{ url_for('admin_orden_detalle', oid=o['id']) }}" class="mono">{{ o['order_number'] }}</a>
               </td>
               <td class="strong">{{ o['customer_name'] }}</td>
-              <td style="color:var(--gold);font-weight:700">${{ "%.2f"|format(o['total'] or 0) }}</td>
+              <td style="color:var(--gold);font-weight:700">${{ (o['total'] or 0)|money }}</td>
               <td><span class="badge status-{{ o['status'] }}">{{ o['status'] }}</span></td>
               <td><span class="badge status-{{ o['payment_status'] }}">{{ o['payment_status'] }}</span></td>
               <td style="font-size:0.8rem;color:var(--text3)">{{ (o['created_at'] or '')[:10] }}</td>
@@ -275,13 +275,13 @@
 
   <!-- Modal Ver (dashboard) -->
   <div id="dash-modal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center">
-    <div style="background:var(--surface,#1a1a2e);border:1px solid var(--gold,#c9a227);border-radius:10px;width:min(92vw,700px);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(201,162,39,0.2)">
+    <div style="background:var(--surface,#1a1a2e);border:1px solid var(--gold);border-radius:10px;width:min(92vw,700px);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(var(--gold-rgb),0.2)">
         <h3 style="margin:0;font-size:1rem">Órdenes Seleccionadas</h3>
         <button onclick="document.getElementById('dash-modal').style.display='none'" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer">✕</button>
       </div>
       <div id="dash-modal-body" style="overflow-y:auto;padding:1rem 1.25rem;flex:1"></div>
-      <div style="padding:0.75rem 1.25rem;border-top:1px solid rgba(201,162,39,0.2);display:flex;justify-content:flex-end;gap:0.5rem">
+      <div style="padding:0.75rem 1.25rem;border-top:1px solid rgba(var(--gold-rgb),0.2);display:flex;justify-content:flex-end;gap:0.5rem">
         <button class="btn btn-ghost btn-sm" onclick="dashPDF()">📄 PDF</button>
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('dash-modal').style.display='none'">Cerrar</button>
       </div>
@@ -316,9 +316,9 @@
   function dashVer() {
     var items = dashGetSel();
     if (!items.length) return;
-    var html = '<table style="width:100%;border-collapse:collapse;font-size:0.83rem"><thead><tr style="border-bottom:1px solid rgba(201,162,39,0.3)">';
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:0.83rem"><thead><tr style="border-bottom:1px solid rgba(var(--gold-rgb),0.3)">';
     ['# Orden','Cliente','Email','Total','Estado','Pago','Fecha'].forEach(function(h){
-      html += '<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.76rem">' + dashEscape(h) + '</th>';
+      html += '<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold);font-size:0.76rem">' + dashEscape(h) + '</th>';
     });
     html += '</tr></thead><tbody>';
     items.forEach(function(o){
@@ -326,7 +326,7 @@
       html += '<td style="padding:0.35rem 0.5rem;font-family:monospace;font-size:0.78rem">' + dashEscape(o.numero) + '</td>';
       html += '<td style="padding:0.35rem 0.5rem;font-weight:600">' + dashEscape(o.cliente) + '</td>';
       html += '<td style="padding:0.35rem 0.5rem;font-size:0.78rem">' + dashEscape(o.email) + '</td>';
-      html += '<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold,#c9a227)">$' + dashEscape(o.total) + '</td>';
+      html += '<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold)">$' + dashEscape(o.total) + '</td>';
       html += '<td style="padding:0.35rem 0.5rem">' + dashEscape(o.estado) + '</td>';
       html += '<td style="padding:0.35rem 0.5rem">' + dashEscape(o.pago) + '</td>';
       html += '<td style="padding:0.35rem 0.5rem;color:var(--text3)">' + dashEscape(o.fecha) + '</td>';
@@ -431,7 +431,7 @@ var COMP_DATA = [
           </tr>
         {% endfor %}
         {% if comparativo %}
-          <tr style="background:rgba(201,162,39,0.06);font-weight:700">
+          <tr style="background:rgba(var(--gold-rgb),0.06);font-weight:700">
             <td colspan="3" style="text-align:right;padding-right:1rem;color:var(--text2)">TOTALES</td>
             <td style="text-align:right">${{ '%.2f'|format(comparativo|sum(attribute='costo_total')) }}</td>
             <td></td>
@@ -450,7 +450,7 @@ var COMP_DATA = [
     <canvas id="comp-chart" style="max-height:360px"></canvas>
     <div style="display:flex;justify-content:center;gap:1.5rem;margin-top:1rem;font-size:0.8rem">
       <span style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;background:rgba(231,76,60,0.8);border-radius:2px;display:inline-block"></span>Costo (OC)</span>
-      <span style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;background:rgba(201,162,39,0.85);border-radius:2px;display:inline-block"></span>Venta</span>
+      <span style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;background:rgba(var(--gold-rgb),0.85);border-radius:2px;display:inline-block"></span>Venta</span>
       <span style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;background:rgba(46,204,113,0.8);border-radius:2px;display:inline-block"></span>Margen</span>
     </div>
   </div>
@@ -470,6 +470,14 @@ function toggleVistaComp() {
   if (vistaGrafica && !compChart) renderCompChart();
 }
 
+// Chart.js dibuja en <canvas>, donde var(--gold) no se resuelve. Leemos el
+// token una sola vez y lo pasamos ya calculado.
+var JDP_GOLD = (getComputedStyle(document.documentElement)
+                  .getPropertyValue('--gold') || '#c79a3a').trim() || '#c79a3a';
+var JDP_GOLD_RGB = (getComputedStyle(document.documentElement)
+                  .getPropertyValue('--gold-rgb') || '199, 154, 58').trim() || '199, 154, 58';
+function JDP_GOLD_A(a) { return 'rgba(' + JDP_GOLD_RGB + ',' + a + ')'; }
+
 function renderCompChart() {
   var labels = COMP_DATA.map(function(r){ return r.name.length > 18 ? r.name.slice(0,16)+'…' : r.name; });
   var costos  = COMP_DATA.map(function(r){ return parseFloat(r.costo); });
@@ -482,7 +490,7 @@ function renderCompChart() {
       labels: labels,
       datasets: [
         { label: 'Costo (OC)',  data: costos,   backgroundColor: 'rgba(231,76,60,0.75)',  borderRadius: 4 },
-        { label: 'Venta',       data: ventas,   backgroundColor: 'rgba(201,162,39,0.85)', borderRadius: 4 },
+        { label: 'Venta',       data: ventas,   backgroundColor: JDP_GOLD_A(0.85), borderRadius: 4 },
         { label: 'Margen',      data: margenes, backgroundColor: 'rgba(46,204,113,0.75)', borderRadius: 4 }
       ]
     },
@@ -559,10 +567,10 @@ function descargarCompPDF() {
         {
           label: 'Ventas $',
           data: totals,
-          borderColor: '#c9a227',
-          backgroundColor: 'rgba(201,162,39,0.08)',
+          borderColor: JDP_GOLD,
+          backgroundColor: JDP_GOLD_A(0.08),
           borderWidth: 2,
-          pointBackgroundColor: '#c9a227',
+          pointBackgroundColor: JDP_GOLD,
           pointRadius: 4,
           tension: 0.35,
           fill: true,
@@ -600,7 +608,7 @@ function descargarCompPDF() {
         x: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
         y: {
           position: 'left',
-          ticks: { color: '#c9a227', callback: function(v){ return '$'+v; } },
+          ticks: { color: JDP_GOLD, callback: function(v){ return '$'+v; } },
           grid: { color: 'rgba(255,255,255,0.04)' }
         },
         y2: {

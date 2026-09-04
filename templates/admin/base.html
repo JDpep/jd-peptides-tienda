@@ -20,7 +20,7 @@
        style="pointer-events:all;display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1.1rem;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.35);min-width:280px;max-width:400px;font-size:0.88rem;font-weight:500;animation:toastIn .25s ease;
        {% if category == 'success' %}background:#1a2e1a;border:1px solid #2ecc71;color:#2ecc71;
        {% elif category == 'error' %}background:#2e1a1a;border:1px solid #e74c3c;color:#e74c3c;
-       {% else %}background:#1a1f2e;border:1px solid #c9a227;color:#c9a227;{% endif %}">
+       {% else %}background:#1a1f2e;border:1px solid var(--gold);color:var(--gold);{% endif %}">
     <span style="font-size:1.1rem;flex-shrink:0">
       {% if category == 'success' %}✓{% elif category == 'error' %}✕{% else %}ℹ{% endif %}
     </span>
@@ -94,7 +94,7 @@
           <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         </span>
         Docs Proveedor
-        <span style="margin-left:auto;background:rgba(201,162,39,0.2);color:var(--gold);font-size:0.65rem;padding:1px 6px;border-radius:4px;font-weight:700">IA</span>
+        <span style="margin-left:auto;background:rgba(var(--gold-rgb),0.2);color:var(--gold);font-size:0.65rem;padding:1px 6px;border-radius:4px;font-weight:700">IA</span>
       </a>
       <a href="{{ url_for('admin_reportes') }}"
          class="admin-nav-link {% if request.endpoint == 'admin_reportes' %}active{% endif %}">
@@ -227,7 +227,7 @@ function showAdminToast(message, type, persistent) {
     container.style.cssText = 'position:fixed;top:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:.6rem;pointer-events:none';
     document.body.appendChild(container);
   }
-  var colors = {success:'#1a2e1a;border:1px solid #2ecc71;color:#2ecc71', error:'#2e1a1a;border:1px solid #e74c3c;color:#e74c3c', info:'#1a1f2e;border:1px solid #c9a227;color:#c9a227'};
+  var colors = {success:'#1a2e1a;border:1px solid #2ecc71;color:#2ecc71', error:'#2e1a1a;border:1px solid #e74c3c;color:#e74c3c', info:'#1a1f2e;border:1px solid var(--gold);color:var(--gold)'};
   var icon = {success:'✓', error:'✕', info:'ℹ'}[type] || 'ℹ';
   var toast = document.createElement('div');
   toast.style.cssText = 'pointer-events:all;display:flex;align-items:center;gap:.75rem;padding:.85rem 1.1rem;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.35);min-width:280px;max-width:420px;font-size:.88rem;font-weight:500;animation:toastIn .25s ease;background:' + (colors[type] || colors.info);

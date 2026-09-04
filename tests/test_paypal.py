@@ -15,7 +15,8 @@ def test_create_order_flow(client, sample_product, monkeypatch):
     client.post('/carrito/agregar', data={'product_id': sample_product['id'], 'quantity': 1})
     r = client.post('/checkout/paypal/create-order', json={
         'name':'Ana Probadora','email':'ana@x.com','address':'Av Siempre Viva',
-        'address_ext':'742','city':'CDMX','zip_code':'06000','phone':'5512345678'})
+        'address_ext':'742','city':'CDMX','state':'CDMX','zip_code':'06000',
+        'phone':'5512345678','ruo_ack':'1'})
     assert r.status_code == 200, r.get_data(as_text=True)
     assert r.get_json()['id'] == 'PP-ORDER-123'
     # PayPal recibió MXN con 2 decimales
@@ -45,7 +46,8 @@ def test_capture_creates_paid_order(client, sample_product, db, monkeypatch):
 
     client.post('/carrito/agregar', data={'product_id': sample_product['id'], 'quantity': 2})
     r1 = client.post('/checkout/paypal/create-order', json={
-        'name':'Beto','email':'beto@x.com','address':'Calle 1','address_ext':'10','city':'GDL'})
+        'name':'Beto','email':'beto@x.com','address':'Calle 1','address_ext':'10',
+        'city':'GDL','state':'Jalisco','zip_code':'44100','ruo_ack':'1'})
     ppid = r1.get_json()['id']
     assert ppid == 'PP-ORDER-ABC'
 
@@ -80,7 +82,8 @@ def test_capture_not_completed_no_order(client, sample_product, db, monkeypatch)
     monkeypatch.setattr(A, '_paypal_request', fake_req)
     client.post('/carrito/agregar', data={'product_id': sample_product['id'], 'quantity': 1})
     ppid = client.post('/checkout/paypal/create-order', json={
-        'name':'C','email':'c@x.com','address':'X','address_ext':'1','city':'CDMX'}).get_json()['id']
+        'name':'C','email':'c@x.com','address':'X','address_ext':'1','city':'CDMX',
+        'state':'CDMX','zip_code':'06000','ruo_ack':'1'}).get_json()['id']
     r = client.post('/checkout/paypal/capture-order', json={'orderID': ppid})
     assert r.status_code == 402
     o = db.execute("SELECT COUNT(*) AS n FROM orders WHERE payment_reference LIKE ?", ('%'+ppid+'%',)).fetchone()

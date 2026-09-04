@@ -64,7 +64,7 @@
             <td class="strong">{{ p['name'] }}</td>
             <td><span class="badge badge-gold" style="font-size:0.7rem">{{ p['category'] }}</span></td>
             <td style="font-size:0.85rem;color:var(--text2)">{{ p['dose'] }}</td>
-            <td style="text-align:right;color:var(--gold);font-weight:700">${{ "%.2f"|format(p['price']) }}</td>
+            <td style="text-align:right;color:var(--gold);font-weight:700">${{ p['price']|money }}</td>
             <td style="text-align:center">
               <span class="stock-value {% if p['stock'] == 0 %}stock-critical{% elif p['stock'] <= p['low_stock_alert'] %}stock-low{% else %}stock-ok{% endif %}">
                 {{ p['stock'] }}

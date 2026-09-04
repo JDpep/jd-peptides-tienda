@@ -3656,6 +3656,20 @@ app.jinja_env.globals['tag_label']  = tag_label
 app.jinja_env.globals['TAG_LABELS'] = TAG_LABELS
 
 
+@app.template_filter('money')
+def _money(value):
+    """Importe en pesos con separador de miles: 3000 -> '3,000.00'.
+
+    Sin el separador, '$3000.00' y '$30000.00' se confunden de un vistazo —
+    justo lo que no quieres en un carrito o en un total de checkout.
+    El símbolo '$' lo pone la plantilla, aquí solo va el número.
+    """
+    try:
+        return f'{float(value):,.2f}'
+    except (TypeError, ValueError):
+        return '0.00'
+
+
 @app.template_filter('fromjson_safe')
 def _fromjson_safe(raw):
     """Parse JSON safely en templates. Devuelve [] si falla — útil para
@@ -4805,36 +4819,21 @@ def procesar_checkout():
             _it['weight_grams'] = DEFAULT_ITEM_WEIGHT_G
     save_cart(cart)
 
-    name = request.form.get('name', '').strip()
-    email = request.form.get('email', '').strip()
-    phone = request.form.get('phone', '').strip()
-    address = request.form.get('address', '').strip()
-    address_ext = request.form.get('address_ext', '').strip()[:20]
-    address_int = request.form.get('address_int', '').strip()[:20]
-    city = request.form.get('city', '').strip()
-    state = request.form.get('state', '').strip()
-    zip_code = request.form.get('zip_code', '').strip()
+    # Mismas reglas que el flujo PayPal: una sola fuente de verdad para que
+    # los dos caminos de pago no se separen con el tiempo.
+    form, ferr = _validate_checkout_fields(request.form)
+    if ferr:
+        flash(ferr, 'error')
+        return redirect(url_for('checkout'))
+    name = form['name']; email = form['email']; phone = form['phone']
+    address = form['address']; address_ext = form['address_ext']
+    address_int = form['address_int']; city = form['city']
+    state = form['state']; zip_code = form['zip_code']; notes = form['notes']
     payment_method = request.form.get('payment_method', '')
-    notes = request.form.get('notes', '').strip()
 
-    if not all([name, email, address, address_ext, city, payment_method]):
-        flash('Por favor completa todos los campos requeridos (incluido el número exterior).', 'error')
+    if not payment_method:
+        flash('Selecciona un método de pago.', 'error')
         return redirect(url_for('checkout'))
-
-    if not valid_email(email):
-        flash('El email ingresado no es válido.', 'error')
-        return redirect(url_for('checkout'))
-
-    # Validación CP MX: exactamente 5 dígitos.
-    if zip_code and not re.match(r'^\d{5}$', zip_code):
-        flash('El código postal debe tener 5 dígitos.', 'error')
-        return redirect(url_for('checkout'))
-    # Teléfono opcional pero si está presente debe parecer un número MX (10-13 dígitos).
-    if phone:
-        _digits = re.sub(r'\D', '', phone)
-        if not (10 <= len(_digits) <= 13):
-            flash('El teléfono no tiene un formato válido (10 dígitos).', 'error')
-            return redirect(url_for('checkout'))
 
     # Solo se aceptan métodos que estén ACTIVOS en /admin/pagos (no solo
     # conocidos). Así desactivar un método en el admin lo bloquea de inmediato.
@@ -4917,11 +4916,21 @@ def _validate_checkout_fields(data):
     state = (data.get('state') or '').strip()
     zip_code = (data.get('zip_code') or '').strip()
     notes = (data.get('notes') or '').strip()
+    # La casilla RUO es la aceptación explícita del comprador. Se valida en el
+    # servidor porque el `required` del form se salta sin JS o posteando directo.
+    if not (data.get('ruo_ack') or ''):
+        return None, 'Debes aceptar el aviso de uso exclusivo en investigación (RUO) para continuar.'
     if not all([name, email, address, address_ext, city]):
         return None, 'Completa todos los campos requeridos (incluido el número exterior).'
     if not valid_email(email):
         return None, 'El email ingresado no es válido.'
-    if zip_code and not re.match(r'^\d{5}$', zip_code):
+    # Estado y CP son obligatorios: sin ellos la guía de envío no se puede
+    # generar y el paquete se queda parado en paquetería.
+    if not state:
+        return None, 'Falta el estado de la dirección de envío.'
+    if not zip_code:
+        return None, 'Falta el código postal (5 dígitos) de la dirección de envío.'
+    if not re.match(r'^\d{5}$', zip_code):
         return None, 'El código postal debe tener 5 dígitos.'
     if phone:
         _d = re.sub(r'\D', '', phone)

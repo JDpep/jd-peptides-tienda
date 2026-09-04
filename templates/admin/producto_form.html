@@ -220,10 +220,10 @@
   border-radius:6px;
   cursor:pointer;
   font-size:0.85rem;
-  color:var(--gold,#c9a227);
+  color:var(--gold);
   transition:border-color 0.2s;
 }
-.img-upload-label:hover { border-color:var(--gold,#c9a227); }
+.img-upload-label:hover { border-color:var(--gold); }
 </style>
 <script nonce="{{ csp_nonce }}">
 function previewImgs(input) {
@@ -239,7 +239,7 @@ function previewImgs(input) {
       wrap.style.cssText = 'position:relative;display:inline-block';
       const img = document.createElement('img');
       img.src = e.target.result;
-      img.style.cssText = 'width:100px;height:100px;object-fit:cover;border-radius:8px;border:2px solid var(--gold,#c9a227)';
+      img.style.cssText = 'width:100px;height:100px;object-fit:cover;border-radius:8px;border:2px solid var(--gold)';
       const name = document.createElement('div');
       name.style.cssText = 'font-size:0.65rem;color:var(--text3);margin-top:0.2rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center';
       name.textContent = file.name;

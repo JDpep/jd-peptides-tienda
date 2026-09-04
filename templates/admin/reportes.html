@@ -59,7 +59,7 @@
     <div style="display:flex;gap:2px;align-items:flex-end;height:140px;border-bottom:1px solid var(--border);padding-bottom:2px">
       {% for s in series %}
         {% set h = (s.revenue / max_rev * 130) if max_rev else 0 %}
-        <div style="flex:1;min-width:4px;background:linear-gradient(to top, var(--gold), rgba(201,162,39,0.3));height:{{ '%.1f'|format(h) }}px;border-radius:2px 2px 0 0"
+        <div style="flex:1;min-width:4px;background:linear-gradient(to top, var(--gold), rgba(var(--gold-rgb),0.3));height:{{ '%.1f'|format(h) }}px;border-radius:2px 2px 0 0"
              title="{{ s.day }} — {{ s.n }} órdenes · ${{ '{:,.0f}'.format(s.revenue) }} MXN"></div>
       {% endfor %}
     </div>

@@ -15,6 +15,7 @@
 
   /* JD Gold palette (Brand Book) */
   --gold:       #c79a3a;   /* Hero — accent principal */
+  --gold-rgb:   199, 154, 58;  /* mismo dorado, para rgba() con alfa */
   --gold-light: #e8c873;   /* Soft Gold — hover */
   --gold-dark:  #8c6a1f;   /* Bronze */
   --gold-deep:  #4a3812;   /* Dark Bronze */
@@ -1240,7 +1241,11 @@ p { color: var(--text2); }
 }
 @media (max-width: 1100px) { .products-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 768px)  { .products-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 480px)  { .products-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px)  {
+  /* Dos columnas también en teléfono. A una sola, 24 productos daban una
+     página de ~24.000px: nadie llega al final. */
+  .products-grid { grid-template-columns: repeat(2, 1fr); gap: 0.7rem; }
+}
 
 /* --- Product Card — Editorial Lab --- */
 .product-card {
@@ -1257,24 +1262,6 @@ p { color: var(--text2); }
     box-shadow 0.4s var(--ease-out);
   display: flex;
   flex-direction: column;
-}
-/* Categorized left rail — a quiet vertical accent line in category color */
-.product-card::before {
-  content: '';
-  position: absolute;
-  top: 12%; left: 0;
-  width: 2px;
-  height: 76%;
-  background: linear-gradient(180deg, transparent, var(--cat-color, var(--gold)), transparent);
-  opacity: 0;
-  transition: opacity 0.4s var(--ease-out);
-  z-index: 2;
-  pointer-events: none;
-}
-.product-card:hover::before { opacity: 0.85; }
-/* Always show a hint of the category rail on big screens */
-@media (min-width: 769px) {
-  .product-card::before { opacity: 0.25; }
 }
 .product-card:hover {
   border-color: rgba(199,154,58,0.5);
@@ -3849,14 +3836,6 @@ details summary::-webkit-details-marker { display: none; }
   transform: translateY(-2px);
 }
 
-.footer-mega-logo {
-  color: rgba(244, 228, 181, 0.22);  /* Champagne #f4e4b5 — fondo suave */
-  margin: 1rem 0 0.5rem;
-  line-height: 0;
-  user-select: none;
-  pointer-events: none;
-}
-.footer-mega-logo svg { display: block; width: 100%; height: auto; }
 
 
 /* =========================================================
@@ -4557,3 +4536,34 @@ button:focus-visible,
 }
 .tracking-state-done svg { color: var(--green); opacity: 1; }
 .tracking-state-done strong { color: #86efac; }
+
+/* =========================================================
+   TARJETA DE PRODUCTO EN TELÉFONO — versión compacta
+   A dos columnas la tarjeta tiene la mitad de ancho, así que
+   sobra todo lo que no ayuda a decidir de un vistazo: SKU,
+   chips de tag y la línea de beneficio. Eso vive en la ficha.
+   ========================================================= */
+@media (max-width: 560px) {
+  .products-grid .product-sku-row,
+  .products-grid .card-tags,
+  .products-grid .product-benefit { display: none; }
+
+  .products-grid .product-body { padding: 0.65rem 0.7rem 0.55rem; }
+  .products-grid .product-name { font-size: 0.92rem; line-height: 1.25; }
+  .products-grid .product-price { margin-top: 0.35rem; }
+  .products-grid .product-price-amount { font-size: 1rem; }
+
+  /* El vial es más alto que ancho; a media columna 3:5 se come la pantalla. */
+  .products-grid .product-visual { aspect-ratio: 4/5; padding: 0.9rem; }
+
+  /* Footer apilado: dos botones lado a lado a 170px de ancho no dan el
+     área táctil mínima, y "Ver detalle" ya lo cubre tocar la foto. */
+  .products-grid .product-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+    padding: 0 0.7rem 0.7rem;
+  }
+  .products-grid .product-footer .btn { width: 100%; min-height: 40px; }
+  .products-grid .product-footer .btn-ghost { display: none; }
+}

@@ -79,7 +79,7 @@
           <div class="product-card" style="position:relative">
             <button class="wishlist-remove" data-id="${p.id}"
                     title="Quitar de favoritos"
-                    style="position:absolute;top:8px;right:8px;z-index:5;background:rgba(0,0,0,0.6);border:none;color:#c9a227;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px">×</button>
+                    style="position:absolute;top:8px;right:8px;z-index:5;background:rgba(0,0,0,0.6);border:none;color:var(--gold);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px">×</button>
             <a href="/producto/${p.slug || p.id}" style="text-decoration:none;display:contents">
               <div class="product-visual ${p.image_path ? 'product-visual-has-img' : ''}">
                 ${p.image_path

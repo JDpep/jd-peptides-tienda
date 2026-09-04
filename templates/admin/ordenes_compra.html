@@ -35,7 +35,7 @@ var OC_DATA = [
     <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
       <h3>Órdenes de Compra <span style="color:var(--text3);font-weight:400">({{ pos|length }})</span></h3>
       <div id="oc-acciones" style="display:none;align-items:center;gap:0.4rem;flex-wrap:wrap">
-        <span id="oc-count" style="color:var(--gold,#c9a227);font-size:0.82rem;font-weight:600"></span>
+        <span id="oc-count" style="color:var(--gold);font-size:0.82rem;font-weight:600"></span>
         <button class="btn btn-ghost btn-sm" onclick="ocVer()">👁 Ver</button>
         <button class="btn btn-ghost btn-sm" onclick="ocPDF()">📄 PDF</button>
         <button class="btn btn-sm" style="background:#c0392b;color:#fff;border:none;cursor:pointer" onclick="ocEliminar()">🗑 Eliminar</button>
@@ -66,14 +66,14 @@ var OC_DATA = [
         {% for po in pos %}
           <tr>
             <td style="text-align:center;vertical-align:middle">
-              <input type="checkbox" name="oc_ids" value="{{ po['id'] }}" class="oc-cb" onchange="ocActualizar()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold,#c9a227)">
+              <input type="checkbox" name="oc_ids" value="{{ po['id'] }}" class="oc-cb" onchange="ocActualizar()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold)">
             </td>
             <td class="mono" style="font-weight:700;color:var(--gold)">{{ po['po_number'] }}</td>
             <td class="strong">{{ po['supplier'] }}</td>
             <td style="font-size:0.82rem;color:var(--text3)">{{ po['created_at'][:10] }}</td>
             <td style="font-size:0.82rem;color:var(--text2)">{{ po['expected_date'] or '—' }}</td>
             <td style="text-align:center;color:var(--text2)">{{ po['items_count'] }}</td>
-            <td style="text-align:right;color:var(--gold);font-weight:700">${{ "%.2f"|format(po['total']) }}</td>
+            <td style="text-align:right;color:var(--gold);font-weight:700">${{ po['total']|money }}</td>
             <td style="text-align:center">
               {% if po['status'] == 'recibido' %}
                 <span class="badge badge-green">Recibido</span>
@@ -160,14 +160,14 @@ var OC_DATA = [
             <td class="mono">{{ item['sku'] }}</td>
             <td class="strong">{{ item['product_name'] }}</td>
             <td style="text-align:center">{{ item['quantity'] }}</td>
-            <td style="text-align:right;color:var(--text2)">${{ "%.2f"|format(item['unit_cost']) }}</td>
-            <td style="text-align:right;color:var(--gold);font-weight:700">${{ "%.2f"|format(item['subtotal']) }}</td>
+            <td style="text-align:right;color:var(--text2)">${{ item['unit_cost']|money }}</td>
+            <td style="text-align:right;color:var(--gold);font-weight:700">${{ item['subtotal']|money }}</td>
           </tr>
         {% endfor %}
-        <tr style="background:rgba(201,162,39,0.05)">
+        <tr style="background:rgba(var(--gold-rgb),0.05)">
           <td colspan="4" style="text-align:right;font-weight:700;padding-right:1rem">TOTAL</td>
           <td style="text-align:right;color:var(--gold);font-weight:800;font-size:1.1rem">
-            ${{ "%.2f"|format(po_detail['total']) }}
+            ${{ po_detail['total']|money }}
           </td>
         </tr>
       </tbody>
@@ -262,13 +262,13 @@ var OC_DATA = [
 
 <!-- Modal Ver OC -->
 <div id="oc-modal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center">
-  <div style="background:var(--surface,#1a1a2e);border:1px solid var(--gold,#c9a227);border-radius:10px;width:min(92vw,780px);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(201,162,39,0.2)">
+  <div style="background:var(--surface,#1a1a2e);border:1px solid var(--gold);border-radius:10px;width:min(92vw,780px);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(var(--gold-rgb),0.2)">
       <h3 style="margin:0;font-size:1rem">Órdenes de Compra Seleccionadas</h3>
       <button onclick="document.getElementById('oc-modal').style.display='none'" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer">✕</button>
     </div>
     <div id="oc-modal-body" style="overflow-y:auto;padding:1rem 1.25rem;flex:1"></div>
-    <div style="padding:0.75rem 1.25rem;border-top:1px solid rgba(201,162,39,0.2);display:flex;justify-content:flex-end;gap:0.5rem">
+    <div style="padding:0.75rem 1.25rem;border-top:1px solid rgba(var(--gold-rgb),0.2);display:flex;justify-content:flex-end;gap:0.5rem">
       <button class="btn btn-ghost btn-sm" onclick="ocPDF()">📄 PDF</button>
       <button class="btn btn-ghost btn-sm" onclick="document.getElementById('oc-modal').style.display='none'">Cerrar</button>
     </div>
@@ -299,17 +299,17 @@ function ocEscape(s){
 }
 function ocVer(){
   var items=ocGetSel(); if(!items.length) return;
-  var html='<table style="width:100%;border-collapse:collapse;font-size:0.83rem"><thead><tr style="border-bottom:1px solid rgba(201,162,39,0.3)">';
-  ['N° OC','Proveedor','Fecha','F. Esperada','Artículos','Total','Estado'].forEach(function(h){html+='<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold,#c9a227);font-size:0.76rem">'+ocEscape(h)+'</th>';});
+  var html='<table style="width:100%;border-collapse:collapse;font-size:0.83rem"><thead><tr style="border-bottom:1px solid rgba(var(--gold-rgb),0.3)">';
+  ['N° OC','Proveedor','Fecha','F. Esperada','Artículos','Total','Estado'].forEach(function(h){html+='<th style="padding:0.35rem 0.5rem;text-align:left;color:var(--gold);font-size:0.76rem">'+ocEscape(h)+'</th>';});
   html+='</tr></thead><tbody>';
   items.forEach(function(o){
     html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">';
-    html+='<td style="padding:0.35rem 0.5rem;font-family:monospace;font-weight:700;color:var(--gold,#c9a227)">'+ocEscape(o.numero)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;font-family:monospace;font-weight:700;color:var(--gold)">'+ocEscape(o.numero)+'</td>';
     html+='<td style="padding:0.35rem 0.5rem;font-weight:600">'+ocEscape(o.proveedor)+'</td>';
     html+='<td style="padding:0.35rem 0.5rem;color:var(--text3)">'+ocEscape(o.fecha)+'</td>';
     html+='<td style="padding:0.35rem 0.5rem">'+ocEscape(o.esperada)+'</td>';
     html+='<td style="padding:0.35rem 0.5rem;text-align:center">'+ocEscape(o.articulos)+'</td>';
-    html+='<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold,#c9a227)">$'+ocEscape(o.total)+'</td>';
+    html+='<td style="padding:0.35rem 0.5rem;font-weight:700;color:var(--gold)">$'+ocEscape(o.total)+'</td>';
     html+='<td style="padding:0.35rem 0.5rem">'+ocEscape(estadoOC(o.estado))+'</td>';
     html+='</tr>';
   });

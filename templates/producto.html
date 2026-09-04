@@ -169,15 +169,15 @@
           {% else %}
             <div style="position:absolute;inset:0;opacity:0.08">
               <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-                <circle cx="200" cy="200" r="24" fill="#c9a227"/>
-                <circle cx="80"  cy="120" r="16" fill="#c9a227" opacity="0.6"/>
-                <circle cx="320" cy="120" r="16" fill="#c9a227" opacity="0.6"/>
-                <circle cx="80"  cy="280" r="16" fill="#c9a227" opacity="0.6"/>
-                <circle cx="320" cy="280" r="16" fill="#c9a227" opacity="0.6"/>
-                <line x1="200" y1="176" x2="80"  y2="120" stroke="#c9a227" stroke-width="3" opacity="0.5"/>
-                <line x1="200" y1="176" x2="320" y2="120" stroke="#c9a227" stroke-width="3" opacity="0.5"/>
-                <line x1="200" y1="224" x2="80"  y2="280" stroke="#c9a227" stroke-width="3" opacity="0.5"/>
-                <line x1="200" y1="224" x2="320" y2="280" stroke="#c9a227" stroke-width="3" opacity="0.5"/>
+                <circle cx="200" cy="200" r="24" fill="#c79a3a"/>
+                <circle cx="80"  cy="120" r="16" fill="#c79a3a" opacity="0.6"/>
+                <circle cx="320" cy="120" r="16" fill="#c79a3a" opacity="0.6"/>
+                <circle cx="80"  cy="280" r="16" fill="#c79a3a" opacity="0.6"/>
+                <circle cx="320" cy="280" r="16" fill="#c79a3a" opacity="0.6"/>
+                <line x1="200" y1="176" x2="80"  y2="120" stroke="#c79a3a" stroke-width="3" opacity="0.5"/>
+                <line x1="200" y1="176" x2="320" y2="120" stroke="#c79a3a" stroke-width="3" opacity="0.5"/>
+                <line x1="200" y1="224" x2="80"  y2="280" stroke="#c79a3a" stroke-width="3" opacity="0.5"/>
+                <line x1="200" y1="224" x2="320" y2="280" stroke="#c79a3a" stroke-width="3" opacity="0.5"/>
               </svg>
             </div>
             <span class="badge badge-cat {{ _bc.get(product['category'], 'badge-cat-default') }}" style="position:absolute;top:1rem;left:1rem">{{ product['category'] }}</span>
@@ -212,7 +212,7 @@
         </div>
 
         <div class="product-detail-dose-price">
-          <span class="product-detail-price">${{ "%.2f"|format(product['price']) }} <span class="price-currency">MXN</span></span>
+          <span class="product-detail-price">${{ product['price']|money }} <span class="price-currency">MXN</span></span>
           <span class="product-detail-dose-tag">{{ product['dose'] }}</span>
         </div>
 
@@ -252,18 +252,18 @@
 
         <!-- Aprender más — Peptide Ed -->
         <a href="{{ peptide_ed_url }}" target="_blank" rel="noopener"
-           style="display:flex;align-items:center;gap:0.8rem;text-decoration:none;border:1px solid rgba(201,162,39,0.3);
-                  border-radius:10px;padding:0.95rem 1.15rem;background:rgba(201,162,39,0.04);transition:border-color .2s,background .2s"
-           onmouseover="this.style.borderColor='var(--gold)';this.style.background='rgba(201,162,39,0.08)'"
-           onmouseout="this.style.borderColor='rgba(201,162,39,0.3)';this.style.background='rgba(201,162,39,0.04)'">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+           style="display:flex;align-items:center;gap:0.8rem;text-decoration:none;border:1px solid rgba(var(--gold-rgb),0.3);
+                  border-radius:10px;padding:0.95rem 1.15rem;background:rgba(var(--gold-rgb),0.04);transition:border-color .2s,background .2s"
+           onmouseover="this.style.borderColor='var(--gold)';this.style.background='rgba(var(--gold-rgb),0.08)'"
+           onmouseout="this.style.borderColor='rgba(var(--gold-rgb),0.3)';this.style.background='rgba(var(--gold-rgb),0.04)'">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c79a3a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
             <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
           </svg>
           <span style="flex:1">
             <span style="display:block;font-size:0.88rem;font-weight:700;color:var(--text)">¿Quieres saber más sobre este péptido?</span>
             <span style="display:block;font-size:0.78rem;color:var(--text3);margin-top:0.15rem">Consulta la ciencia y los fundamentos en Peptide&nbsp;Ed, nuestra plataforma educativa aliada.</span>
           </span>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c79a3a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
             <path d="M7 17L17 7M9 7h8v8"/>
           </svg>
         </a>
@@ -371,11 +371,11 @@
                   {% else %}
                     <div class="product-visual-pattern">
                       <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="100" cy="100" r="12" fill="#c9a227"/>
-                        <circle cx="40" cy="60" r="8" fill="#c9a227" opacity="0.6"/>
-                        <circle cx="160" cy="60" r="8" fill="#c9a227" opacity="0.6"/>
-                        <line x1="100" y1="88" x2="40" y2="60" stroke="#c9a227" stroke-width="2" opacity="0.5"/>
-                        <line x1="100" y1="88" x2="160" y2="60" stroke="#c9a227" stroke-width="2" opacity="0.5"/>
+                        <circle cx="100" cy="100" r="12" fill="#c79a3a"/>
+                        <circle cx="40" cy="60" r="8" fill="#c79a3a" opacity="0.6"/>
+                        <circle cx="160" cy="60" r="8" fill="#c79a3a" opacity="0.6"/>
+                        <line x1="100" y1="88" x2="40" y2="60" stroke="#c79a3a" stroke-width="2" opacity="0.5"/>
+                        <line x1="100" y1="88" x2="160" y2="60" stroke="#c79a3a" stroke-width="2" opacity="0.5"/>
                       </svg>
                     </div>
                     <div class="product-visual-name">{{ p['name'] }}</div>
@@ -386,7 +386,7 @@
               <div class="product-body">
                 <h3 class="product-name">{{ p['name'] }}</h3>
                 <p class="product-dose">{{ p['dose'] }}</p>
-                <div class="product-price">${{ "%.2f"|format(p['price']) }} <span class="price-currency">MXN</span></div>
+                <div class="product-price">${{ p['price']|money }} <span class="price-currency">MXN</span></div>
               </div>
               <div class="product-footer">
                 <a href="{{ url_for('producto', slug=p['slug']) if p['slug'] else url_for('producto_by_id', pid=p['id']) }}" class="btn btn-ghost btn-sm">Ver más</a>

@@ -34,7 +34,7 @@
   <link rel="apple-touch-icon" sizes="180x180"  href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
   <link rel="shortcut icon"    href="{{ url_for('static', filename='img/favicon.ico') }}">
   <link rel="manifest"         href="{{ url_for('static', filename='manifest.json') }}">
-  <meta name="theme-color"     content="#c9a227">
+  <meta name="theme-color"     content="var(--gold)">
   <meta name="apple-mobile-web-app-capable"        content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title"          content="JD Peptides">
@@ -382,7 +382,7 @@
 
         <!-- Newsletter / loop -->
         <div class="footer-col footer-col-newsletter">
-          <h4>STAY IN THE LOOP</h4>
+          <h4>Novedades</h4>
           <p style="color:var(--text2);font-size:0.85rem;margin:0 0 0.85rem">
             Suscríbete y recibe novedades de catálogo, CoAs y disponibilidad.
           </p>
@@ -397,7 +397,7 @@
 
         <!-- Brand / catálogo -->
         <div class="footer-col">
-          <h4>BRAND</h4>
+          <h4>Catálogo</h4>
           <ul>
             <li><a href="{{ url_for('sobre_nosotros') }}">Sobre Nosotros</a></li>
             <li><a href="{{ url_for('catalogo') }}">Catálogo Completo</a></li>
@@ -411,7 +411,7 @@
 
         <!-- Support -->
         <div class="footer-col">
-          <h4>SUPPORT</h4>
+          <h4>Ayuda</h4>
           <ul>
             <li><a href="{{ url_for('tracking') }}">Seguimiento de pedido</a></li>
             <li><a href="{{ url_for('favoritos') }}">Mis favoritos</a></li>
@@ -428,7 +428,7 @@
 
         <!-- Legal / "boring stuff" -->
         <div class="footer-col">
-          <h4>LEGAL</h4>
+          <h4>Legal</h4>
           <ul>
             <li><a href="{{ url_for('privacidad') }}">Política de Privacidad</a></li>
             <li><a href="{{ url_for('terminos') }}">Términos y Condiciones</a></li>
@@ -465,18 +465,6 @@
       <!-- Disclaimer band -->
       <div class="footer-disclaimer">
         <strong style="color:var(--gold)">FOR RESEARCH USE ONLY</strong> — Los productos de JD Peptides son exclusivamente para uso en investigación científica. No están destinados al uso humano o veterinario, diagnóstico, tratamiento o prevención de enfermedades.
-      </div>
-
-      <!-- Mega logo + copyright -->
-      <div class="footer-mega-logo" aria-hidden="true">
-        <svg viewBox="0 0 1000 200" preserveAspectRatio="xMidYMid meet">
-          <text x="500" y="160" text-anchor="middle"
-                font-family="'Space Grotesk', sans-serif" font-weight="800"
-                font-size="190" fill="currentColor"
-                letter-spacing="-6">
-            JD Peptides
-          </text>
-        </svg>
       </div>
 
       <div class="footer-bottom">
@@ -522,15 +510,15 @@
 
   {# Cookie consent banner — LFPDPPP / GDPR style. Solo aparece si el usuario no ha decidido. #}
   <div id="cookie-consent" hidden role="dialog" aria-label="Aviso de cookies"
-       style="position:fixed;bottom:1rem;left:1rem;right:1rem;max-width:520px;margin:0 auto;z-index:9999;background:#0d0d0d;border:1px solid #c9a227;border-radius:10px;padding:1rem 1.2rem;box-shadow:0 12px 36px rgba(0,0,0,0.5);color:#e8dcc4;font-size:0.85rem;line-height:1.5">
+       style="position:fixed;bottom:1rem;left:1rem;right:1rem;max-width:520px;margin:0 auto;z-index:9999;background:#0d0d0d;border:1px solid var(--gold);border-radius:10px;padding:1rem 1.2rem;box-shadow:0 12px 36px rgba(0,0,0,0.5);color:#e8dcc4;font-size:0.85rem;line-height:1.5">
     <p style="margin:0 0 0.7rem">
       🍪 Usamos cookies estrictamente necesarias para tu sesión y carrito.
       También usamos analítica anonimizada para mejorar el sitio.
-      <a href="{{ url_for('privacidad') }}" style="color:#c9a227;text-decoration:underline">Ver política</a>.
+      <a href="{{ url_for('privacidad') }}" style="color:var(--gold);text-decoration:underline">Ver política</a>.
     </p>
     <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
       <button onclick="window.__cookieConsent('all')"
-              style="background:#c9a227;color:#0d0d0d;border:none;padding:0.5rem 0.9rem;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.82rem">
+              style="background:var(--gold);color:#0d0d0d;border:none;padding:0.5rem 0.9rem;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.82rem">
         Aceptar todo
       </button>
       <button onclick="window.__cookieConsent('essential')"

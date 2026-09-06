@@ -4901,8 +4901,12 @@ def procesar_checkout():
             used = dict(list(used.items())[-5:])
         session['used_checkout_tokens'] = used
 
-    return render_template('pedido_exitoso.html', order=order, items=items,
-                           payment=payment_method_by_slug(order['payment_method']))
+    # POST/Redirect/GET. Antes se renderizaba la confirmación en la URL del
+    # POST: al recargar el navegador ofrecía reenviar el formulario y la
+    # página del pedido no se podía compartir ni guardar. _finalize_order ya
+    # dejó el número en session['view_orders'], así que el GET entra directo
+    # sin pedir el correo.
+    return redirect(url_for('pedido', order_number=order['order_number']))
 
 
 def _validate_checkout_fields(data):

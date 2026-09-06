@@ -380,19 +380,29 @@
 
       <div class="footer-grid">
 
-        <!-- Newsletter / loop -->
+        <!-- Novedades.
+             En checkout se oculta: un segundo formulario compitiendo en la
+             página de pago solo distrae y desvía el foco del pedido. -->
         <div class="footer-col footer-col-newsletter">
           <h4>Novedades</h4>
-          <p style="color:var(--text2);font-size:0.85rem;margin:0 0 0.85rem">
-            Suscríbete y recibe novedades de catálogo, CoAs y disponibilidad.
-          </p>
-          <form action="{{ url_for('contacto') }}" method="GET" class="footer-newsletter">
-            <input type="email" name="email" placeholder="tu@email.com" required>
-            <button type="submit">SUSCRIBIRSE</button>
-          </form>
-          <p style="font-size:0.7rem;color:var(--text3);margin-top:0.65rem">
-            Solo mandamos información relevante. Sin spam.
-          </p>
+          {% if request.endpoint not in ('checkout', 'procesar_checkout') %}
+            <p style="color:var(--text2);font-size:0.85rem;margin:0 0 0.85rem">
+              Suscríbete y recibe novedades de catálogo, CoAs y disponibilidad.
+            </p>
+            <form action="{{ url_for('contacto') }}" method="GET" class="footer-newsletter">
+              <label for="footer-news-email" class="sr-only">Tu correo electrónico</label>
+              <input type="email" name="email" id="footer-news-email"
+                     placeholder="tu@email.com" required autocomplete="email">
+              <button type="submit">Suscribirse</button>
+            </form>
+            <p style="font-size:0.7rem;color:var(--text3);margin-top:0.65rem">
+              Solo mandamos información relevante. Sin spam.
+            </p>
+          {% else %}
+            <p style="color:var(--text2);font-size:0.85rem;margin:0">
+              Al terminar tu pedido te llega la confirmación por correo.
+            </p>
+          {% endif %}
         </div>
 
         <!-- Brand / catálogo -->

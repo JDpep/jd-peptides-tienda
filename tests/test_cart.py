@@ -75,3 +75,64 @@ def test_checkout_page_renders_with_items(client, sample_product):
     # Form de checkout tiene campos típicos
     assert ('name="customer_name"' in body) or ('name="name"' in body)
     assert 'email' in body
+
+
+# ---------------------------------------------------------------------------
+# Checkout: campos obligatorios y POST/Redirect/GET
+# ---------------------------------------------------------------------------
+
+def _checkout_form(**over):
+    """Formulario de checkout válido; se sobreescribe lo que interese romper."""
+    data = {
+        'name': 'Beto Prueba',
+        'email': 'beto@ejemplo.mx',
+        'phone': '5512345678',
+        'address': 'Av. Reforma 100',
+        'address_ext': '100',
+        'city': 'CDMX',
+        'state': 'CDMX',
+        'zip_code': '06000',
+        'payment_method': 'paypal',
+        'ruo_ack': '1',
+    }
+    data.update(over)
+    return data
+
+
+def _with_item(client, sample_product):
+    client.post('/carrito/agregar',
+                data={'product_id': sample_product['id'], 'quantity': 1})
+
+
+def test_checkout_redirects_to_order_page(client, sample_product):
+    """POST/Redirect/GET: recargar la confirmación no debe reenviar el form."""
+    _with_item(client, sample_product)
+    r = client.post('/checkout/procesar', data=_checkout_form())
+    assert r.status_code == 302, r.status_code
+    assert '/pedido/' in r.headers['Location']
+    # Y el GET entra sin pedir correo: _finalize_order dejó el número en sesión.
+    r2 = client.get(r.headers['Location'])
+    assert r2.status_code == 200
+    assert 'Beto Prueba' in r2.get_data(as_text=True)
+
+
+@pytest.mark.parametrize('missing', ['state', 'zip_code', 'ruo_ack'])
+def test_checkout_rejects_missing_required_field(client, sample_product, missing):
+    """Sin estado, sin CP o sin aceptación RUO no se crea pedido.
+
+    El `required` del HTML se salta posteando directo, así que la regla
+    tiene que vivir en el servidor.
+    """
+    _with_item(client, sample_product)
+    r = client.post('/checkout/procesar', data=_checkout_form(**{missing: ''}))
+    assert r.status_code == 302
+    assert '/checkout' in r.headers['Location']
+    assert '/pedido/' not in r.headers['Location']
+
+
+def test_checkout_rejects_malformed_zip(client, sample_product):
+    """CP mexicano: exactamente 5 dígitos."""
+    _with_item(client, sample_product)
+    for bad in ('123', '060000', 'abcde'):
+        r = client.post('/checkout/procesar', data=_checkout_form(zip_code=bad))
+        assert '/pedido/' not in r.headers.get('Location', ''), bad

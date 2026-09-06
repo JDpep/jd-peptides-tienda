@@ -4707,3 +4707,15 @@ h3 > svg, h4 > svg { vertical-align: -0.15em; margin-right: 0.35rem; color: var(
   margin-bottom: 0.15rem;
 }
 .detail-coa:hover > svg:last-child { color: var(--gold); }
+
+/* Etiqueta solo para lectores de pantalla: el campo lleva placeholder, pero
+   un placeholder no es una etiqueta (desaparece al escribir). */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

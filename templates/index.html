@@ -12,8 +12,12 @@
   <div class="container hero-content">
 
     <div class="hero-meta-row">
-      <span class="hero-eyebrow eyebrow">Análisis · Trazabilidad · CoA por lote</span>
-      <span class="hero-edition mono" aria-hidden="true">N.º 04 — VOL. 02</span>
+      <span class="hero-eyebrow eyebrow">Péptidos grado investigación · México</span>
+      {# Antes: "N.º 04 — VOL. 02", metadato de revista inventado. Ahora el
+         catálogo real, que además cambia solo cuando cambia el inventario. #}
+      {% if catalog_count %}
+        <span class="hero-edition mono">{{ catalog_count }} productos en catálogo</span>
+      {% endif %}
     </div>
 
     <h1 class="hero-anim-title hero-headline">
@@ -72,6 +76,7 @@
           <div class="cq-badge-body">
             <strong>Certificado de Análisis</strong>
             <p>Cada lote verificado por terceros en pureza, peso, endotoxinas, metales pesados y esterilidad.</p>
+            <a href="{{ url_for('contacto') }}" class="cq-coa-link">Pedir el CoA de tu lote</a>
           </div>
         </div>
       </div>
@@ -86,38 +91,11 @@
                class="cq-vial-img"
                decoding="async" fetchpriority="high">
 
-          <!-- Tarjeta COA flotante (abajo-izquierda del vial) -->
-          <div class="cq-coa-card">
-            <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.12em;color:var(--gold);margin-bottom:0.4rem">COA</div>
-            <svg viewBox="0 0 52 52" style="width:44px;height:44px" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="52" height="52" fill="#0d0d0d" rx="4"/>
-              <!-- QR corners -->
-              <rect x="4"  y="4"  width="16" height="16" rx="1.5" fill="#c79a3a" opacity="0.85"/>
-              <rect x="6"  y="6"  width="12" height="12" rx="1"   fill="#0d0d0d"/>
-              <rect x="8"  y="8"  width="8"  height="8"  rx="0.5" fill="#c79a3a"/>
-              <rect x="32" y="4"  width="16" height="16" rx="1.5" fill="#c79a3a" opacity="0.85"/>
-              <rect x="34" y="6"  width="12" height="12" rx="1"   fill="#0d0d0d"/>
-              <rect x="36" y="8"  width="8"  height="8"  rx="0.5" fill="#c79a3a"/>
-              <rect x="4"  y="32" width="16" height="16" rx="1.5" fill="#c79a3a" opacity="0.85"/>
-              <rect x="6"  y="34" width="12" height="12" rx="1"   fill="#0d0d0d"/>
-              <rect x="8"  y="36" width="8"  height="8"  rx="0.5" fill="#c79a3a"/>
-              <!-- QR data dots -->
-              <rect x="24" y="4"  width="4" height="4" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="24" y="10" width="4" height="4" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="4"  y="24" width="4" height="4" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="10" y="24" width="4" height="4" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="24" y="24" width="4" height="4" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="30" y="24" width="4" height="4" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="38" y="24" width="4" height="4" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="44" y="24" width="4" height="4" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="24" y="30" width="4" height="8" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="30" y="32" width="8" height="4" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="38" y="30" width="8" height="4" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="30" y="40" width="4" height="8" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-              <rect x="36" y="42" width="12" height="4" rx="0.5" fill="#c79a3a" opacity="0.65"/>
-            </svg>
-            <div style="font-size:0.56rem;color:var(--text2);margin-top:0.35rem;letter-spacing:0.05em">#JDP-2026</div>
-          </div>
+          {# La tarjeta flotante que había aquí repetía palabra por palabra
+             el badge "Certificado de Análisis" de la izquierda, y encima se
+             montaba sobre la foto del vial. El enlace para pedir el CoA se
+             movió a ese badge. #}
+
 
         </div>
       </div>
@@ -153,25 +131,8 @@
 
   </div><!-- /container stage -->
 
-  <!-- Strip de estadísticas -->
-  <div class="container reveal" style="position:relative;z-index:1;margin-top:4rem;--delay:0.1s">
-    <div class="cq-stats-strip">
-      <div class="cq-stat">
-        <span class="cq-stat-num" data-target="99" data-suffix="%+">99%+</span>
-        <span class="cq-stat-lbl">Pureza HPLC</span>
-      </div>
-      <div class="cq-stat-div"></div>
-      <div class="cq-stat">
-        <span class="cq-stat-num">CoA</span>
-        <span class="cq-stat-lbl">Por cada lote</span>
-      </div>
-      <div class="cq-stat-div"></div>
-      <div class="cq-stat">
-        <span class="cq-stat-num">3rd</span>
-        <span class="cq-stat-lbl">Verificación externa</span>
-      </div>
-    </div>
-  </div>
+  {# La tira de estadísticas decía exactamente lo mismo que los tres
+     badges de arriba (99% / CoA / verificación externa). Una vez basta. #}
 
   <!-- .cq-* styles live in static/css/style.css -->
 </section>
@@ -281,40 +242,64 @@
   </div>
 </section>
 
-<!-- Why JD Peptides -->
+<!-- Antes de comprar — respuestas operativas, no propuestas de valor -->
+{#
+  Aquí había tres tarjetas idénticas (01 Calidad / 02 Logística / 03 Soporte).
+  La primera repetía la sección de calidad de arriba y la tercera repetía los
+  bullets de "Sobre nosotros" de abajo. Se cambian por lo que de verdad
+  pregunta quien está a punto de comprar y no estaba en ninguna parte de la
+  home: cuánto tarda, cómo se paga y a quién le escribe si algo pasa.
+  El formato deja de ser rejilla de tres iguales a propósito.
+#}
 <section class="section" style="background:var(--bg2);padding:4rem 0">
   <div class="container">
-    <div class="section-header">
-      <div class="divider">
-        <h2>¿Por qué <span class="gold">JD Peptides</span>?</h2>
+    <div class="prebuy">
+
+      <div class="prebuy-intro reveal">
+        <h2>Antes de comprar</h2>
+        <p>
+          Lo esencial en claro. Si falta algo,
+          <a href="{{ url_for('contacto') }}">escríbenos</a> o revisa las
+          <a href="{{ url_for('faq') }}">preguntas frecuentes</a>.
+        </p>
       </div>
-      <p>Nos comprometemos con los más altos estándares de la investigación científica</p>
-    </div>
-    <div class="pillars-grid">
-      <div class="pillar-card-v2 reveal" style="--delay:0.05s">
-        <span class="pillar-icon-v2">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
-        </span>
-        <p class="pillar-eyebrow">01 · Calidad</p>
-        <h3>Verificación HPLC ≥99%</h3>
-        <p>Cada lote pasa por análisis de pureza, endotoxinas, metales pesados y esterilidad. Sin excepciones, con CoA descargable por producción.</p>
-      </div>
-      <div class="pillar-card-v2 reveal" style="--delay:0.15s">
-        <span class="pillar-icon-v2">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        </span>
-        <p class="pillar-eyebrow">02 · Logística</p>
-        <h3>Empaque y temperatura controlada</h3>
-        <p>Liofilizado, sellado al vacío y enviado en empaque térmico. Trazabilidad de guía con los principales carriers en México.</p>
-      </div>
-      <div class="pillar-card-v2 reveal" style="--delay:0.25s">
-        <span class="pillar-icon-v2">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </span>
-        <p class="pillar-eyebrow">03 · Soporte</p>
-        <h3>Consultas técnicas directas</h3>
-        <p>Equipo accesible por WhatsApp y email para resolver dudas de manejo, reconstitución, dosificación de investigación y documentación.</p>
-      </div>
+
+      <dl class="prebuy-list reveal" style="--delay:0.08s">
+        <div class="prebuy-row">
+          <dt>Envío</dt>
+          <dd>
+            De 2 a 5 días hábiles a partir de que se confirma el pago. Te mandamos
+            el número de guía por correo en cuanto sale.
+            <strong>Gratis desde ${{ '{:,.0f}'.format(FREE_SHIPPING_MIN_MXN) }} MXN.</strong>
+          </dd>
+        </div>
+
+        <div class="prebuy-row">
+          <dt>Pago</dt>
+          <dd>
+            PayPal, con tarjeta de crédito, débito o saldo. No necesitas cuenta.
+            Todos los precios están en pesos mexicanos.
+          </dd>
+        </div>
+
+        <div class="prebuy-row">
+          <dt>Documentación</dt>
+          <dd>
+            Cada lote tiene certificado de análisis. Pídelo por
+            <a href="{{ url_for('contacto') }}">contacto</a> con el nombre del
+            producto y te lo mandamos.
+          </dd>
+        </div>
+
+        <div class="prebuy-row">
+          <dt>Dudas</dt>
+          <dd>
+            Manejo, reconstitución o estado de tu pedido: contestamos por
+            WhatsApp y correo. No hay bots de por medio.
+          </dd>
+        </div>
+      </dl>
+
     </div>
   </div>
 </section>
@@ -349,45 +334,13 @@
       <!-- Columna derecha: bullets + CTAs -->
       <div class="reveal-right" style="display:flex;flex-direction:column;gap:2rem;padding-top:0.5rem;--delay:0.12s">
 
-        <!-- Bullets -->
-        <div style="display:flex;flex-direction:column;gap:1.25rem">
-
-          <div style="display:flex;align-items:flex-start;gap:1rem">
-            <div style="flex-shrink:0;width:42px;height:42px;border:1.5px solid rgba(var(--gold-rgb),0.35);border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fffbf0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c79a3a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="3"/>
-              </svg>
-            </div>
-            <div>
-              <p style="font-weight:700;color:#111;font-size:0.95rem;margin:0 0 0.2rem">Trazabilidad por lote</p>
-              <p style="color:#666;font-size:0.85rem;margin:0;line-height:1.55">Identidad de lote, análisis y pureza documentados para cada producto.</p>
-            </div>
-          </div>
-
-          <div style="display:flex;align-items:flex-start;gap:1rem">
-            <div style="flex-shrink:0;width:42px;height:42px;border:1.5px solid rgba(var(--gold-rgb),0.35);border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fffbf0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c79a3a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>
-              </svg>
-            </div>
-            <div>
-              <p style="font-weight:700;color:#111;font-size:0.95rem;margin:0 0 0.2rem">Documentación disponible</p>
-              <p style="color:#666;font-size:0.85rem;margin:0;line-height:1.55">CoA y especificaciones técnicas accesibles por producto.</p>
-            </div>
-          </div>
-
-          <div style="display:flex;align-items:flex-start;gap:1rem">
-            <div style="flex-shrink:0;width:42px;height:42px;border:1.5px solid rgba(var(--gold-rgb),0.35);border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fffbf0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c79a3a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-              </svg>
-            </div>
-            <div>
-              <p style="font-weight:700;color:#111;font-size:0.95rem;margin:0 0 0.2rem">Soporte y atención</p>
-              <p style="color:#666;font-size:0.85rem;margin:0;line-height:1.55">Comunicación directa para consultas de producto y pedidos.</p>
-            </div>
-          </div>
-        </div>
+        {#
+          Aquí había tres bullets: "Trazabilidad por lote", "Documentación
+          disponible" y "Soporte y atención". Los tres ya están resueltos
+          arriba, en "Antes de comprar" y en la sección de calidad. Un bloque
+          "sobre nosotros" que repite features deja de ser sobre nosotros.
+          Se quedan los dos párrafos y los enlaces.
+        #}
 
         <!-- CTAs -->
         <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">

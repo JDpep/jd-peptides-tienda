@@ -26,7 +26,7 @@
     <div class="order-tracker {% if _is_cancelled %}cancelled{% endif %}" style="margin-bottom:1.75rem">
       {% if _is_cancelled %}
         <div class="order-tracker-cancelled">
-          ❌ Pedido cancelado
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg> Pedido cancelado
         </div>
       {% else %}
         <div class="order-tracker-line">
@@ -97,7 +97,7 @@
     <!-- Acciones (factura) -->
     <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin:1rem 0">
       <a href="{{ url_for('pedido_factura', order_number=order['order_number']) }}"
-         class="btn btn-ghost btn-sm" target="_blank" rel="noopener">📄 Ver/descargar comprobante</a>
+         class="btn btn-ghost btn-sm" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg> Ver/descargar comprobante</a>
     </div>
 
     <!-- Items -->
@@ -172,7 +172,7 @@
           <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text2)">{{ payment.fields['note'] }}</p>
         {% endif %}
       {% else %}
-        <h4>📋 Instrucciones de Pago</h4>
+        <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M9 5h9M9 12h9M9 19h9"/><path d="M4.5 5h.01M4.5 12h.01M4.5 19h.01"/></svg> Instrucciones de pago</h4>
         <p>Te contactaremos en breve para coordinar el pago de <strong style="color:var(--gold)">${{ order['total']|money }} MXN</strong>.</p>
       {% endif %}
     </div>

@@ -188,20 +188,8 @@
         </div>
         {% endif %}
 
-        <!-- Stock badge — updated in real time via SSE -->
-        <div style="margin-top:1rem;display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;
-                    color:{% if product['stock'] > product['low_stock_alert'] %}var(--green){% elif product['stock'] > 0 %}var(--orange){% else %}var(--red){% endif %}">
-          <span>●</span>
-          <span id="product-stock-badge-{{ product['id'] }}">
-            {% if product['stock'] > product['low_stock_alert'] %}
-              En stock
-            {% elif product['stock'] > 0 %}
-              Stock limitado
-            {% else %}
-              Sin stock
-            {% endif %}
-          </span>
-        </div>
+        {# El estado de stock se movió a la columna de compra, junto a
+           la cantidad: aquí abajo de la foto quedaba huérfano. #}
       </div>
 
       <!-- Info -->
@@ -250,6 +238,24 @@
           </p>
         </div>
 
+        <!-- Documentación del lote -->
+        <a class="detail-coa" href="{{ url_for('contacto') }}?producto={{ product['sku']|urlencode }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/>
+          </svg>
+          <span>
+            <strong>Certificado de análisis (CoA)</strong>
+            Pídelo para el lote de {{ product['name'] }}: pureza por HPLC, endotoxinas,
+            metales pesados y esterilidad.
+          </span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </a>
+
         <!-- Aprender más — Peptide Ed -->
         <a href="{{ peptide_ed_url }}" target="_blank" rel="noopener"
            style="display:flex;align-items:center;gap:0.8rem;text-decoration:none;border:1px solid rgba(var(--gold-rgb),0.3);
@@ -280,7 +286,16 @@
 
         <!-- Add to cart -->
         <div>
-          <h4 style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.75rem">Cantidad</h4>
+          <div class="detail-buy-head">
+            <h4>Cantidad</h4>
+            <!-- Stock — se actualiza en vivo por polling -->
+            <span class="stock-badge {% if product['stock'] > product['low_stock_alert'] %}ok{% elif product['stock'] > 0 %}low{% else %}out{% endif %}"
+                  id="product-stock-badge-{{ product['id'] }}">
+              {% if product['stock'] > product['low_stock_alert'] %}En stock
+              {% elif product['stock'] > 0 %}Stock limitado
+              {% else %}Sin stock{% endif %}
+            </span>
+          </div>
           <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
             <div class="quantity-selector">
               <button class="qty-btn" data-action="dec" data-target="qty-detail" type="button">−</button>
@@ -289,7 +304,7 @@
             </div>
             {% if product['stock'] > 0 %}
               <button class="btn btn-gold btn-lg add-to-cart-btn" data-product-id="{{ product['id'] }}" style="flex:1;min-width:160px">
-                🛒 Agregar al Carrito
+                Agregar al carrito
               </button>
             {% else %}
               <button class="btn btn-ghost btn-lg" disabled style="flex:1;min-width:160px;opacity:0.5;cursor:not-allowed">
@@ -299,12 +314,16 @@
           </div>
         </div>
 
-        <!-- Research Use Only Disclaimer -->
-        <div class="detail-disclaimer">
-          <div class="detail-disclaimer-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            FOR RESEARCH USE ONLY — AVISO LEGAL
-          </div>
+        <!-- Aviso legal completo — colapsado.
+             El texto va íntegro; lo que cambia es que deja de ocupar media
+             pantalla justo debajo del botón de compra. El aviso RUO corto
+             sigue visible más arriba, junto al producto. -->
+        <details class="detail-disclaimer">
+          <summary class="detail-disclaimer-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>For Research Use Only — aviso legal completo</span>
+            <svg class="detail-disclaimer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
           <p class="detail-disclaimer-body">
             <strong>{{ product['name'] }}</strong> es un producto de investigación científica destinado <strong>exclusivamente</strong> a laboratorios, investigadores y profesionales del área científica con los permisos y habilitaciones correspondientes.
           </p>
@@ -317,7 +336,7 @@
           <p class="detail-disclaimer-legal">
             Al adquirir este producto, el comprador declara conocer y aceptar que su uso es estrictamente científico y que cumple con toda la legislación local aplicable. <strong>JD Peptides no asume ninguna responsabilidad</strong> por el uso indebido, mal uso, uso no autorizado o cualquier daño derivado del manejo de este producto fuera del ámbito de la investigación científica. El comprador asume plena responsabilidad legal y civil por el uso que dé al producto.
           </p>
-        </div>
+        </details>
 
       </div>
     </div>

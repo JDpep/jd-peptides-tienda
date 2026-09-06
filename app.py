@@ -4091,7 +4091,9 @@ def categoria_landing(slug):
 def index():
     products = query_db("SELECT * FROM products WHERE active=1 LIMIT 6")
     categories = query_db("SELECT DISTINCT category FROM products WHERE active=1")
-    return render_template('index.html', products=products, categories=categories)
+    _cnt = query_db("SELECT COUNT(*) AS c FROM products WHERE active=1", one=True)
+    return render_template('index.html', products=products, categories=categories,
+                           catalog_count=(_cnt['c'] if _cnt else 0))
 
 
 _SORT_WHITELIST = {

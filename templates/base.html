@@ -89,18 +89,18 @@
   <div class="marquee-bar" role="region" aria-label="Anuncios">
     <div class="marquee-track">
       {# Mismo set de mensajes duplicado dos veces para loop sin gap visible #}
+      {#
+        Datos operativos concretos, no eslóganes. Los doce mensajes anteriores
+        eran doce formas de decir "calidad por lote": el visitante leía la
+        misma frase cinco veces antes de ver un producto. Lo de aquí sale del
+        FAQ y de FREE_SHIPPING_MIN_MXN, así que no se desfasa solo.
+      #}
       {% set _announcements = [
-        'Grado investigación • Control de calidad por lote',
-        'Trazabilidad y consistencia en cada lote',
-        'Documentación disponible (CoA por lote)',
-        'Estándares de laboratorio • Calidad verificable',
-        'Empaque seguro y manejo cuidadoso',
-        'Procesos enfocados en pureza e identidad',
-        'Información clara y recursos educativos',
-        'Centro de información: guías y FAQs',
-        'Catálogo actualizado regularmente',
-        'Soporte y atención al cliente',
-        'Transparencia en procesos y documentación',
+        'Envío gratis en pedidos desde $' ~ '{:,.0f}'.format(FREE_SHIPPING_MIN_MXN) ~ ' MXN',
+        'Entrega en 2–5 días hábiles tras confirmar el pago',
+        'Te mandamos el número de guía cuando sale tu pedido',
+        'Pago con PayPal: tarjeta de crédito, débito o saldo',
+        'CoA por lote disponible a solicitud',
         'For research use only • Not for human consumption',
       ] %}
       {% for _ in range(2) %}
@@ -340,8 +340,8 @@
           <input type="search" name="q" placeholder="Buscar péptido…" value="{{ request.args.get('q', '') }}"
                  autocomplete="off" maxlength="60" aria-label="Buscar">
         </form>
-        <a href="{{ url_for('carrito') }}" class="cart-btn">
-          🛒
+        <a href="{{ url_for('carrito') }}" class="cart-btn" aria-label="Carrito">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h2.2l2.4 11.4a1.6 1.6 0 0 0 1.6 1.3h8.5a1.6 1.6 0 0 0 1.6-1.3L21 7H5.3"/></svg>
           <span class="cart-count cart-badge" {% if cart_count() == 0 %}style="display:none"{% endif %}>{{ cart_count() }}</span>
         </a>
         <button class="hamburger" id="hamburger" aria-label="Menú" aria-expanded="false">
@@ -366,7 +366,7 @@
     <a href="{{ url_for('tracking') }}">Rastrear pedido</a>
     <a href="{{ url_for('sobre_nosotros') }}">Nosotros</a>
     <a href="{{ url_for('contacto') }}">Contacto</a>
-    <a href="{{ url_for('carrito') }}">🛒 Carrito ({{ cart_count() }})</a>
+    <a href="{{ url_for('carrito') }}">Carrito ({{ cart_count() }})</a>
   </div>
 
   <!-- Main content -->
@@ -512,7 +512,7 @@
   <div id="cookie-consent" hidden role="dialog" aria-label="Aviso de cookies"
        style="position:fixed;bottom:1rem;left:1rem;right:1rem;max-width:520px;margin:0 auto;z-index:9999;background:#0d0d0d;border:1px solid var(--gold);border-radius:10px;padding:1rem 1.2rem;box-shadow:0 12px 36px rgba(0,0,0,0.5);color:#e8dcc4;font-size:0.85rem;line-height:1.5">
     <p style="margin:0 0 0.7rem">
-      🍪 Usamos cookies estrictamente necesarias para tu sesión y carrito.
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9h.01M15 10h.01M10.5 14.5h.01M15 15h.01"/></svg> Usamos cookies estrictamente necesarias para tu sesión y carrito.
       También usamos analítica anonimizada para mejorar el sitio.
       <a href="{{ url_for('privacidad') }}" style="color:var(--gold);text-decoration:underline">Ver política</a>.
     </p>

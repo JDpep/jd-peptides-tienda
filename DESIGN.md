@@ -120,10 +120,21 @@ The store has a working component vocabulary in `static/css/style.css`. Use it i
 
 ## Critical conventions
 
-1. **Vial photos are 320×533** (aspect 3:5) in cards. PNG with transparent background.
+1. **La caja de foto de la tarjeta es 2:3**, que es la proporción exacta de
+   las fotos reales (733×1100): `object-fit: cover` no recorta nada. En
+   teléfono baja a 4:5 para que quepan más productos por pantallazo. Las
+   cuatro fotos apaisadas (BBKG80, Cagrilintide, RT10, TB-500) sí se
+   recortan, y está bien: el vial está centrado y el recorte lo deja al
+   mismo tamaño aparente que los verticales.
 2. **Prices**: `${{price}} <span class="price-currency">MXN</span>` — currency in small, muted.
 3. **RUO disclaimer**: must appear on every product detail page + checkout + footer.
-4. **Stock badges**: ok/low/out — colored dot + label, never just color.
+4. **El estado de stock solo se pinta cuando dice algo**: quedan pocas, o
+   agotado. "En stock" en las 24 tarjetas eran 24 pastillas verdes idénticas
+   que no informaban de nada. Y va **sobre la foto**, no en el cuerpo: dentro
+   del cuerpo solo lo llevan algunas tarjetas, y esa fila de más subía su
+   precio respecto al de las vecinas de la misma hilera. En una rejilla los
+   precios tienen que leerse en línea. Punto de color + etiqueta, nunca solo
+   color.
 5. **`fetchpriority="high"`** on first 3 above-the-fold product images.
 6. **`loading="lazy" decoding="async"`** below the fold.
 
@@ -157,3 +168,45 @@ busca si esa frase ya está en la página.
 - Nada de QR, sellos o certificados decorativos que aparenten ser verificables sin serlo. En esta marca eso resta confianza en vez de darla.
 - No inventes lotes, purezas ni fechas de análisis para rellenar un hueco: la base no guarda ese dato por producto.
 - No "ONLY 2 LEFT!" pseudo-scarcity.
+
+
+## `[hidden]` tiene que ganar
+
+`display: none` viene de la hoja del navegador, así que **cualquier** regla
+propia con `display: flex/grid/block` lo pisa por especificidad. Pasó de
+verdad: `.catalog-active-chips` se pintaba como una barra vacía de 852×23 con
+borde dorado encima de la rejilla del catálogo, en cada carga, con el atributo
+puesto. Hay una guarda global `[hidden] { display: none !important }` al
+principio de `style.css`. No la quites.
+
+## `var(--gold)` dentro de `.paper` es para TEXTO, no para rellenos
+
+`.paper` remapea `--gold` a `--gold-on-light` (#8c6a1f) para que el dorado sea
+legible sobre crema. Un componente que use `var(--gold)` como **fondo** en esa
+superficie acaba con el mismo color en fondo y en texto, porque `.paper a`
+también pinta `--gold-on-light`. Le pasó a `.about-cta-primary`: un rectángulo
+bronce vacío, 1.00:1, en la home. Todo componente que pinte fondo dorado sobre
+superficie clara tiene que fijar sus **dos** colores a la vez.
+
+## Barra de compra fija (ficha, teléfono)
+
+`.pdp-buybar` aparece cuando el botón de la ficha sale de vista y desaparece
+cuando vuelve, vía `IntersectionObserver`: nunca hay dos botones de compra en
+pantalla a la vez. Sin JS se queda oculta — la ficha ya tiene el suyo. Sube el
+botón de WhatsApp y añade `padding-bottom` al `body` para no tapar el pie.
+
+## Errores de formulario
+
+El aviso flotante de arriba a la derecha (`.flash`) se borra solo a los 4
+segundos y no dice qué campo falla: sirve para confirmaciones, no para
+validación. El checkout devuelve `{field, message}` desde
+`_validate_checkout_fields` y pinta el error **anclado al campo**
+(`.field-error` + `aria-invalid` + `aria-describedby`), lleva el foco ahí y
+conserva lo que ya estaba escrito. Cualquier formulario nuevo va igual.
+
+## Áreas táctiles
+
+44px mínimo en los controles principales, medido con emulación táctil a 390px
+(no a ojo: el menú era de 35×27). Donde el icono no debe crecer —los botones
+sobre la foto de la tarjeta, que a 165px de ancho taparían el vial— se deja el
+tamaño visible y se agranda solo la zona sensible con `::after { inset: -7px }`.

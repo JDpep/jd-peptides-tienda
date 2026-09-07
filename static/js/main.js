@@ -562,42 +562,64 @@ document.addEventListener('DOMContentLoaded', function () {
         ? `<img src="${escHtml(p.image_url)}" alt="${escHtml(altText)}" class="product-card-img${isJpeg ? ' img-vial-right' : ''}" loading="lazy" decoding="async" width="320" height="533">`
         : `<div class="product-visual-name">${escHtml(p.name)}</div><div class="product-visual-dose">${escHtml(p.dose)}</div>`;
 
+      const CAT_BADGE = {
+        'Recuperación': 'badge-cat-recuperacion', 'Cambio muscular': 'badge-cat-performance',
+        'Anti-aging': 'badge-cat-antiaging', 'Pérdida de Peso': 'badge-cat-perdida',
+        'Bienestar': 'badge-cat-bienestar', 'Accesorios': 'badge-cat-default',
+      };
+      const catCls = CAT_BADGE[p.category] || 'badge-cat-default';
+
       let stockBadge;
       if (!inStock)                 stockBadge = `<span class="stock-badge out">Agotado</span>`;
-      else if (p.stock <= lowAlert) stockBadge = `<span class="stock-badge low">Pocas unidades (${p.stock})</span>`;
+      else if (p.stock <= lowAlert) stockBadge = `<span class="stock-badge low">Quedan ${p.stock}</span>`;
       else                          stockBadge = `<span class="stock-badge ok">En stock</span>`;
 
-      const tagsHtml = (p.tags || '').split('|').filter(Boolean).slice(0, 3).map(t => {
-        const label = TAG_LABELS[t] || t.replace(/-/g, ' ');
-        return `<a href="/catalogo?tag=${encodeURIComponent(t)}" class="tag-chip" onclick="event.stopPropagation()">${escHtml(label)}</a>`;
-      }).join('');
-      const tagsBlock = tagsHtml ? `<div class="card-tags">${tagsHtml}</div>` : '';
+      // Mismo formato que el filtro `money` de Jinja. Sin esto, al filtrar
+      // los precios perdían el separador de miles y la rejilla mostraba
+      // "$2500.00" donde el render del servidor pone "$2,500.00".
+      const precio = Number(p.price).toLocaleString('es-MX', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2,
+      });
 
+      // La API manda `benefits` separado por "|"; la plantilla del servidor
+      // pinta el primero. Aquí igual, o la tarjeta filtrada sale sin la línea.
+      const beneficio = (p.benefits || '').split('|').filter(Boolean)[0] || '';
+
+      // Los chips de tag se quitaron de la tarjeta: salían solo en algunos
+      // productos y descuadraban la altura dentro de una misma hilera.
       return `
         <div class="product-card" data-product-id="${p.id}">
           <button type="button" class="product-quickview-btn" data-product-id="${p.id}" title="Vista rápida" aria-label="Vista rápida">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
-          <a href="${detailUrl}" style="text-decoration:none;display:contents">
+          <a href="${detailUrl}" style="text-decoration:none;display:contents" tabindex="-1" aria-hidden="true">
             <div class="product-visual${p.image_url ? ' product-visual-has-img' : ''}">
               <div class="product-visual-cat">
-                <span class="badge badge-gold">${escHtml(p.category)}</span>
+                <span class="badge badge-cat ${catCls}">${escHtml(p.category)}</span>
               </div>
               ${imgTag}
             </div>
           </a>
           <div class="product-body">
-            <h3 class="product-name">${escHtml(p.name)}</h3>
-            <p class="product-dose">${escHtml(p.sku || '')} · ${escHtml(p.dose)}</p>
-            ${tagsBlock}
-            <div class="product-price" style="color:var(--gold)">$${parseFloat(p.price).toFixed(2)} <span class="price-currency">MXN</span></div>
-            <div style="margin-top:0.5rem">${stockBadge}</div>
+            <p class="product-sku-row">
+              <span class="product-sku mono">${escHtml(p.sku || '')}</span>
+              <span class="product-sku-dot" aria-hidden="true">·</span>
+              <span class="product-dose-data mono">${escHtml(p.dose)}</span>
+            </p>
+            <h3 class="product-name"><a href="${detailUrl}">${escHtml(p.name)}</a></h3>
+            ${beneficio ? `<p class="product-benefit">${escHtml(beneficio)}</p>` : ''}
+            <div class="product-meta">
+              <span class="product-price">
+                <span class="product-price-amount">$${precio}</span>
+                <span class="price-currency">MXN</span>
+              </span>
+              ${stockBadge}
+            </div>
           </div>
           <div class="product-footer">
-            <a href="${detailUrl}" class="btn btn-ghost btn-sm">Ver detalle</a>
             ${inStock
-              ? `<button class="btn btn-gold btn-sm add-to-cart-btn" data-product-id="${p.id}">+ Agregar</button>`
-              : `<span style="font-size:0.78rem;color:var(--red);font-weight:600">Sin stock</span>`}
+              ? `<button class="btn btn-gold add-to-cart-btn" data-product-id="${p.id}" aria-label="Agregar ${escHtml(p.name)} al carrito"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true"><circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/><path d="M2 3h2.2l2.4 11.4a1.6 1.6 0 0 0 1.6 1.3h8.5a1.6 1.6 0 0 0 1.6-1.3L21 7H5.3"/></svg>Agregar</button>`
+              : `<button class="btn btn-outline" disabled aria-disabled="true">Sin existencias</button>`}
           </div>
         </div>`;
     }

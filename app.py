@@ -3652,6 +3652,20 @@ def tag_label(slug):
 
 
 app.jinja_env.globals['parse_tags'] = parse_tags
+def category_badge_class(category):
+    """Clase del badge de categoría. Vivía duplicada en las plantillas; ahora
+    hay una sola fuente para catálogo, home y relacionados de la ficha."""
+    return {
+        'Recuperación':    'badge-cat-recuperacion',
+        'Cambio muscular': 'badge-cat-performance',
+        'Anti-aging':      'badge-cat-antiaging',
+        'Pérdida de Peso': 'badge-cat-perdida',
+        'Bienestar':       'badge-cat-bienestar',
+        'Accesorios':      'badge-cat-default',
+    }.get(category, 'badge-cat-default')
+
+
+app.jinja_env.globals['category_badge_class'] = category_badge_class
 app.jinja_env.globals['tag_label']  = tag_label
 app.jinja_env.globals['TAG_LABELS'] = TAG_LABELS
 

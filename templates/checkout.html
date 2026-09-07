@@ -23,19 +23,22 @@
             <h3>Información Personal</h3>
             <div class="form-group">
               <label for="co-name">Nombre completo *</label>
-              <input type="text" name="name" id="co-name" class="form-control" placeholder="Tu nombre" required autocomplete="name"
-                     value="{{ customer.name or '' }}">
+              <input type="text" name="name" id="co-name" class="form-control{{ ' is-invalid' if field_error.get('field') == 'name' else '' }}" placeholder="Tu nombre" required autocomplete="name"
+                     value="{{ customer.get('name', '') }}" aria-invalid="{{ 'true' if field_error.get('field') == 'name' else 'false' }}"{% if field_error.get('field') == 'name' %} aria-describedby="err-name"{% endif %}>
+                     {% if field_error.get('field') == 'name' %}<p class="field-error" id="err-name" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="co-email">Email *</label>
-                <input type="email" name="email" id="co-email" class="form-control" placeholder="tu@email.com" required autocomplete="email"
-                       value="{{ customer.email or '' }}">
+                <input type="email" name="email" id="co-email" class="form-control{{ ' is-invalid' if field_error.get('field') == 'email' else '' }}" placeholder="tu@email.com" required autocomplete="email"
+                       value="{{ customer.get('email', '') }}" aria-invalid="{{ 'true' if field_error.get('field') == 'email' else 'false' }}"{% if field_error.get('field') == 'email' %} aria-describedby="err-email"{% endif %}>
+                       {% if field_error.get('field') == 'email' %}<p class="field-error" id="err-email" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
               </div>
               <div class="form-group">
                 <label for="co-phone">Teléfono <span class="label-hint">(opcional)</span></label>
-                <input type="tel" name="phone" id="co-phone" class="form-control" placeholder="+52 xxx xxx xxxx" autocomplete="tel"
-                       value="{{ customer.phone or '' }}">
+                <input type="tel" name="phone" id="co-phone" class="form-control{{ ' is-invalid' if field_error.get('field') == 'phone' else '' }}" placeholder="+52 xxx xxx xxxx" autocomplete="tel"
+                       value="{{ customer.get('phone', '') }}" aria-invalid="{{ 'true' if field_error.get('field') == 'phone' else 'false' }}"{% if field_error.get('field') == 'phone' %} aria-describedby="err-phone"{% endif %}>
+                       {% if field_error.get('field') == 'phone' %}<p class="field-error" id="err-phone" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
               </div>
             </div>
           </div>
@@ -50,10 +53,11 @@
                   (escribe y selecciona para validar)
                 </span>
               </label>
-              <input type="text" name="address" id="addr-input" class="form-control"
+              <input type="text" name="address" id="addr-input" class="form-control{{ ' is-invalid' if field_error.get('field') == 'address' else '' }}"
                      placeholder="Calle y colonia (sin número)" required
                      autocomplete="street-address" autocapitalize="words" spellcheck="false"
-                     value="{{ customer.default_address or '' }}">
+                     value="{{ customer.get('address', '') }}" aria-invalid="{{ 'true' if field_error.get('field') == 'address' else 'false' }}"{% if field_error.get('field') == 'address' %} aria-describedby="err-address"{% endif %}>
+                     {% if field_error.get('field') == 'address' %}<p class="field-error" id="err-address" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
               <div id="addr-suggestions" class="addr-suggest" hidden></div>
               <p id="addr-attr" style="font-size:0.65rem;color:var(--text3);margin-top:0.35rem;display:none">
                 Resultados por <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" style="color:var(--text2)">© OpenStreetMap</a>
@@ -62,37 +66,42 @@
             <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
               <div class="form-group">
                 <label for="co-ext">Número exterior *</label>
-                <input type="text" name="address_ext" id="co-ext" class="form-control" placeholder="Ej. 123" required
+                <input type="text" name="address_ext" id="co-ext" class="form-control{{ ' is-invalid' if field_error.get('field') == 'address_ext' else '' }}" placeholder="Ej. 123" required
                        maxlength="20" autocomplete="address-line2" inputmode="text"
-                       value="{{ customer.default_address_ext or '' }}">
+                       value="{{ customer.get('address_ext', '') }}" aria-invalid="{{ 'true' if field_error.get('field') == 'address_ext' else 'false' }}"{% if field_error.get('field') == 'address_ext' %} aria-describedby="err-address_ext"{% endif %}>
+                       {% if field_error.get('field') == 'address_ext' %}<p class="field-error" id="err-address_ext" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
               </div>
               <div class="form-group">
                 <label for="co-int">
                   Número interior
                   <span style="font-size:0.7rem;font-weight:400;color:var(--text3);margin-left:0.4rem">(opcional)</span>
                 </label>
-                <input type="text" name="address_int" id="co-int" class="form-control" placeholder="Ej. 4B, Depto 12"
+                <input type="text" name="address_int" id="co-int" class="form-control{{ ' is-invalid' if field_error.get('field') == 'address_int' else '' }}" placeholder="Ej. 4B, Depto 12"
                        maxlength="20" autocomplete="address-line3"
-                       value="{{ customer.default_address_int or '' }}">
+                       value="{{ customer.get('address_int', '') }}" aria-invalid="{{ 'true' if field_error.get('field') == 'address_int' else 'false' }}"{% if field_error.get('field') == 'address_int' %} aria-describedby="err-address_int"{% endif %}>
+                       {% if field_error.get('field') == 'address_int' %}<p class="field-error" id="err-address_int" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
               </div>
             </div>
             <div class="form-row form-row-3">
               <div class="form-group">
                 <label for="addr-city">Ciudad *</label>
-                <input type="text" name="city" id="addr-city" class="form-control" placeholder="Ciudad" required autocomplete="address-level2"
-                       value="{{ customer.default_city or '' }}">
+                <input type="text" name="city" id="addr-city" class="form-control{{ ' is-invalid' if field_error.get('field') == 'city' else '' }}" placeholder="Ciudad" required autocomplete="address-level2"
+                       value="{{ customer.get('city', '') }}" aria-invalid="{{ 'true' if field_error.get('field') == 'city' else 'false' }}"{% if field_error.get('field') == 'city' %} aria-describedby="err-city"{% endif %}>
+                       {% if field_error.get('field') == 'city' %}<p class="field-error" id="err-city" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
               </div>
               <div class="form-group">
                 <label for="addr-state">Estado *</label>
-                <input type="text" name="state" id="addr-state" class="form-control" placeholder="Estado" required autocomplete="address-level1"
-                       value="{{ customer.default_state or '' }}">
+                <input type="text" name="state" id="addr-state" class="form-control{{ ' is-invalid' if field_error.get('field') == 'state' else '' }}" placeholder="Estado" required autocomplete="address-level1"
+                       value="{{ customer.get('state', '') }}" aria-invalid="{{ 'true' if field_error.get('field') == 'state' else 'false' }}"{% if field_error.get('field') == 'state' %} aria-describedby="err-state"{% endif %}>
+                       {% if field_error.get('field') == 'state' %}<p class="field-error" id="err-state" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
               </div>
               <div class="form-group">
                 <label for="addr-zip">C.P. *</label>
-                <input type="text" name="zip_code" id="addr-zip" class="form-control" placeholder="00000" required
+                <input type="text" name="zip_code" id="addr-zip" class="form-control{{ ' is-invalid' if field_error.get('field') == 'zip_code' else '' }}" placeholder="00000" required
                        inputmode="numeric" pattern="[0-9]{5}" maxlength="5"
                        title="5 dígitos" autocomplete="postal-code"
-                       value="{{ customer.default_zip_code or '' }}">
+                       value="{{ customer.get('zip_code', '') }}" aria-invalid="{{ 'true' if field_error.get('field') == 'zip_code' else 'false' }}"{% if field_error.get('field') == 'zip_code' %} aria-describedby="err-zip_code"{% endif %}>
+                       {% if field_error.get('field') == 'zip_code' %}<p class="field-error" id="err-zip_code" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
               </div>
             </div>
           </div>
@@ -104,6 +113,7 @@
               {# Un solo método habilitado: se preselecciona, sin dropdown. #}
               {% set _m = payment_methods[0] %}
               <input type="hidden" name="payment_method" value="{{ _m.slug }}">
+              {% if field_error.get('field') == 'payment_method' %}<p class="field-error" id="err-payment_method" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
               <div style="display:flex;align-items:center;gap:0.6rem;padding:0.85rem 1rem;border:1px solid rgba(var(--gold-rgb),0.35);border-radius:8px;background:rgba(var(--gold-rgb),0.06)">
                 <span style="font-size:1.4rem">{{ _m.icon }}</span>
                 <div>
@@ -124,7 +134,8 @@
             {% endif %}
             <div class="form-group">
               <label for="co-notes">Notas adicionales <span class="label-hint">(opcional)</span></label>
-              <textarea name="notes" id="co-notes" class="form-control" placeholder="Instrucciones especiales, referencias, etc."></textarea>
+              <textarea name="notes" id="co-notes" class="form-control{{ ' is-invalid' if field_error.get('field') == 'notes' else '' }}" placeholder="Instrucciones especiales, referencias, etc." aria-invalid="{{ 'true' if field_error.get('field') == 'notes' else 'false' }}"{% if field_error.get('field') == 'notes' %} aria-describedby="err-notes"{% endif %}>{{ customer.get('notes', '') }}</textarea>
+              {% if field_error.get('field') == 'notes' %}<p class="field-error" id="err-notes" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
             </div>
           </div>
 
@@ -135,14 +146,10 @@
               <div>
                 <h3 style="color:var(--text);margin:0 0 0.3rem;font-size:1rem">Aviso For Research Use Only</h3>
                 <p style="font-size:0.85rem;margin:0;color:var(--text2);line-height:1.6">
-                  Al completar este pedido confirmo que los productos son para <strong style="color:var(--text)">uso exclusivo de investigación científica <em>in vitro</em></strong> y no para consumo humano o veterinario.
+                  Todo lo que vendemos es para <strong style="color:var(--text)">uso exclusivo de investigación científica <em>in vitro</em></strong>. No es medicamento ni suplemento, y no se destina a consumo humano o veterinario. La aceptación va junto al botón de confirmar.
                 </p>
               </div>
             </div>
-            <label style="display:flex;align-items:flex-start;gap:0.6rem;cursor:pointer;padding-top:0.85rem;border-top:1px solid rgba(var(--gold-rgb),0.18)">
-              <input type="checkbox" name="ruo_ack" value="1" id="co-ruo" required style="margin-top:0.2rem;accent-color:var(--gold)">
-              <span style="font-size:0.85rem;color:var(--text2);line-height:1.55">Acepto que los productos son para uso en investigación científica exclusivamente y cumpliré con todas las regulaciones aplicables en mi jurisdicción.</span>
-            </label>
           </div>
 
         </div>
@@ -183,7 +190,26 @@
               <span>Total</span>
               <span>${{ total|money }} <span class="price-currency">MXN</span></span>
             </div>
-            <div style="margin-top:1.25rem">
+            {#
+              La aceptación RUO vive aquí, no al final de la columna izquierda.
+              Antes quedaba ~870px por debajo del botón que bloquea: se pulsaba
+              "Confirmar" y rebotaba un error sobre una casilla que ni se había
+              visto. La condición y la acción tienen que verse a la vez.
+            #}
+            <label class="co-consent{{ ' is-invalid' if field_error.get('field') == 'ruo_ack' else '' }}" for="co-ruo">
+              <input type="checkbox" name="ruo_ack" value="1" id="co-ruo" required
+                     aria-invalid="{{ 'true' if field_error.get('field') == 'ruo_ack' else 'false' }}"
+                     {%- if field_error.get('field') == 'ruo_ack' %} aria-describedby="err-ruo_ack"{% endif %}>
+              <span>
+                Confirmo que compro estos productos para
+                <strong>investigación científica <em>in vitro</em></strong>, no para
+                consumo humano ni veterinario, y que cumpliré las regulaciones de
+                mi jurisdicción.
+              </span>
+            </label>
+            {% if field_error.get('field') == 'ruo_ack' %}<p class="field-error" id="err-ruo_ack" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>{{ field_error.get('message') }}</p>{% endif %}
+
+            <div style="margin-top:1rem">
               {% if paypal_embedded %}
                 <div id="paypal-error" style="display:none;color:#e23b3b;font-size:0.85rem;margin-bottom:0.6rem;text-align:center"></div>
                 <div id="paypal-button-container" style="display:none"></div>
@@ -208,6 +234,22 @@
 {% endblock %}
 
 {% block extra_js %}
+{% if field_error.get('field') %}
+<script nonce="{{ csp_nonce }}">
+// El servidor rechazó un campo. Llevar ahí al comprador en vez de dejarlo
+// buscando cuál de los diez fue, sin robarle el scroll si ya está a la vista.
+(function () {
+  var el = document.querySelector('[aria-invalid="true"]');
+  if (!el) return;
+  var r = el.getBoundingClientRect();
+  if (r.top < 80 || r.bottom > window.innerHeight - 40) {
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  // El foco espera al scroll suave: enfocar de inmediato lo cancela.
+  setTimeout(function () { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } }, 380);
+})();
+</script>
+{% endif %}
 <script nonce="{{ csp_nonce }}">
 // Carrito abandonado — snapshot del carrito + email cuando el usuario llena
 // su email pero no completa la compra. Se dispara en `blur` del input email.

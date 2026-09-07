@@ -4883,3 +4883,91 @@ h3 > svg, h4 > svg { vertical-align: -0.15em; margin-right: 0.35rem; color: var(
 .products-grid-related { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 900px) { .products-grid-related { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 420px) { .products-grid-related { grid-template-columns: repeat(2, 1fr); gap: 0.7rem; } }
+
+/* =========================================================
+   FORMULARIOS — error anclado al campo
+   El aviso flotante de arriba a la derecha se borra solo a los
+   4 segundos y nunca dijo QUÉ campo estaba mal. En un formulario
+   de diez campos eso obliga a revisarlos todos. El mensaje del
+   servidor ahora viaja con el nombre del campo y se pinta aquí.
+   ========================================================= */
+.form-control.is-invalid,
+.form-control[aria-invalid="true"] {
+  border-color: #b4534d;
+  background: rgba(239, 68, 68, 0.05);
+}
+.form-control.is-invalid:focus,
+.form-control[aria-invalid="true"]:focus {
+  border-color: #d06b63;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+  outline: none;
+}
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #e79a94;
+}
+.field-error svg { flex: 0 0 auto; margin-top: 0.12rem; }
+
+/* Consentimiento RUO, dentro del resumen y pegado al botón de confirmar.
+   La casilla nativa se veía como un cuadro blanco de sistema sobre el
+   fondo oscuro; se dibuja a mano para que pertenezca a la página. */
+.co-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-top: 1.15rem;
+  padding: 0.9rem 0.95rem;
+  border: 1px solid rgba(var(--gold-rgb), 0.22);
+  border-radius: var(--radius);
+  background: rgba(var(--gold-rgb), 0.04);
+  cursor: pointer;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text2);
+  transition: border-color 0.2s var(--ease-out), background 0.2s var(--ease-out);
+}
+.co-consent:hover { border-color: rgba(var(--gold-rgb), 0.42); }
+.co-consent strong { color: var(--text); font-weight: 600; }
+.co-consent.is-invalid {
+  border-color: #b4534d;
+  background: rgba(239, 68, 68, 0.06);
+}
+.co-consent input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 0.1rem 0 0;
+  border: 1.5px solid rgba(var(--gold-rgb), 0.5);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: background 0.18s var(--ease-out), border-color 0.18s var(--ease-out);
+}
+.co-consent input[type="checkbox"]::before {
+  content: "";
+  width: 11px;
+  height: 11px;
+  transform: scale(0);
+  transform-origin: center;
+  transition: transform 0.16s var(--ease-out);
+  background: #0d0d0d;
+  clip-path: polygon(14% 45%, 0 60%, 39% 100%, 100% 22%, 84% 8%, 39% 70%);
+}
+.co-consent input[type="checkbox"]:checked {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.co-consent input[type="checkbox"]:checked::before { transform: scale(1); }
+.co-consent input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}

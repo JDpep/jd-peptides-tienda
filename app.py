@@ -4672,12 +4672,16 @@ def checkout():
     # Token de idempotencia: el POST sólo crea pedido si el token aún no se
     # registró en session['used_checkout_tokens']. Doble submit → mismo pedido.
     checkout_token = secrets.token_urlsafe(24)
+    # Lo que quedó de un intento anterior que no pasó validación.
+    _prefill = _take_checkout_form()
+    _field_error = session.pop('checkout_error', None) or {}
     _methods = enabled_payment_methods()
     # Cobro embebido de PayPal: activo si hay credenciales Y PayPal está entre
     # los métodos habilitados. Si no, el checkout usa el flujo manual (form).
     _pp_embedded = paypal_enabled() and any(m['slug'] == 'paypal' for m in _methods)
     return render_template('checkout.html', cart=cart, subtotal=subtotal,
-                           shipping=shipping, total=total, customer={},
+                           shipping=shipping, total=total, customer=_prefill,
+                           field_error=_field_error,
                            payment_methods=_methods,
                            paypal_embedded=_pp_embedded,
                            paypal_client_id=PAYPAL_CLIENT_ID,
@@ -4806,6 +4810,11 @@ def procesar_checkout():
     if not cart:
         return redirect(url_for('catalogo'))
 
+    # Se recuerda ANTES de validar: los seis returns de error de aquí abajo
+    # redirigen al formulario, y el que vuelve tiene que encontrar sus datos.
+    # En el camino feliz se limpia justo antes de mandar al pedido.
+    _remember_checkout_form(request.form)
+
     # Rate-limit anti-spam/DoS: límite generoso por IP real (no spoofeable).
     if _rate_limited(f'checkout:{_client_ip()}', limit=12, window=600):
         flash('Demasiados intentos seguidos. Espera un par de minutos e intenta de nuevo.', 'error')
@@ -4839,7 +4848,9 @@ def procesar_checkout():
     # los dos caminos de pago no se separen con el tiempo.
     form, ferr = _validate_checkout_fields(request.form)
     if ferr:
-        flash(ferr, 'error')
+        # El mensaje va como toast (se va solo) Y anclado al campo (se queda).
+        session['checkout_error'] = ferr
+        flash(ferr['message'], 'error')
         return redirect(url_for('checkout'))
     name = form['name']; email = form['email']; phone = form['phone']
     address = form['address']; address_ext = form['address_ext']
@@ -4848,6 +4859,8 @@ def procesar_checkout():
     payment_method = request.form.get('payment_method', '')
 
     if not payment_method:
+        session['checkout_error'] = {'field': 'payment_method',
+                                     'message': 'Selecciona un método de pago.'}
         flash('Selecciona un método de pago.', 'error')
         return redirect(url_for('checkout'))
 
@@ -4855,6 +4868,8 @@ def procesar_checkout():
     # conocidos). Así desactivar un método en el admin lo bloquea de inmediato.
     _enabled_slugs = {m['slug'] for m in enabled_payment_methods()}
     if payment_method not in VALID_PAYMENT_METHODS or payment_method not in _enabled_slugs:
+        session['checkout_error'] = {'field': 'payment_method',
+                                     'message': 'Ese método de pago no está disponible.'}
         flash('Método de pago no válido.', 'error')
         return redirect(url_for('checkout'))
 
@@ -4872,6 +4887,7 @@ def procesar_checkout():
             if prev:
                 # Re-mostrar el pedido ya creado
                 session.pop('cart', None)
+                session.pop('checkout_form', None)
                 return redirect(url_for('pedido', order_number=prev['order_number']))
 
     try:
@@ -4920,12 +4936,43 @@ def procesar_checkout():
     # página del pedido no se podía compartir ni guardar. _finalize_order ya
     # dejó el número en session['view_orders'], así que el GET entra directo
     # sin pedir el correo.
+    session.pop('checkout_form', None)
     return redirect(url_for('pedido', order_number=order['order_number']))
+
+
+# Campos que se recuerdan entre un intento fallido de checkout y el siguiente
+# render del formulario. `ruo_ack` no está: la aceptación legal se vuelve a
+# marcar a mano cada vez, no se hereda de un envío anterior.
+_CHECKOUT_REMEMBER = ('name', 'email', 'phone', 'address', 'address_ext',
+                      'address_int', 'city', 'state', 'zip_code', 'notes',
+                      'payment_method')
+
+
+def _remember_checkout_form(data):
+    """Guarda en sesión lo que el comprador ya había escrito.
+
+    Cuando una validación falla hacemos POST/Redirect/GET a /checkout, y sin
+    esto el formulario volvía a pintarse vacío: un código postal mal escrito
+    obligaba a teclear otra vez nombre, correo, calle, número, ciudad y estado.
+    """
+    session['checkout_form'] = {
+        k: (data.get(k) or '').strip()[:200] for k in _CHECKOUT_REMEMBER
+    }
+
+
+def _take_checkout_form():
+    """Devuelve lo recordado y lo borra (solo sirve para el siguiente render)."""
+    return session.pop('checkout_form', None) or {}
 
 
 def _validate_checkout_fields(data):
     """Valida los campos del checkout (dict, mismas reglas que el flujo manual).
-    Devuelve (form_dict, None) si OK, o (None, mensaje_error)."""
+
+    Devuelve (form_dict, None) si OK, o (None, {'field': ..., 'message': ...}).
+    El `field` es el `name` del input culpable: el formulario lo usa para
+    marcar y enfocar ese campo, en vez de dejar al comprador adivinar cuál de
+    los diez es el que está mal.
+    """
     name = (data.get('name') or '').strip()
     email = (data.get('email') or '').strip()
     phone = (data.get('phone') or '').strip()
@@ -4936,26 +4983,43 @@ def _validate_checkout_fields(data):
     state = (data.get('state') or '').strip()
     zip_code = (data.get('zip_code') or '').strip()
     notes = (data.get('notes') or '').strip()
+
+    def _err(field, message):
+        return None, {'field': field, 'message': message}
+
     # La casilla RUO es la aceptación explícita del comprador. Se valida en el
     # servidor porque el `required` del form se salta sin JS o posteando directo.
     if not (data.get('ruo_ack') or ''):
-        return None, 'Debes aceptar el aviso de uso exclusivo en investigación (RUO) para continuar.'
-    if not all([name, email, address, address_ext, city]):
-        return None, 'Completa todos los campos requeridos (incluido el número exterior).'
+        return _err('ruo_ack', 'Debes aceptar el aviso de uso exclusivo en '
+                               'investigación (RUO) para continuar.')
+    # Uno por uno para poder señalar el campo exacto.
+    if not name:
+        return _err('name', 'Falta tu nombre completo.')
+    if not email:
+        return _err('email', 'Falta tu correo electrónico.')
     if not valid_email(email):
-        return None, 'El email ingresado no es válido.'
+        return _err('email', 'Ese correo no parece válido. Revísalo, ahí te '
+                             'mandamos la confirmación y la guía de envío.')
+    if not address:
+        return _err('address', 'Falta la calle y colonia de la dirección de envío.')
+    if not address_ext:
+        return _err('address_ext', 'Falta el número exterior. Sin él la '
+                                   'paquetería no entrega.')
+    if not city:
+        return _err('city', 'Falta la ciudad.')
     # Estado y CP son obligatorios: sin ellos la guía de envío no se puede
     # generar y el paquete se queda parado en paquetería.
     if not state:
-        return None, 'Falta el estado de la dirección de envío.'
+        return _err('state', 'Falta el estado de la dirección de envío.')
     if not zip_code:
-        return None, 'Falta el código postal (5 dígitos) de la dirección de envío.'
+        return _err('zip_code', 'Falta el código postal (5 dígitos).')
     if not re.match(r'^\d{5}$', zip_code):
-        return None, 'El código postal debe tener 5 dígitos.'
+        return _err('zip_code', 'El código postal debe tener 5 dígitos.')
     if phone:
         _d = re.sub(r'\D', '', phone)
         if not (10 <= len(_d) <= 13):
-            return None, 'El teléfono no tiene un formato válido (10 dígitos).'
+            return _err('phone', 'El teléfono no tiene un formato válido '
+                                 '(10 dígitos).')
     return {'name': name, 'email': email, 'phone': phone, 'address': address,
             'address_ext': address_ext, 'address_int': address_int, 'city': city,
             'state': state, 'zip_code': zip_code, 'notes': notes}, None
@@ -4999,7 +5063,7 @@ def paypal_create_order():
         return jsonify({'error': err}), 400
     form, ferr = _validate_checkout_fields(request.get_json(silent=True) or {})
     if ferr:
-        return jsonify({'error': ferr}), 400
+        return jsonify({'error': ferr['message'], 'field': ferr['field']}), 400
     subtotal = cart_total()
     shipping = compute_shipping(subtotal)
     total = subtotal + shipping

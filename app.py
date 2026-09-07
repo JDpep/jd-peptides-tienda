@@ -4103,7 +4103,15 @@ def categoria_landing(slug):
 
 @app.route('/')
 def index():
-    products = query_db("SELECT * FROM products WHERE active=1 LIMIT 6")
+    # 8 y no 6: la rejilla de la home da 4 columnas en escritorio y 2 en
+    # teléfono, así que 6 dejaba siempre una fila coja de dos tarjetas.
+    # Solo con existencias — abrir la portada con "Agotado" es mal recibimiento
+    # — y con foto primero, que es lo que sostiene la sección.
+    products = query_db(
+        "SELECT * FROM products WHERE active=1 AND stock > 0 "
+        "ORDER BY CASE WHEN image_path IS NULL OR image_path = '' THEN 1 ELSE 0 END, "
+        "         price DESC, id "
+        "LIMIT 8")
     categories = query_db("SELECT DISTINCT category FROM products WHERE active=1")
     _cnt = query_db("SELECT COUNT(*) AS c FROM products WHERE active=1", one=True)
     return render_template('index.html', products=products, categories=categories,

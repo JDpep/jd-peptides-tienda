@@ -162,7 +162,9 @@
       <div class="divider">
         <h2>Productos <span class="gold">Destacados</span></h2>
       </div>
-      <p>Nuestra selección de péptidos de investigación más solicitados</p>
+      {# La consulta no ordena por ventas, así que la sección no puede decir
+         "los más solicitados": afirmaba un dato que no existe. #}
+      <p>Una muestra del catálogo. Todos con existencias y certificado de análisis por lote.</p>
     </div>
 
     {% set img_map = {
@@ -181,7 +183,7 @@
       'JDP-GHKCU': 'vial_ghk_cu.png',
       'JDP-BAC':   'vial_bac.png'
     } %}
-    <div class="products-grid">
+    <div class="products-grid products-grid-home">
       {% for p in products %}
         {% set benefits = p['benefits'].split('|') if p['benefits'] else [] %}
         {% set pimg = p['image_path'] or img_map.get(p['sku'], '') %}
@@ -313,12 +315,18 @@
 <section id="nosotros" class="about-sec paper">
   <div class="container">
     {#
-      Era una rejilla de dos columnas: prosa a la izquierda, tres bullets de
-      features a la derecha. Los bullets repetían "Antes de comprar" y la
-      sección de calidad, así que se fueron; con la columna derecha vacía la
-      rejilla dejaba de tener sentido. Ahora es un bloque único con la medida
-      acotada, que es lo que pide un texto para leerse.
+      Dos columnas otra vez, pero no como antes: la derecha ya no repite en
+      bullets lo que dicen "Antes de comprar" y la sección de calidad. Lleva
+      el producto, que es de lo que va la sección y lo único que no está
+      dicho en otro sitio. La prosa mantiene su medida acotada a la
+      izquierda; la foto ocupa el hueco que quedaba vacío.
+
+      La imagen tiene fondo blanco y esta superficie es crema, así que los
+      viales flotan sin recuadro: es el único sitio del sitio donde una foto
+      de estudio cae en su fondo natural en vez de recortarse contra el
+      tema oscuro.
     #}
+    <div class="about-layout">
     <div class="about-block reveal">
       <p class="about-eyebrow">Sobre nosotros</p>
       <h2 class="about-title">Quiénes somos y qué nos <span class="gold">mueve</span></h2>
@@ -346,6 +354,20 @@
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
       </div>
+    </div>
+
+      <figure class="about-figure reveal-right">
+        <div class="about-figure-plate">
+          <img src="{{ url_for('static', filename='img/group.webp') }}?v={{ build_id }}"
+               alt="Viales de JD Peptides con etiqueta de lote y leyenda For Research Use Only"
+               width="1024" height="1536" loading="lazy" decoding="async">
+        </div>
+        <figcaption>
+          Cada vial sale etiquetado con péptido, dosis y la leyenda
+          <em>For research use only</em>. El certificado de análisis del lote
+          se pide por producto.
+        </figcaption>
+      </figure>
     </div>
   </div>
 </section>

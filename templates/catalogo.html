@@ -212,6 +212,19 @@
                       <div class="product-visual-cat">
                         <span class="badge badge-cat {{ category_badge_class(p['category']) }}">{{ p['category'] }}</span>
                       </div>
+                      {#
+                        El aviso de stock va sobre la foto, no en el cuerpo.
+                        Dentro del cuerpo solo lo llevan algunas tarjetas, y
+                        esa fila de más subía su precio respecto al de las
+                        vecinas de la misma hilera: en una rejilla, los
+                        precios tienen que leerse en línea.
+                      #}
+                      {% set _low = p['low_stock_alert'] if p['low_stock_alert'] is not none else 5 %}
+                      {% if p['stock'] <= 0 %}
+                        <span class="stock-badge out product-visual-stock">Agotado</span>
+                      {% elif p['stock'] <= _low %}
+                        <span class="stock-badge low product-visual-stock">Quedan {{ p['stock'] }}</span>
+                      {% endif %}
                       {% set _pimg = p['image_path'] or img_map.get(p['sku'], '') %}
                       {% if _pimg %}
                         <img src="{{ url_for('static', filename='img/' + _pimg) }}?v={{ build_id }}"
@@ -259,24 +272,11 @@
                     {% if benefits %}
                       <p class="product-benefit">{{ benefits[0] }}</p>
                     {% endif %}
-                    {% set _low = p['low_stock_alert'] if p['low_stock_alert'] is not none else 5 %}
-                    {#
-                      El estado de stock solo se pinta cuando dice algo. Con
-                      "En stock" en las 24 tarjetas eran 24 pastillas verdes
-                      idénticas: ruido que empujaba el precio y el botón una
-                      fila hacia abajo sin informar de nada. Lo normal es que
-                      haya existencias; lo que hay que avisar es cuando no.
-                    #}
                     <div class="product-meta">
                       <span class="product-price">
                         <span class="product-price-amount">${{ p['price']|money }}</span>
                         <span class="price-currency">MXN</span>
                       </span>
-                      {% if p['stock'] <= 0 %}
-                        <span class="stock-badge out">Agotado</span>
-                      {% elif p['stock'] <= _low %}
-                        <span class="stock-badge low">Quedan {{ p['stock'] }}</span>
-                      {% endif %}
                     </div>
                   </div>
                   {#

@@ -5047,3 +5047,216 @@ h3 > svg, h4 > svg { vertical-align: -0.15em; margin-right: 0.35rem; color: var(
   color: var(--gold-on-dark);
   letter-spacing: 0.04em;
 }
+
+/* Aviso de stock sobre la foto (esquina inferior izquierda, sobre el
+   degradado que ya funde el pie de la imagen). Va aquí y no en el cuerpo
+   de la tarjeta porque solo lo llevan algunas: metido en el flujo, esa
+   fila de más subía el precio de esas tarjetas respecto al de sus vecinas
+   de la misma hilera, y en una rejilla los precios tienen que leerse en
+   línea. Arriba a la izquierda está la categoría y a la derecha los
+   botones de acción; abajo a la izquierda estaba libre. */
+.product-visual-stock {
+  position: absolute;
+  left: 0.6rem;
+  bottom: 0.6rem;
+  z-index: 2;
+  backdrop-filter: blur(6px);
+}
+@media (max-width: 560px) {
+  .products-grid .product-visual-stock { left: 0.5rem; bottom: 0.5rem; }
+}
+
+/* =========================================================
+   BARRA DE COMPRA FIJA — ficha de producto, solo teléfono
+   En vertical la foto va arriba y empuja el botón a ~1.190px:
+   una pantalla larga de scroll antes de poder comprar. La
+   mayoría del tráfico entra por WhatsApp desde el móvil.
+   ========================================================= */
+.pdp-buybar { display: none; }
+
+@media (max-width: 768px) {
+  .pdp-buybar {
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 998;                     /* bajo el menú móvil, sobre el contenido */
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom));
+    background: rgba(12, 11, 8, 0.94);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.5);
+    animation: buybarIn 0.22s var(--ease-out);
+  }
+  @keyframes buybarIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { .pdp-buybar { animation: none; } }
+
+  .pdp-buybar-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .pdp-buybar-name {
+    font-size: 0.76rem;
+    color: var(--text2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pdp-buybar-price {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+  }
+  .pdp-buybar .btn {
+    flex: 0 0 auto;
+    min-height: 46px;
+    padding: 0.7rem 1.5rem;
+  }
+  /* El botón de WhatsApp sube para no montarse sobre la barra, y el pie
+     gana hueco para que la barra no tape la última línea. */
+  body.has-buybar .whatsapp-btn { bottom: calc(5.25rem + env(safe-area-inset-bottom)); }
+  body.has-buybar { padding-bottom: 4.5rem; }
+}
+
+/* =========================================================
+   ÁREAS TÁCTILES EN TELÉFONO
+   Medido con un viewport de 390px y emulación táctil: los
+   controles principales se quedaban por debajo de 44px, que
+   es el mínimo con el que un pulgar acierta a la primera.
+   El menú era de 35x27 y es el control con el que se navega
+   todo el sitio en móvil.
+   Donde el icono no debe crecer (los botones sobre la foto
+   de la tarjeta, que a 165px de ancho taparían el vial), se
+   deja el tamaño visible y se agranda solo la zona sensible
+   con un pseudoelemento.
+   ========================================================= */
+@media (max-width: 768px) {
+  .hamburger {
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem;
+  }
+  .cart-btn { min-height: 44px; }
+  .catalog-sidebar-close { width: 44px; height: 44px; }
+
+  /* Filtros: la fila entera es la etiqueta, así que crece la fila. */
+  .cf-radio, .cf-checkbox { min-height: 44px; padding: 0.55rem; }
+
+  /* Campos de formulario y desplegables. */
+  .form-control { min-height: 44px; }
+  textarea.form-control { min-height: 96px; }
+
+  /* Alta y ancha para el dedo, sin cambiar el aspecto del pie. */
+  .footer-newsletter input { min-height: 44px; }
+  .footer-newsletter button { min-height: 44px; padding-inline: 0.5rem; }
+
+  /* Los enlaces del pie van en lista densa: no se estiran a 44px cada uno
+     (el pie se duplicaría de alto), pero sí se separan lo suficiente para
+     no encadenar toques fallidos. */
+  .footer-col li { margin-bottom: 0.15rem; }
+  .footer-col li a { display: block; padding: 0.42rem 0; }
+}
+
+/* Botones de acción de la tarjeta: 30px visibles, 44px sensibles.
+   Agrandarlos de verdad taparía el vial en una tarjeta de 165px. */
+@media (hover: none) {
+  .product-quickview-btn,
+  .card-action-btn { position: absolute; }
+  .product-quickview-btn::after,
+  .card-action-btn::after {
+    content: "";
+    position: absolute;
+    inset: -7px;
+    border-radius: inherit;
+  }
+}
+
+/* =========================================================
+   SOBRE NOSOTROS (home) — prosa + producto
+   ========================================================= */
+.about-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 62ch) minmax(0, 1fr);
+  gap: 3rem 4rem;
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .about-layout { grid-template-columns: 1fr; gap: 2.5rem; }
+}
+
+.about-figure {
+  margin: 0;
+  justify-self: center;
+  max-width: 380px;
+}
+.about-figure-plate {
+  /* La imagen viene con fondo blanco uniforme sobre una superficie crema.
+     Se intentó fundirla con `mix-blend-mode: multiply`, pero la máscara
+     crea su propio contexto de apilamiento y el blend se queda sin fondo
+     con el que mezclar: salía un rectángulo blanco puro, más claro que el
+     papel. En vez de pelearse con el blend, el recuadro se asume: placa
+     blanca con filo cálido, como la lámina de una ficha técnica. */
+  background: #fff;
+  border: 1px solid rgba(140, 106, 31, 0.16);
+  border-radius: 14px;
+  padding: 1.5rem 1.25rem;
+  box-shadow: 0 12px 34px rgba(90, 74, 40, 0.09);
+}
+.about-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* El fondo de la imagen es rgb(250,250,250) y la placa es blanco puro:
+     se veía el borde de la foto como un rectángulo dentro del marco.
+     x1.022 lleva ese 250 a 255 exacto y la foto se funde con su placa. */
+  filter: brightness(1.022);
+}
+.about-figure figcaption {
+  margin-top: 1rem;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: #6b6355;
+  text-align: center;
+  max-width: 34ch;
+  margin-inline: auto;
+}
+@media (max-width: 900px) {
+  .about-figure { max-width: 300px; }
+}
+
+/* -----------------------------------------------------------
+   El botón "Conocer más" salía en blanco: texto y fondo eran el
+   MISMO color.
+   `.paper` remapea `--gold` a `--gold-on-light` (#8c6a1f) para que
+   el dorado se lea sobre crema. Este botón usaba `background:
+   var(--gold)` — que en esta superficie deja de ser el dorado de
+   marca y pasa a ser ese bronce — y su color de texto venía de
+   `.paper a { color: var(--gold-on-light) }`, el mismo #8c6a1f.
+   Resultado: 1.00:1, un rectángulo bronce vacío.
+
+   Lección: dentro de `.paper`, `var(--gold)` sirve para TEXTO, no
+   para rellenos. Un componente que pinte fondo dorado en una
+   superficie clara tiene que fijar sus dos colores a la vez.
+   ----------------------------------------------------------- */
+.paper .about-cta-primary,
+.about-cta-primary {
+  background: var(--gold-on-light);   /* bronce, legible sobre crema */
+  color: #fdfbf4;                     /* 4.9:1 contra ese bronce */
+}
+.paper .about-cta-primary:hover,
+.about-cta-primary:hover {
+  background: #6f5417;
+  color: #fdfbf4;
+}
+.about-cta-primary:focus-visible {
+  outline: 2px solid #6f5417;
+  outline-offset: 3px;
+}
+
+/* La home muestra 8 destacados. La rejilla fluida daba 3 columnas entre
+   ~1000 y ~1150px, y 8 en 3 columnas deja una fila coja de dos. Aquí el
+   número de tarjetas es fijo, así que las columnas también: 4 o 2, las dos
+   divisores de 8, y ninguna fila queda a medias. */
+.products-grid-home { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) {
+  .products-grid-home { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

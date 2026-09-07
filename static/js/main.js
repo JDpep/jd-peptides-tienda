@@ -570,11 +570,12 @@ document.addEventListener('DOMContentLoaded', function () {
       const catCls = CAT_BADGE[p.category] || 'badge-cat-default';
 
       // Misma regla que la plantilla del servidor: el estado solo se pinta
-      // cuando dice algo. "En stock" en cada tarjeta no informaba de nada y
-      // metía una fila de más entre el precio y el botón.
+      // cuando dice algo ("En stock" en cada tarjeta no informaba de nada), y
+      // va sobre la foto, no en el cuerpo — dentro del cuerpo solo lo llevan
+      // algunas tarjetas y esa fila de más desalineaba los precios de la fila.
       let stockBadge = '';
-      if (!inStock)                 stockBadge = `<span class="stock-badge out">Agotado</span>`;
-      else if (p.stock <= lowAlert) stockBadge = `<span class="stock-badge low">Quedan ${p.stock}</span>`;
+      if (!inStock)                 stockBadge = `<span class="stock-badge out product-visual-stock">Agotado</span>`;
+      else if (p.stock <= lowAlert) stockBadge = `<span class="stock-badge low product-visual-stock">Quedan ${p.stock}</span>`;
 
       // Mismo formato que el filtro `money` de Jinja. Sin esto, al filtrar
       // los precios perdían el separador de miles y la rejilla mostraba
@@ -599,6 +600,7 @@ document.addEventListener('DOMContentLoaded', function () {
               <div class="product-visual-cat">
                 <span class="badge badge-cat ${catCls}">${escHtml(p.category)}</span>
               </div>
+              ${stockBadge}
               ${imgTag}
             </div>
           </a>
@@ -615,7 +617,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 <span class="product-price-amount">$${precio}</span>
                 <span class="price-currency">MXN</span>
               </span>
-              ${stockBadge}
             </div>
           </div>
           <div class="product-footer">

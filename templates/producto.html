@@ -212,6 +212,44 @@
           </div>
         {% endif %}
 
+        {#
+          El bloque de compra va aquí, pegado al precio. Estaba al final de
+          la columna: descripción, beneficios, aviso RUO, CoA, Peptide Ed y
+          reseñas por delante lo empujaban a ~700px, fuera de la primera
+          pantalla en escritorio. Lo que decide la compra —cuánto cuesta,
+          si hay, y el botón— tiene que verse junto. El detalle que sostiene
+          esa decisión sigue debajo, que es donde se consulta.
+        #}
+        <div>
+          <div class="detail-buy-head">
+            <h4>Cantidad</h4>
+            <!-- Stock — se actualiza en vivo por polling -->
+            <span class="stock-badge {% if product['stock'] > product['low_stock_alert'] %}ok{% elif product['stock'] > 0 %}low{% else %}out{% endif %}"
+                  id="product-stock-badge-{{ product['id'] }}">
+              {% if product['stock'] > product['low_stock_alert'] %}En stock
+              {% elif product['stock'] > 0 %}Stock limitado
+              {% else %}Sin stock{% endif %}
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+            <div class="quantity-selector">
+              <button class="qty-btn" data-action="dec" data-target="qty-detail" type="button">−</button>
+              <label for="qty-detail" class="sr-only">Cantidad</label>
+              <input type="number" id="qty-detail" class="qty-input" value="1" min="1" max="99">
+              <button class="qty-btn" data-action="inc" data-target="qty-detail" type="button">+</button>
+            </div>
+            {% if product['stock'] > 0 %}
+              <button class="btn btn-gold btn-lg add-to-cart-btn" data-product-id="{{ product['id'] }}" style="flex:1;min-width:160px">
+                Agregar al carrito
+              </button>
+            {% else %}
+              <button class="btn btn-ghost btn-lg" disabled style="flex:1;min-width:160px;opacity:0.5;cursor:not-allowed">
+                Sin Stock
+              </button>
+            {% endif %}
+          </div>
+        </div>
+
         {% if product['description'] %}
           <p style="font-size:0.92rem;line-height:1.75;color:var(--text2)">{{ product['description'] }}</p>
         {% endif %}
@@ -229,11 +267,21 @@
 
         <div class="ruo-disclaimer" role="note" aria-label="Aviso de uso de investigación">
           <strong>For Research Use Only</strong>
+          {#
+            El <strong> de este bloque se pinta como línea aparte. Con la
+            frase partida a la mitad, el punto y coma se quedaba huérfano
+            abriendo la línea siguiente: "; no está destinado al consumo...".
+            Cada trozo tiene que ser una oración entera.
+          #}
           <p>
-            Este producto se vende exclusivamente para uso en investigación científica
-            <em>in vitro</em>. <strong>No es un medicamento ni un suplemento</strong>; no está
-            destinado al consumo humano, ni para diagnosticar, tratar, curar o prevenir
-            enfermedad alguna. Su compra implica la aceptación de estos términos.
+            Este producto se vende exclusivamente para uso en investigación
+            científica <em>in vitro</em>.
+          </p>
+          <p><strong>No es un medicamento ni un suplemento.</strong></p>
+          <p>
+            No está destinado al consumo humano, ni para diagnosticar, tratar,
+            curar o prevenir enfermedad alguna. Su compra implica la aceptación
+            de estos términos.
           </p>
         </div>
 
@@ -282,37 +330,6 @@
           <span style="color:var(--text3)">({{ review_stats.count }} reseña{{ 's' if review_stats.count != 1 else '' }})</span>
         </div>
         {% endif %}
-
-        <!-- Add to cart -->
-        <div>
-          <div class="detail-buy-head">
-            <h4>Cantidad</h4>
-            <!-- Stock — se actualiza en vivo por polling -->
-            <span class="stock-badge {% if product['stock'] > product['low_stock_alert'] %}ok{% elif product['stock'] > 0 %}low{% else %}out{% endif %}"
-                  id="product-stock-badge-{{ product['id'] }}">
-              {% if product['stock'] > product['low_stock_alert'] %}En stock
-              {% elif product['stock'] > 0 %}Stock limitado
-              {% else %}Sin stock{% endif %}
-            </span>
-          </div>
-          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-            <div class="quantity-selector">
-              <button class="qty-btn" data-action="dec" data-target="qty-detail" type="button">−</button>
-              <label for="qty-detail" class="sr-only">Cantidad</label>
-              <input type="number" id="qty-detail" class="qty-input" value="1" min="1" max="99">
-              <button class="qty-btn" data-action="inc" data-target="qty-detail" type="button">+</button>
-            </div>
-            {% if product['stock'] > 0 %}
-              <button class="btn btn-gold btn-lg add-to-cart-btn" data-product-id="{{ product['id'] }}" style="flex:1;min-width:160px">
-                Agregar al carrito
-              </button>
-            {% else %}
-              <button class="btn btn-ghost btn-lg" disabled style="flex:1;min-width:160px;opacity:0.5;cursor:not-allowed">
-                Sin Stock
-              </button>
-            {% endif %}
-          </div>
-        </div>
 
         <!-- Aviso legal completo — colapsado.
              El texto va íntegro; lo que cambia es que deja de ocupar media
@@ -424,4 +441,43 @@
 
   </div>
 </section>
+
+{#
+  Barra de compra fija, solo en teléfono. En vertical la foto va arriba y
+  empuja el botón a ~1.190px: hay que hacer scroll de una pantalla larga
+  para poder comprar, y la mayor parte del tráfico entra por WhatsApp desde
+  el móvil. Aparece cuando el botón de la ficha sale de vista y desaparece
+  cuando vuelve, así que nunca hay dos botones a la vez.
+#}
+{% if product['stock'] > 0 %}
+<div class="pdp-buybar" id="pdpBuybar" hidden>
+  <div class="pdp-buybar-info">
+    <span class="pdp-buybar-name">{{ product['name'] }} · {{ product['dose'] }}</span>
+    <span class="pdp-buybar-price">${{ product['price']|money }} <span class="price-currency">MXN</span></span>
+  </div>
+  <button class="btn btn-gold add-to-cart-btn" data-product-id="{{ product['id'] }}"
+          aria-label="Agregar {{ product['name'] }} al carrito">Agregar</button>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if product['stock'] > 0 %}
+<script nonce="{{ csp_nonce }}">
+// La barra fija solo aparece cuando el botón de la ficha ya no se ve, así
+// que nunca hay dos botones de compra a la vez en pantalla.
+(function () {
+  var bar = document.getElementById('pdpBuybar');
+  var ref = document.querySelector('.product-detail-info .add-to-cart-btn');
+  if (!bar || !ref) return;
+  // Sin IntersectionObserver se queda oculta: la ficha ya tiene su botón.
+  if (!('IntersectionObserver' in window)) return;
+  new IntersectionObserver(function (entries) {
+    var visible = entries[0].isIntersecting;
+    bar.hidden = visible;
+    document.body.classList.toggle('has-buybar', !visible);
+  }, { rootMargin: '0px 0px -8px 0px' }).observe(ref);
+})();
+</script>
+{% endif %}
 {% endblock %}

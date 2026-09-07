@@ -14,6 +14,7 @@ Warm dark with gold accent. Inspired by aged bourbon glass + lab amber. All neut
 | `--bg4`  | `#1e1b14` | Elevated cards |
 | `--border` | `#2c281e` | All hairlines |
 | `--gold` | `#c79a3a` | Brand accent — buttons, highlights, gold text |
+| `--gold-rgb` | `199, 154, 58` | El mismo dorado para `rgba(var(--gold-rgb), α)` |
 | `--gold-light` | `#e8c873` | Hover state for gold |
 | `--gold-dark` | `#8c6a1f` | Pressed state, deep gold band |
 | `--champagne` | `#f4e4b5` | Light-mode about section, paper backgrounds |
@@ -31,6 +32,15 @@ Used only on category badges, never as primary surface tint:
 - Pérdida de Peso → `--cat-perdida` (gold `#c79a3a`)
 - Bienestar → `--cat-bienestar` (purple `#5b3570`)
 
+### Un solo dorado
+
+Hubo dos golds conviviendo: `#c9a227` (155 usos) y el token `#c79a3a`. Todo
+está unificado al token. **Nunca escribas el hex a mano**, con una excepción:
+los atributos de presentación de SVG (`fill=`, `stroke=`, `stop-color=`) no
+aceptan `var()` — el navegador los descarta en silencio y el icono se pinta
+negro. Ahí va `#c79a3a` literal. Lo mismo en `<canvas>` (Chart.js): lee el
+token con `getComputedStyle` y pásale el valor ya resuelto.
+
 ### Strategy
 
 **Restrained** on product/admin surfaces (catalog, checkout, dashboard). Gold ≤10% of viewport.
@@ -41,9 +51,17 @@ Never **drenched** — would cheapen.
 
 ### Fonts (loaded from Google Fonts)
 
-- **Display**: `Space Grotesk` (400, 500, 600, 700). Used for h1–h5 and logo wordmark.
-- **Body**: `Inter` (400, 500, 600). Used for paragraphs, UI labels, buttons.
-- **Tabular**: Inter with `font-variant-numeric: tabular-nums` (must add) for prices.
+- **Display**: `Fraunces` — h1–h5 y wordmark. La italic a tamaño grande se
+  reserva para énfasis de una palabra (`.serif-italic`), no para párrafos.
+- **Body**: `Inter Tight` — párrafos, etiquetas de UI, botones.
+- **Mono**: `JetBrains Mono` — dato técnico: SKU, dosis, peso molecular, lote.
+
+Tokens: `--font-display`, `--font-body`, `--font-mono`. No escribas el nombre
+de la familia a mano.
+
+> Space Grotesk + Inter fue la pareja original; el sitio ya no las carga.
+> Si encuentras `font-family: 'Space Grotesk'` en algún sitio, es código
+> muerto que cae a la sans del sistema.
 
 ### Scale (clamp-based for fluid responsive)
 
@@ -92,7 +110,10 @@ The store has a working component vocabulary in `static/css/style.css`. Use it i
 - `.btn` + variants (`-gold`, `-outline`, `-ghost`, `-sm`, `-lg`, `-block`, `-danger`)
 - `.badge` + variants (`-gold`, `-green`, `-red`, `-orange`, `-gray`)
 - `.product-card` — the canonical product unit (visual + body + footer)
-- `.pillar-card` — feature/value-prop cards
+- `.prebuy` / `.prebuy-row` — bloque "Antes de comprar" de la home (lista de
+  definición asimétrica; sustituyó a la rejilla de tres tarjetas iguales)
+- `.detail-coa` — acceso al certificado de análisis en la ficha de producto
+- `.about-block` — bloque de lectura de "Sobre nosotros"
 - `.flash` — toast notifications (top-right slide-in)
 - `.cq-*` — calidad section composition pieces
 - `.tag-chip` `.stock-badge` `.ruo-badge` — inline metadata
@@ -106,10 +127,33 @@ The store has a working component vocabulary in `static/css/style.css`. Use it i
 5. **`fetchpriority="high"`** on first 3 above-the-fold product images.
 6. **`loading="lazy" decoding="async"`** below the fold.
 
+## Animaciones de entrada y no-JS
+
+Las clases `.reveal`, `.reveal-left`, `.reveal-right` y `.product-card`
+arrancan en `opacity: 0` y las enciende un `IntersectionObserver`. **Ese
+estado oculto está detrás de `html.js`**, una clase que un script inline en
+`<head>` pone antes de pintar. Sin JS no se oculta nada y la página se ve
+entera. Si añades una animación de entrada nueva, cuélgala también de `.js`
+o dejarás contenido invisible cuando el JS falle.
+
+## Repetir el mensaje
+
+El fallo más caro de este sitio no fue visual: era decir lo mismo a todas las
+alturas. "Calidad y trazabilidad por lote" llegó a aparecer seis veces en la
+home (marquee, hero, sección de calidad, tira de estadísticas, pilares y
+bullets de nosotros) y el aviso RUO tres veces en una ficha de producto.
+
+Regla: **cada afirmación se hace una vez, en el lugar donde decide algo.**
+Si hace falta repetirla por motivo legal, se consolida (una visible + el
+texto completo en `<details>`), no se duplica. Antes de añadir un bloque,
+busca si esa frase ya está en la página.
+
 ## Don'ts
 
-- No emoji as iconography in the main UI surface (✓ in inline copy is fine, decorative emoji in pillar cards is not).
+- No emoji as iconography. Los iconos son SVG de trazo, 24x24, `stroke-width` 1.7–1.9, `stroke="currentColor"`. (✓ y ✕ dentro del texto están bien.)
 - No side-stripe (`border-left: 3px`) accents on cards/alerts. Use full borders or background tints.
 - No gradient text. Solid color, emphasis by weight or size.
 - No identical pillar-of-three card grids without rhythm variation.
+- Nada de QR, sellos o certificados decorativos que aparenten ser verificables sin serlo. En esta marca eso resta confianza en vez de darla.
+- No inventes lotes, purezas ni fechas de análisis para rellenar un hueco: la base no guarda ese dato por producto.
 - No "ONLY 2 LEFT!" pseudo-scarcity.

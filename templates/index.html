@@ -307,62 +307,44 @@
 <!-- ══════════════════════════════════════════
      SOBRE NOSOTROS
      ══════════════════════════════════════════ -->
-<section id="nosotros" style="background:#ffffff;padding:5.5rem 0">
+<section id="nosotros" class="about-sec paper">
   <div class="container">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3.5rem 5rem;align-items:start" class="about-grid">
+    {#
+      Era una rejilla de dos columnas: prosa a la izquierda, tres bullets de
+      features a la derecha. Los bullets repetían "Antes de comprar" y la
+      sección de calidad, así que se fueron; con la columna derecha vacía la
+      rejilla dejaba de tener sentido. Ahora es un bloque único con la medida
+      acotada, que es lo que pide un texto para leerse.
+    #}
+    <div class="about-block reveal">
+      <p class="about-eyebrow">Sobre nosotros</p>
+      <h2 class="about-title">Quiénes somos y qué nos <span class="gold">mueve</span></h2>
 
-      <!-- Columna izquierda: título + texto -->
-      <div class="reveal-left">
-        <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.75rem">Sobre nosotros</p>
-        <h2 style="font-size:clamp(1.8rem,3vw,2.5rem);font-weight:800;color:#111;line-height:1.2;margin-bottom:1.5rem">
-          Quiénes somos y<br>qué nos <span style="color:var(--gold)">mueve</span>
-        </h2>
-        <p style="font-size:0.97rem;color:#444;line-height:1.8;margin-bottom:1.25rem">
-          JD Peptides es una marca enfocada en ofrecer péptidos grado investigación con un estándar
-          claro: consistencia, trazabilidad por lote y documentación. Nuestro objetivo es facilitar
-          un catálogo ordenado y transparente para quienes trabajan con materiales de investigación,
-          priorizando información clara del producto y una experiencia de compra simple y profesional.
-        </p>
-        <p style="font-size:0.97rem;color:#444;line-height:1.8;margin:0">
-          Creemos que la confianza se construye con procesos: control de calidad, empaque seguro y
-          comunicación directa. Por eso, además del catálogo, desarrollamos un Centro de información
-          con recursos y conceptos básicos para entender el tema desde una perspectiva educativa.
-          <em style="color:#888;font-size:0.88rem">For research use only. Not for human consumption.</em>
-        </p>
+      <p>
+        JD Peptides es una marca enfocada en ofrecer péptidos grado investigación con un estándar
+        claro: consistencia, trazabilidad por lote y documentación. Nuestro objetivo es facilitar
+        un catálogo ordenado y transparente para quienes trabajan con materiales de investigación,
+        priorizando información clara del producto y una experiencia de compra simple y profesional.
+      </p>
+      <p>
+        Creemos que la confianza se construye con procesos: control de calidad, empaque seguro y
+        comunicación directa. Por eso, además del catálogo, desarrollamos un Centro de información
+        con recursos y conceptos básicos para entender el tema desde una perspectiva educativa.
+      </p>
+      <p class="about-ruo"><em>For research use only. Not for human consumption.</em></p>
+
+      <div class="about-ctas">
+        <a href="{{ url_for('sobre_nosotros') }}" class="about-cta-primary">
+          Conocer más
+          <svg width="13" height="13" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="{{ url_for('info') }}" class="about-cta-link">
+          Centro de información
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
       </div>
-
-      <!-- Columna derecha: bullets + CTAs -->
-      <div class="reveal-right" style="display:flex;flex-direction:column;gap:2rem;padding-top:0.5rem;--delay:0.12s">
-
-        {#
-          Aquí había tres bullets: "Trazabilidad por lote", "Documentación
-          disponible" y "Soporte y atención". Los tres ya están resueltos
-          arriba, en "Antes de comprar" y en la sección de calidad. Un bloque
-          "sobre nosotros" que repite features deja de ser sobre nosotros.
-          Se quedan los dos párrafos y los enlaces.
-        #}
-
-        <!-- CTAs -->
-        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-          <a href="/sobre-nosotros"
-             style="display:inline-flex;align-items:center;gap:0.45rem;padding:0.65rem 1.4rem;background:var(--gold);border-radius:7px;color:#111;font-size:0.85rem;font-weight:700;letter-spacing:0.04em;text-decoration:none;transition:opacity .2s"
-             onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
-            Conocer más
-            <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-          <a href="/info"
-             style="display:inline-flex;align-items:center;gap:0.4rem;font-size:0.85rem;font-weight:600;color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(var(--gold-rgb),0.35);padding-bottom:1px;transition:border-color .2s"
-             onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='rgba(var(--gold-rgb),0.35)'">
-            Centro de información
-            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-        </div>
-
-      </div><!-- /col derecha -->
-    </div><!-- /grid -->
+    </div>
   </div>
-
-  <!-- .about-grid responsive styles live in static/css/style.css -->
 </section>
 
 {% endblock %}

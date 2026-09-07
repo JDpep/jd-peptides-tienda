@@ -2,6 +2,14 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <script>
+    /* Las animaciones de entrada arrancan en opacity:0 y las enciende un
+       IntersectionObserver. Si el JS no llega (falla la red, un bloqueador,
+       un error antes de este punto), media página se queda invisible.
+       Marcamos el <html> ANTES de pintar: sin esta clase el CSS no oculta
+       nada y el contenido se ve siempre. */
+    document.documentElement.className += ' js';
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}JD Peptides — Péptidos de Investigación{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}JD Peptides — Péptidos de investigación de calidad superior. For research use only.{% endblock %}">

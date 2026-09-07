@@ -19,12 +19,26 @@
   --gold-light: #e8c873;   /* Soft Gold — hover */
   --gold-dark:  #8c6a1f;   /* Bronze */
   --gold-deep:  #4a3812;   /* Dark Bronze */
+  /* Final del degradado del botón dorado. Con --gold-dark el texto #100e09
+     caía a 3.85 en la esquina inferior del botón; con este da 5.02. */
+  --gold-btn-end: #a37c27;
+  /* Dorado legible sobre superficie clara (hero crema, bloque nosotros):
+     --gold da 2.50 sobre #fdfbf4, este da 4.83. */
+  --gold-on-light: #8c6a1f;
+  /* Dorado apagado pero legible sobre superficies oscuras (SKU, metadatos):
+     --gold-dark se queda en 3.43-3.98 sobre las tarjetas. */
+  --gold-on-dark:  #a8802c;
   --champagne:  #f4e4b5;
 
   /* Text — warm */
   --text:       #ede9e0;
   --text2:      #9a9080;
-  --text3:      #524d3e;
+  /* #524d3e daba 2.04-2.36 de contraste sobre los cuatro fondos: por debajo
+     incluso del mínimo para texto grande, y se usa para copia real
+     (descripción de producto, migas, avisos del pie). #8a8271 da
+     5.23/5.11/4.82/4.51 — pasa AA en todos y sigue leyéndose terciario
+     frente a --text2 (6.33). */
+  --text3:      #8a8271;
 
   /* Functional */
   --green:      #22c55e;
@@ -178,7 +192,7 @@ p { color: var(--text2); }
   transition: opacity 0.3s, transform 0.7s var(--ease-out);
 }
 .btn-gold {
-  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  background: linear-gradient(135deg, var(--gold), var(--gold-btn-end));
   color: #100e09;
 }
 .btn-gold:hover {
@@ -1007,11 +1021,13 @@ p { color: var(--text2); }
   flex-wrap: wrap;
 }
 .hero-eyebrow {
-  color: #8c6a1f;
+  /* !important porque .eyebrow se define más abajo con var(--gold) y ganaba
+     por orden. Sobre el crema del hero ese dorado da 2.50. */
+  color: var(--gold-on-light) !important;
   font-size: 0.7rem;
 }
 .hero-edition {
-  color: rgba(140,106,31,0.55);
+  color: var(--gold-on-light);
   font-size: 0.7rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -1039,7 +1055,8 @@ p { color: var(--text2); }
 }
 .hero-highlight {
   display: inline-block;
-  color: var(--gold);
+  /* 66px sobre crema necesita 3.0; --gold daba 2.50. */
+  color: var(--gold-on-light);
   font-weight: 500;
   /* Fraunces italic at large opsz reveals beautiful swashes */
   font-size: 1.04em;
@@ -1336,7 +1353,7 @@ p { color: var(--text2); }
   margin-bottom: 0.1rem;
 }
 .product-sku {
-  color: var(--gold-dark);
+  color: var(--gold-on-dark);
   font-weight: 500;
   letter-spacing: 0.04em;
 }
@@ -1555,7 +1572,7 @@ p { color: var(--text2); }
 .product-detail-sku {
   font-family: var(--font-mono);
   font-size: 0.78rem;
-  color: var(--gold-dark);
+  color: var(--gold-on-dark);
   letter-spacing: 0.1em;
   text-transform: none;
   display: inline-flex;
@@ -2799,7 +2816,7 @@ dl.info-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; 
 .main-content, main { animation: fadeIn 0.35s ease; }
 
 /* Product cards — staggered entrance */
-.products-grid .product-card {
+.js .products-grid .product-card {
   animation: fadeInUp 0.45s ease both;
 }
 .products-grid .product-card:nth-child(1)  { animation-delay: 0.04s; }
@@ -3009,9 +3026,11 @@ dl.info-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; 
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Scroll reveal --- */
-.product-card,
-.reveal {
+/* --- Scroll reveal ---
+   Ojo: el estado oculto vive detrás de `html.js`. Sin JS no se oculta nada
+   (el observador que lo revelaría tampoco existiría). --- */
+.js .product-card,
+.js .reveal {
   opacity: 0;
   transform: translateY(24px);
   transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
@@ -3019,8 +3038,8 @@ dl.info-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; 
   transition-delay: var(--delay, 0s);
   will-change: transform, opacity;
 }
-.reveal-left  { opacity: 0; transform: translateX(-32px); transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1); transition-delay: var(--delay, 0s); }
-.reveal-right { opacity: 0; transform: translateX( 32px); transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1); transition-delay: var(--delay, 0s); }
+.js .reveal-left  { opacity: 0; transform: translateX(-32px); transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1); transition-delay: var(--delay, 0s); }
+.js .reveal-right { opacity: 0; transform: translateX( 32px); transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1); transition-delay: var(--delay, 0s); }
 .product-card.visible,
 .reveal.visible,
 .reveal-left.visible,
@@ -3076,13 +3095,13 @@ dl.info-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; 
 }
 
 /* --- Directional scroll reveal --- */
-.reveal-left {
+.js .reveal-left {
   opacity: 0;
   transform: translateX(-36px);
   transition: opacity 0.65s ease, transform 0.65s ease;
   transition-delay: var(--delay, 0s);
 }
-.reveal-right {
+.js .reveal-right {
   opacity: 0;
   transform: translateX(36px);
   transition: opacity 0.65s ease, transform 0.65s ease;
@@ -4719,3 +4738,81 @@ h3 > svg, h4 > svg { vertical-align: -0.15em; margin-right: 0.35rem; color: var(
   white-space: nowrap;
   border: 0;
 }
+
+/* =========================================================
+   SOBRE NOSOTROS (home) — bloque de papel sobre fondo claro
+   Antes era una rejilla 1fr/1fr con tres bullets a la derecha
+   que repetían "Antes de comprar". Ahora es un solo bloque de
+   lectura con la medida acotada.
+   ========================================================= */
+.about-sec { background: #fffdf8; padding: 5.5rem 0; }
+.about-block { max-width: 62ch; }
+.about-eyebrow {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--gold-on-light);
+  margin-bottom: 0.75rem;
+}
+.about-title {
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  color: #1a1610;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+}
+.about-title .gold { color: var(--gold-on-light); }
+.about-block p {
+  font-size: 0.99rem;
+  color: #4a443a;
+  line-height: 1.85;
+  margin-bottom: 1.25rem;
+}
+.about-ruo { font-size: 0.86rem !important; color: #736b5c !important; }
+.about-ctas {
+  display: flex; align-items: center; gap: 1.5rem;
+  flex-wrap: wrap; margin-top: 2rem;
+}
+.about-cta-primary {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.7rem 1.5rem;
+  background: var(--gold); border-radius: 7px;
+  color: #1a1610; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.03em;
+  transition: background var(--transition);
+}
+.about-cta-primary:hover { background: var(--gold-light); color: #1a1610; }
+.about-cta-link {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.85rem; font-weight: 600;
+  color: var(--gold-on-light);
+  border-bottom: 1px solid rgba(var(--gold-rgb), 0.4);
+  padding-bottom: 1px;
+  transition: border-color var(--transition), color var(--transition);
+}
+.about-cta-link:hover { color: #6b5115; border-bottom-color: #6b5115; }
+/* Aclaración opcional dentro de una etiqueta, sin robarle peso. */
+.label-hint { font-weight: 400; font-size: 0.72rem; color: var(--text3); margin-left: 0.35rem; }
+
+/* =========================================================
+   SUPERFICIE CLARA (.paper)
+   El sitio es oscuro y `p { color: var(--text2) }` es global.
+   En las páginas de papel (legales, FAQ, info, nosotros) esa
+   regla gana por selector de elemento sobre el `color` que
+   pone el contenedor, y el texto se queda en 3.15 de
+   contraste sobre blanco. Los avisos legales tienen que ser
+   legibles, así que la superficie clara declara sus propios
+   colores en vez de pelearse con los del tema oscuro.
+   ========================================================= */
+.paper {
+  color: #3f3a33;
+  --text:  #1a1610;
+  --text2: #4a443a;
+  --text3: #6b6355;
+  --gold:  var(--gold-on-light);
+}
+.paper p,
+.paper li,
+.paper dd,
+.paper td { color: #4a443a; }
+.paper h1, .paper h2, .paper h3, .paper h4, .paper h5,
+.paper strong, .paper b { color: #1a1610; }
+.paper a { color: var(--gold-on-light); }
+.paper a:hover { color: #6f5417; }
+.paper small, .paper .paper-meta { color: #6b6355; }

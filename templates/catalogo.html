@@ -118,10 +118,12 @@
               <span class="catalog-filter-hint" id="priceRangeLabel">MXN</span>
             </span>
             <div class="catalog-price-range">
+              <label for="minPrice" class="sr-only">Precio mínimo en pesos</label>
               <input type="number" name="min_price" id="minPrice" class="form-control" placeholder="Mín"
                      min="{{ price_min_bound|int }}" max="{{ price_max_bound|int }}" step="1"
                      value="{{ current_min_price if current_min_price is not none else '' }}">
               <span class="catalog-price-dash">—</span>
+              <label for="maxPrice" class="sr-only">Precio máximo en pesos</label>
               <input type="number" name="max_price" id="maxPrice" class="form-control" placeholder="Máx"
                      min="{{ price_min_bound|int }}" max="{{ price_max_bound|int }}" step="1"
                      value="{{ current_max_price if current_max_price is not none else '' }}">

@@ -4816,3 +4816,25 @@ h3 > svg, h4 > svg { vertical-align: -0.15em; margin-right: 0.35rem; color: var(
 .paper a { color: var(--gold-on-light); }
 .paper a:hover { color: #6f5417; }
 .paper small, .paper .paper-meta { color: #6b6355; }
+
+/* En táctil los botones de acción no tienen hover: están siempre visibles.
+   A dos columnas los tres ocupaban ~128px de la esquina superior derecha de
+   una tarjeta de ~180px y tapaban el badge de categoría.
+   Los botones son hijos de .product-card (no de la foto), así que moverlos
+   abajo los estrella contra "+ Agregar". Se quedan arriba, reducidos a dos,
+   y el que baja es el badge — ese sí vive dentro de .product-visual. */
+@media (max-width: 560px) {
+  .products-grid .product-quickview-btn,
+  .products-grid .card-action-btn { width: 30px; height: 30px; top: 0.45rem; }
+  .products-grid .product-quickview-btn { right: 0.45rem; }
+  .products-grid .card-wishlist-btn     { right: 2.5rem; }
+  /* Comparar es tarea de escritorio: en teléfono estorba más de lo que ayuda
+     y el comparador sigue accesible desde el menú. */
+  .products-grid .card-compare-btn      { display: none; }
+
+  .products-grid .product-visual-cat {
+    top: auto;
+    bottom: 0.5rem;
+    left: 0.5rem;
+  }
+}

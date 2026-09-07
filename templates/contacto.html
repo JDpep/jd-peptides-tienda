@@ -53,26 +53,44 @@
 
       <!-- Form -->
       <div class="contact-form-card">
-        <h3 style="margin-bottom:1rem">Envíanos un mensaje</h3>
+        {% if intent and intent.kind == 'coa' %}
+          <h3 style="margin-bottom:0.35rem">Pedir el CoA de {{ intent.name }}</h3>
+          <p class="contact-intent">
+            <span class="mono">{{ intent.sku }}</span> · {{ intent.dose }} —
+            te mandamos el certificado del lote que tenemos en existencia:
+            pureza por HPLC, endotoxinas, metales pesados y esterilidad.
+          </p>
+        {% elif intent and intent.kind == 'newsletter' %}
+          <h3 style="margin-bottom:0.35rem">Suscribirte a novedades</h3>
+          <p class="contact-intent">
+            Confirma tus datos y te damos de alta. Mandamos catálogo nuevo,
+            certificados de análisis y disponibilidad. Nada más.
+          </p>
+        {% else %}
+          <h3 style="margin-bottom:1rem">Envíanos un mensaje</h3>
+        {% endif %}
 
         <form method="POST" action="{{ url_for('contacto') }}" class="contact-form">
           <div class="form-group">
             <label for="ct-name">Nombre completo *</label>
-            <input type="text" name="name" id="ct-name" class="form-control" required autocomplete="name">
+            <input type="text" name="name" id="ct-name" class="form-control" required autocomplete="name"
+                   value="{{ form.get('name', '') }}">
           </div>
           <div class="form-row">
             <div class="form-group">
               <label for="ct-email">Email *</label>
-              <input type="email" name="email" id="ct-email" class="form-control" required autocomplete="email">
+              <input type="email" name="email" id="ct-email" class="form-control" required autocomplete="email"
+                     value="{{ form.get('email', '') }}">
             </div>
             <div class="form-group">
               <label for="ct-phone">Teléfono <span class="label-hint">(opcional)</span></label>
-              <input type="tel" name="phone" id="ct-phone" class="form-control" autocomplete="tel">
+              <input type="tel" name="phone" id="ct-phone" class="form-control" autocomplete="tel"
+                     value="{{ form.get('phone', '') }}">
             </div>
           </div>
           <div class="form-group">
             <label for="ct-message">Mensaje *</label>
-            <textarea name="message" id="ct-message" class="form-control" rows="6" required></textarea>
+            <textarea name="message" id="ct-message" class="form-control" rows="6" required>{{ form.get('message', '') }}</textarea>
           </div>
           <button type="submit" class="btn btn-gold btn-lg">Enviar mensaje</button>
         </form>

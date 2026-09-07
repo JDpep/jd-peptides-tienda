@@ -569,10 +569,12 @@ document.addEventListener('DOMContentLoaded', function () {
       };
       const catCls = CAT_BADGE[p.category] || 'badge-cat-default';
 
-      let stockBadge;
+      // Misma regla que la plantilla del servidor: el estado solo se pinta
+      // cuando dice algo. "En stock" en cada tarjeta no informaba de nada y
+      // metía una fila de más entre el precio y el botón.
+      let stockBadge = '';
       if (!inStock)                 stockBadge = `<span class="stock-badge out">Agotado</span>`;
       else if (p.stock <= lowAlert) stockBadge = `<span class="stock-badge low">Quedan ${p.stock}</span>`;
-      else                          stockBadge = `<span class="stock-badge ok">En stock</span>`;
 
       // Mismo formato que el filtro `money` de Jinja. Sin esto, al filtrar
       // los precios perdían el separador de miles y la rejilla mostraba

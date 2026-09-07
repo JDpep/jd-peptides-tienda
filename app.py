@@ -4348,6 +4348,7 @@ def agregar_carrito():
         return jsonify({'success': False, 'message': 'Producto sin stock disponible'}), 400
 
     cart = get_cart()
+    clamped = False
     current_in_cart = cart[pid]['quantity'] if pid in cart else 0
     total_requested = current_in_cart + qty
     if total_requested > product['stock']:
@@ -4355,6 +4356,7 @@ def agregar_carrito():
         if available <= 0:
             return jsonify({'success': False, 'message': f'Ya tienes el máximo disponible de "{product["name"]}" en tu carrito ({product["stock"]} uds)'}), 400
         qty = available  # Ajustar al máximo disponible
+        clamped = True
 
     if pid in cart:
         cart[pid]['quantity'] += qty
@@ -4371,9 +4373,18 @@ def agregar_carrito():
         }
     save_cart(cart)
 
+    # Si se pidieron más de las que hay, se añaden las que quedan — pero hay
+    # que decirlo. Antes respondía "agregado al carrito" a secas y el
+    # comprador se enteraba del recorte al llegar al resumen del pedido.
+    if clamped:
+        _msg = (f'Solo quedaban {qty} unidad(es) de "{product["name"]}". '
+                f'Agregamos esas.')
+    else:
+        _msg = f'{product["name"]} agregado al carrito'
     return jsonify({
         'success': True,
-        'message': f'{product["name"]} agregado al carrito',
+        'clamped': clamped,
+        'message': _msg,
         'cart_count': cart_count(),
         'cart_total': cart_total(),
     })
@@ -7320,10 +7331,37 @@ def nosotros_alias():
 @app.route('/contacto', methods=['GET', 'POST'])
 def contacto():
     sent = False
+    # Los dos enlaces que traen gente aquí llegaban con datos que se tiraban:
+    #   · el pie "Suscribirse" manda ?email=…  → llegaba a un campo vacío y
+    #     había que teclear el correo otra vez;
+    #   · la ficha de producto manda ?producto=SKU para pedir el CoA → la
+    #     página no mencionaba el producto por ningún lado.
+    form = {'name': '', 'email': '', 'phone': '', 'message': ''}
+    intent = None
+    if request.method == 'GET':
+        form['email'] = (request.args.get('email') or '').strip()[:120]
+        _sku = (request.args.get('producto') or '').strip()[:40]
+        if _sku:
+            _p = query_db("SELECT name, sku, dose FROM products WHERE sku=? AND active=1",
+                          (_sku,), one=True)
+            if _p:
+                intent = {'kind': 'coa', 'name': _p['name'], 'sku': _p['sku'],
+                          'dose': _p['dose']}
+                form['message'] = (
+                    f'Hola, quisiera el certificado de análisis (CoA) del lote de '
+                    f'{_p["name"]} {_p["dose"]} (SKU {_p["sku"]}).')
+        elif form['email']:
+            intent = {'kind': 'newsletter'}
+            form['message'] = ('Hola, quiero recibir novedades de catálogo, '
+                               'certificados de análisis y disponibilidad.')
     if request.method == 'POST':
         nombre  = (request.form.get('name')    or '').strip()
         email   = (request.form.get('email')   or '').strip()
         mensaje = (request.form.get('message') or '').strip()
+        # Si algo falla, se vuelve a pintar con lo que ya estaba escrito.
+        form = {'name': nombre, 'email': email,
+                'phone': (request.form.get('phone') or '').strip(),
+                'message': mensaje}
         if _rate_limited(f'contact:{_client_ip()}', limit=5, window=600):
             flash('Demasiados mensajes seguidos. Espera unos minutos.', 'error')
             return redirect(url_for('contacto'))
@@ -7342,8 +7380,12 @@ def contacto():
             flash('Gracias, recibimos tu mensaje. Te respondemos por correo.', 'success')
             sent = True
             return redirect(url_for('contacto'))
-        flash('Completa nombre, email y mensaje.', 'error')
-    return render_template('contacto.html', sent=sent)
+        if not valid_email(email) and email:
+            flash('Ese correo no parece válido. Revísalo, es por donde te '
+                  'respondemos.', 'error')
+        else:
+            flash('Completa nombre, email y mensaje.', 'error')
+    return render_template('contacto.html', sent=sent, form=form, intent=intent)
 
 
 _nav_cats_cache = {'data': [], 'ts': 0}

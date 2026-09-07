@@ -40,7 +40,9 @@
   <div class="container">
     <h1>Catálogo de <span class="gold">Péptidos</span></h1>
     <p>
-      <span id="catalog-count">{{ products|length }} producto{{ 's' if products|length != 1 else '' }}</span>
+      {# Cuenta el total del filtro, no las 24 de esta página: decía
+         "24 productos" arriba y "31 productos" en la paginación. #}
+      <span id="catalog-count">{{ total_products }} producto{{ 's' if total_products != 1 else '' }}</span>
       {% if current_category %} en <strong style="color:var(--gold)">{{ current_category }}</strong>{% endif %}
       {% if current_tag %} · <strong style="color:var(--gold)">{{ tag_label(current_tag) }}</strong>{% endif %}
     </p>
@@ -258,17 +260,22 @@
                       <p class="product-benefit">{{ benefits[0] }}</p>
                     {% endif %}
                     {% set _low = p['low_stock_alert'] if p['low_stock_alert'] is not none else 5 %}
+                    {#
+                      El estado de stock solo se pinta cuando dice algo. Con
+                      "En stock" en las 24 tarjetas eran 24 pastillas verdes
+                      idénticas: ruido que empujaba el precio y el botón una
+                      fila hacia abajo sin informar de nada. Lo normal es que
+                      haya existencias; lo que hay que avisar es cuando no.
+                    #}
                     <div class="product-meta">
                       <span class="product-price">
                         <span class="product-price-amount">${{ p['price']|money }}</span>
                         <span class="price-currency">MXN</span>
                       </span>
-                      {% if p['stock'] > _low %}
-                        <span class="stock-badge ok">En stock</span>
-                      {% elif p['stock'] > 0 %}
-                        <span class="stock-badge low">Quedan {{ p['stock'] }}</span>
-                      {% else %}
+                      {% if p['stock'] <= 0 %}
                         <span class="stock-badge out">Agotado</span>
+                      {% elif p['stock'] <= _low %}
+                        <span class="stock-badge low">Quedan {{ p['stock'] }}</span>
                       {% endif %}
                     </div>
                   </div>

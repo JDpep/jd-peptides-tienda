@@ -4,6 +4,14 @@
    JetBrains Mono (technical data: SKU, dose, MW, batch).
    ========================================================= */
 
+/* El atributo `hidden` tiene que ganar siempre.
+   Su `display:none` viene de la hoja del navegador, así que cualquier regla
+   propia con `display:flex/grid/block` lo pisa por especificidad. Pasó de
+   verdad: `.catalog-active-chips` (display:flex) se pintaba como una barra
+   vacía de 852x23 con borde dorado encima de la rejilla del catálogo, en
+   cada carga, aunque el atributo estuviera puesto. */
+[hidden] { display: none !important; }
+
 /* --- Variables --- */
 :root {
   /* Backgrounds — warm ink */
@@ -1251,12 +1259,17 @@ p { color: var(--text2); }
 }
 
 /* --- Product Grid --- */
+/* El número de columnas lo decide el ancho disponible, no un breakpoint.
+   Con `repeat(4, 1fr)` fijo, el catálogo (que además cede 264px a la barra
+   de filtros) daba tarjetas de 198px en una pantalla de 1440: el nombre, el
+   precio y el botón cabían a duras penas. Con un mínimo de 230px, ese mismo
+   hueco da 3 columnas de ~270px, y una pantalla más ancha recupera la
+   cuarta sola. La home, sin barra lateral, sigue en cuatro. */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 1.25rem;
 }
-@media (max-width: 1100px) { .products-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 768px)  { .products-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 480px)  {
   /* Dos columnas también en teléfono. A una sola, 24 productos daban una
@@ -1290,7 +1303,10 @@ p { color: var(--text2); }
 }
 .product-visual {
   position: relative;
-  aspect-ratio: 3/5;
+  /* 2:3 es exactamente la proporción de las fotos (733x1100), así que
+     `cover` no recorta nada. Con 3:5 se comía un 10% del ancho de cada
+     vial y, de paso, alargaba la tarjeta un 11% de más. */
+  aspect-ratio: 2/3;
   background: linear-gradient(145deg, var(--bg4), #0d0d0d);
   display: flex;
   flex-direction: column;
@@ -4621,7 +4637,11 @@ button:focus-visible,
   .products-grid .product-price-amount { font-size: 1rem; }
 
   /* El vial es más alto que ancho; a media columna 3:5 se come la pantalla. */
-  .products-grid .product-visual { aspect-ratio: 4/5; padding: 0.9rem; }
+  .products-grid .product-visual { aspect-ratio: 4/5; }   /* a media columna, más corta */
+  /* El padding solo aplica al marcador de posición (el bloque con el nombre).
+     Aplicado también a las fotos, las metía 14px hacia dentro y dejaba un
+     marco oscuro alrededor: parecían recortes pegados sobre la tarjeta. */
+  .products-grid .product-visual:not(.product-visual-has-img) { padding: 0.9rem; }
 
   /* El footer ya tiene un solo botón a todo el ancho; aquí solo se aprieta
      el espaciado y se garantiza el área táctil. */
@@ -4870,11 +4890,15 @@ h3 > svg, h4 > svg { vertical-align: -0.15em; margin-right: 0.35rem; color: var(
      y el comparador sigue accesible desde el menú. */
   .products-grid .card-compare-btn      { display: none; }
 
+  /* El badge se queda arriba a la izquierda, donde está en escritorio.
+     Bajarlo lo dejaba montado sobre la costura entre foto y cuerpo, y
+     encima cambiaba de sitio según el ancho de pantalla. Los botones de
+     acción están arriba a la DERECHA, así que no se estorban. */
   .products-grid .product-visual-cat {
-    top: auto;
-    bottom: 0.5rem;
+    top: 0.5rem;
     left: 0.5rem;
   }
+  .products-grid .badge-cat { font-size: 0.58rem; padding: 0.24rem 0.45rem; }
 }
 
 /* Relacionados en la ficha: tres columnas en escritorio, pero respetando los
@@ -4970,4 +4994,56 @@ h3 > svg, h4 > svg { vertical-align: -0.15em; margin-right: 0.35rem; color: var(
 .co-consent input[type="checkbox"]:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
+}
+
+/* =========================================================
+   FOTO DE PRODUCTO — coserla a la tarjeta
+   Las fotos reales son viales sobre fondo de estudio, y cada
+   una trae el suyo: blanco, gris frío, gris cálido. Puestas en
+   crudo sobre el tema oscuro, una rejilla de 24 se ve como 24
+   recortes pegados, cada uno de un tono. Tres capas lo cosen:
+   un degradado que funde el borde inferior con el cuerpo de la
+   tarjeta, una viñeta que apaga las esquinas, y un ajuste
+   mínimo de brillo/saturación para acercar los tonos entre sí.
+   Nada de esto toca el vial: el sujeto está centrado.
+   ========================================================= */
+.product-visual-has-img { position: relative; }
+.product-card-img {
+  filter: brightness(0.96) contrast(1.03) saturate(0.94);
+}
+.product-visual-has-img::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    /* funde el pie de la foto con el cuerpo de la tarjeta */
+    linear-gradient(to top, var(--bg3) 0%, rgba(23,20,15,0.55) 7%, transparent 22%),
+    /* viñeta: apaga las esquinas para que el fondo de estudio no haga marco */
+    radial-gradient(115% 85% at 50% 42%, transparent 52%, rgba(10,9,6,0.42) 100%);
+}
+/* El badge y los botones de acción van por encima del velo. */
+.product-visual-cat { z-index: 2; }
+
+/* En la ficha la foto es el sujeto principal y se mira de cerca:
+   ahí no se le mete viñeta ni degradado, solo el ajuste de tono. */
+.product-detail-visual .product-card-img,
+.product-detail-visual img { filter: none; }
+
+/* Bajada del formulario de contacto cuando se llega con una intención
+   concreta (pedir el CoA de un producto, o suscribirse desde el pie). */
+.contact-intent {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text2);
+  margin: 0 0 1.1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.contact-intent .mono {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--gold-on-dark);
+  letter-spacing: 0.04em;
 }
